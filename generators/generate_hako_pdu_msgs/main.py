@@ -10,6 +10,7 @@ from .dependency_resolver import DependencyResolver
 from .code_generator import CodeGenerator
 from .offset_calculator import OffsetCalculator
 from .offset_parser import parse_offset_file
+from .size_registry_generator import SizeRegistryGenerator
 
 def get_search_paths(search_path_file, project_root, ros_root=None):
     """
@@ -113,6 +114,9 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             offset_data = parse_offset_file(offset_file)
             if offset_data:
                 code_gen.generate_javascript_converter(msg_def, offset_data, output_root_dir)
+
+        print("\n7. Generating PDU size registry...")
+        SizeRegistryGenerator().generate(output_root_dir)
 
         print("\n--- Generation Complete! ---")
 

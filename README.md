@@ -142,10 +142,20 @@ bash docker/run.bash
 ```bash
 cd hakoniwa-pdu-registry
 ```
+for service msg generation:
 
 ```bash
-python3 -m generators.hakoniwa_pdu_generator.main config/ros_msgs.txt 
+python3 -m generators.generate_hako_service_msgs.main <srv_file_path> --out idl
 ```
+
+
+for pdu generation:
+
+```bash
+python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt 
+```
+
+
 
 Generated PDU artifacts will appear under:
 

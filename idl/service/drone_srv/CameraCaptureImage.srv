@@ -1,0 +1,6 @@
+string drone_name
+string image_type
+---
+bool ok
+uint8[] data
+string message

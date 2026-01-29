@@ -1,0 +1,24 @@
+{
+  "fields": [
+    {
+      "name": "d_temp",
+      "type": "hako_msgs/DisturbanceTemperature"
+    },
+    {
+      "name": "d_wind",
+      "type": "hako_msgs/DisturbanceWind"
+    },
+    {
+      "name": "d_atm",
+      "type": "hako_msgs/DisturbanceAtm"
+    },
+    {
+      "name": "d_boundary",
+      "type": "hako_msgs/DisturbanceBoundary"
+    },
+    {
+      "name": "d_user_custom",
+      "type": "hako_msgs/DisturbanceUserCustom[]"
+    }
+  ]
+}

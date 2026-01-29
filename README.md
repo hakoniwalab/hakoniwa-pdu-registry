@@ -83,7 +83,7 @@ to runtime-consumable artifacts.
 
 hakoniwa-pdu-registry
 ├── idl/                # Input definitions (ROS 2 msg, etc.)
-├── templates/          # Code generation templates
+├── template/          # Code generation templates
 ├── generators/         # Python-based generators
 ├── pdu/                # Generated PDU artifacts
 │   └── types/
@@ -137,7 +137,11 @@ Example:
 
 ```bash
 bash docker/run.bash
-bash create_all_pdus.bash
+```
+
+```bash
+export PYTHONPATH=$PYTHONPATH:/path/to/hakoniwa-pdu-registry
+python3 /path/to/hakoniwa-pdu-registry/utils/hakoniwa_pdu_generator/main.py /path/to/hakoniwa-pdu-registry/config/ros_msgs.txt
 ```
 
 Generated PDU artifacts will appear under:
@@ -185,10 +189,9 @@ binary compatibility.
 
 ## Relationship to Other Hakoniwa Components
 
-* **hakoniwa-core**: Runtime execution and simulation
-* **hakoniwa-bridge**: Inter-process and inter-node communication
-* **hakoniwa-conductor**: Distributed coordination and time control
-* **hakoniwa-ros2pdu**: Legacy generator (functionality migrated here)
+* **hakoniwa-core-pro**: Runtime execution and simulation
+* **hakoniwa-pdu-bridge**: Inter-process and inter-node communication
+* **hakoniwa-pdu-endpoint**: PDU io interfaces
 
 `hakoniwa-pdu-registry` provides the authoritative PDU definitions
 used by these components.

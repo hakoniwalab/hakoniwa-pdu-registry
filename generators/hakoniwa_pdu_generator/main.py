@@ -130,7 +130,7 @@ def main():
     # varray-size-file is obsolete
     # parser.add_argument('--varray-size-file', type=str, default='config/varray_size.json', help="Path to the varray size definition file")
     parser.add_argument('--output-dir', type=str, default='pdu', help="Root directory for the generated PDU files")
-    parser.add_argument('--template-dir', type=str, default='utils/hakoniwa_pdu_generator/templates', help="Directory of the template files")
+    parser.add_argument('--template-dir', type=str, default='template', help="Directory of the template files")
     parser.add_argument('--ros-root', type=str, help="(Optional) Root path of your local ROS 2 installation for testing.")
     parser.add_argument('--offset-include-path-file', type=str, help="Path to a file listing additional include paths for offset calculation.")
     

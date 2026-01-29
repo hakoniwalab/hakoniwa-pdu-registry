@@ -140,8 +140,11 @@ bash docker/run.bash
 ```
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:/path/to/hakoniwa-pdu-registry
-python3 /path/to/hakoniwa-pdu-registry/utils/hakoniwa_pdu_generator/main.py /path/to/hakoniwa-pdu-registry/config/ros_msgs.txt
+cd hakoniwa-pdu-registry
+```
+
+```bash
+python3 -m generators.hakoniwa_pdu_generator.main config/ros_msgs.txt 
 ```
 
 Generated PDU artifacts will appear under:

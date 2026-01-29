@@ -4,13 +4,13 @@ HAKONIWA_TOP_DIR=`pwd`
 
 DIR_PATH=`dirname $0`
 IMAGE_NAME=`cat ${DIR_PATH}/image_name.txt`
-IMAGE_TAG=`cat ${DIR_PATH}/../appendix/latest_version.txt`
+IMAGE_TAG=`cat ${DIR_PATH}/latest_version.txt`
 DOCKER_IMAGE=${IMAGE_NAME}:${IMAGE_TAG}
 
 ARCH=`arch`
-OS_TYPE=`bash ${DIR_PATH}/../utils/detect_os_type.bash`
+OS_TYPE=`uname`
 
-if [ ${OS_TYPE} != "Mac" ]
+if [ ${OS_TYPE} != "Darwin" ]
 then
 	docker ps > /dev/null
 	if [ $? -ne 0 ]
@@ -21,46 +21,32 @@ then
 	fi
 fi
 
-if [ ${OS_TYPE} = "wsl2" ]
-then
-	IPADDR=`cat /etc/resolv.conf  | grep nameserver | awk '{print $NF}'`
-elif [ ${OS_TYPE} = "Mac" ]
-then
-	if [ $# -ne 1 ]
-	then
-		echo "Usage: $0 <port>"
-		exit 1
-	fi
-	ETHER=${1}
-	IPADDR=`ifconfig | grep -A1 ${ETHER} | grep netmask | awk '{print $2}'`
-else
-	IPADDR="127.0.0.1"
-fi
+IPADDR="127.0.0.1"
 
-if [ ${OS_TYPE} != "Mac" ]
+if [ ${OS_TYPE} != "Darwin" ]
 then
-	docker run -v ${HAKONIWA_TOP_DIR}:/root/workspace/hakoniwa-ros2pdu \
+	docker run -v ${HAKONIWA_TOP_DIR}:/root/workspace/hakoniwa-pdu-registry \
 		-it --rm \
 		--net host \
 		-e CORE_IPADDR=${IPADDR} \
 		-e OS_TYPE=${OS_TYPE} \
-		--name hakoniwa-ros2pdu ${DOCKER_IMAGE} 
+		--name hakoniwa-pdu-registry ${DOCKER_IMAGE} 
 else
 	if [ $ARCH = "arm64" ]
 	then
-		docker run -v ${HAKONIWA_TOP_DIR}:/root/workspace/hakoniwa-ros2pdu \
+		docker run -v ${HAKONIWA_TOP_DIR}:/root/workspace/hakoniwa-pdu-registry \
             --platform linux/amd64 \
 			-it --rm \
 			-e CORE_IPADDR=${IPADDR} \
 			-e ROS_UNITY_IPADDR=${IPADDR} \
 			-e OS_TYPE=${OS_TYPE} \
-			--name hakoniwa-ros-sim ${DOCKER_IMAGE} 
+			--name hakoniwa-pdu-registry ${DOCKER_IMAGE} 
 	else
-		docker run -v ${HAKONIWA_TOP_DIR}:/root/workspace/hakoniwa-ros2pdu \
+		docker run -v ${HAKONIWA_TOP_DIR}:/root/workspace/hakoniwa-pdu-registry \
 			-it --rm \
 			-e CORE_IPADDR=${IPADDR} \
 			-e ROS_UNITY_IPADDR=${IPADDR} \
 			-e OS_TYPE=${OS_TYPE} \
-			--name hakoniwa-ros-sim ${DOCKER_IMAGE} 
+			--name hakoniwa-pdu-registry ${DOCKER_IMAGE} 
 	fi
 fi

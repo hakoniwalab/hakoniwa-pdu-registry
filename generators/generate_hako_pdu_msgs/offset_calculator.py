@@ -53,6 +53,15 @@ class OffsetCalculator:
         
         print(f"Generated size file: {size_file_path}")
 
+    def _write_offset_text(self, offset_data, pkg_name, msg_name, output_dir):
+        base_output_dir = Path(output_dir).parent
+        text_output_dir = base_output_dir / 'offset_text' / pkg_name
+        text_output_dir.mkdir(parents=True, exist_ok=True)
+        text_file_path = text_output_dir / f"{msg_name}.txt"
+        with open(text_file_path, 'w') as f:
+            f.write(offset_data)
+        print(f"Generated offset text file: {text_file_path}")
+
     def calculate_offsets(self, context, output_dir):
         pkg_name = context['container']['pkg_name']
         msg_name = context['container']['msg_type_name']
@@ -110,3 +119,4 @@ class OffsetCalculator:
             f.write(offset_data)
         print(f"Generated offset file: {offset_file_path}")
         self._calculate_and_write_size(offset_file_path, pkg_name, msg_name, output_dir)
+        self._write_offset_text(offset_data, pkg_name, msg_name, output_dir)

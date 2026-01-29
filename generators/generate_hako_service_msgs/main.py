@@ -1,9 +1,9 @@
 import argparse
-from utils.generate_hako_service_msgs.service_context import ServiceContext
-from utils.generate_hako_service_msgs.srv_parser import SrvParser
-from utils.generate_hako_service_msgs.msg_generator import MsgGenerator
-from utils.generate_hako_service_msgs.msg_writer import MsgWriter
-from utils.generate_hako_service_msgs.common import validate_fields
+from generators.generate_hako_service_msgs.service_context import ServiceContext
+from generators.generate_hako_service_msgs.srv_parser import SrvParser
+from generators.generate_hako_service_msgs.msg_generator import MsgGenerator
+from generators.generate_hako_service_msgs.msg_writer import MsgWriter
+from generators.generate_hako_service_msgs.common import validate_fields
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Hakoniwa Service .msg files from a ROS .srv file")

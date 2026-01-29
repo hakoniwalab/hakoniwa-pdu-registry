@@ -97,7 +97,7 @@ so each component stays focused on its own responsibility.
 
 hakoniwa-pdu-registry
 ├── idl/                # Input definitions (ROS 2 msg, etc.)
-├── template/          # Code generation templates
+├── template/           # Code generation templates
 ├── generators/         # Python-based generators
 ├── pdu/                # Generated PDU artifacts
 │   └── types/
@@ -109,7 +109,7 @@ hakoniwa-pdu-registry
 ├── docker/             # Reproducible build environment
 └── docs/               # Design documents and specifications
 
-````
+```
 
 ---
 
@@ -120,7 +120,7 @@ hakoniwa-pdu-registry
 ```bash
 git clone https://github.com/<your-org>/hakoniwa-pdu-registry.git
 cd hakoniwa-pdu-registry
-````
+```
 
 ### 2. Configure target messages
 
@@ -153,24 +153,16 @@ Example:
 
 ### 3. Run the generator
 
+Run the following commands inside the container started by `bash docker/run.bash`.
+
 ```bash
 bash docker/run.bash
-```
-
-```bash
 cd hakoniwa-pdu-registry
-```
-for service msg generation:
-
-```bash
 python3 -m generators.generate_hako_service_msgs.main <srv_file_path> --out idl
+python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt
 ```
 
-for pdu generation:
-
-```bash
-python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt 
-```
+`--out idl` writes generated `.msg` files under `idl/` so they are treated as registry inputs.
 
 
 
@@ -199,6 +191,7 @@ Hakoniwa PDUs are serialized into the following binary layout:
 |      8 | uint32 | BaseData offset           |
 |     12 | uint32 | HeapData offset           |
 |     16 | uint32 | Total size                |
+|     20 | uint32 | Reserved (padding)        |
 
 ### BaseData
 
@@ -228,7 +221,9 @@ binary compatibility.
 4. Generate Python and JavaScript converters from offset files.
 
 Generated offset files are placed under `pdu/offset/`, and aligned size
-files are placed under `pdu/pdu_size/`.
+files are placed under `pdu/pdu_size/`. For Unity and other tools that
+disallow the `.offset` extension, the same content is also emitted under
+`pdu/offset_text/` with `.txt` filenames.
 
 ---
 
@@ -237,6 +232,7 @@ files are placed under `pdu/pdu_size/`.
 Generated Python files include:
 
 - `pdu/python/pdu_utils.py`: shared PDU metadata and helpers
+- `pdu/python/binary_io.py`: canonical MetaData definitions and low-level binary IO
 - `pdu/python/<pkg>/pdu_pytype_<msg>.py`: Python data classes
 - `pdu/python/<pkg>/pdu_conv_<msg>.py`: PDU byte conversion helpers
 

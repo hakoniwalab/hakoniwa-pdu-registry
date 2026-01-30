@@ -21,8 +21,8 @@ def get_search_paths(search_path_file, project_root, ros_root=None):
     
     adjusted_paths = []
     for p in paths:
-        if p.startswith('/root/workspace/hakoniwa-ros2pdu'):
-            adjusted_paths.append(str(project_root / Path(p).relative_to('/root/workspace/hakoniwa-ros2pdu')))
+        if p.startswith('/root/workspace/hakoniwa-pdu-registry'):
+            adjusted_paths.append(str(project_root / Path(p).relative_to('/root/workspace/hakoniwa-pdu-registry')))
         elif ros_root and p.startswith('/opt/ros/foxy'):
             adjusted_paths.append(str(Path(ros_root) / Path(p).relative_to('/opt/ros/foxy')))
         else:

@@ -152,3 +152,7 @@ hako_srv_msgs/GetEventRequestPacket
 hako_srv_msgs/GetEventResponsePacket
 hako_srv_msgs/AckEventRequestPacket
 hako_srv_msgs/AckEventResponsePacket
+hako_msgs/ExecutionUnitRuntimeNode
+hako_msgs/ExecutionUnitRuntimeContext
+hako_msgs/ExecutionUnitRuntimeStatus
+hako_msgs/ExecutionUnitRuntimeEpoch

@@ -77,6 +77,7 @@ static const HakoPduSizeEntry g_pdu_size_table[] = {
     { "hako_msgs/DisturbanceUserCustom", 16 },
     { "hako_msgs/DisturbanceWind", 24 },
     { "hako_msgs/DroneStatus", 40 },
+    { "hako_msgs/ExecutionUnitRuntimeNode", 8 },
     { "hako_msgs/GameControllerOperation", 80 },
     { "hako_msgs/HakoBatteryStatus", 32 },
     { "hako_msgs/HakoCameraData", 280 },

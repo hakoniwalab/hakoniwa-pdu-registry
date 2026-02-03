@@ -38,6 +38,9 @@ typedef struct {
     uint32_t base_off;
     uint32_t heap_off;
     uint32_t total_size;
+    uint8_t epoch;
+    uint8_t flags;
+    uint8_t reserved[2];
 } HakoPduMetaDataType;
 
 #define HAKO_ALIGNMENT_SIZE sizeof(void*)
@@ -62,11 +65,17 @@ typedef struct {
 #if defined(_MSC_VER)
   #include <intrin.h>
   #define HAKO_ATOMIC_LOAD_U32(p) (uint32_t)_InterlockedCompareExchange((volatile long*)(p), 0, 0)
+  #define HAKO_ATOMIC_LOAD_U8(p)  (uint8_t)_InterlockedCompareExchange8((volatile char*)(p), 0, 0)
+  #define HAKO_ATOMIC_STORE_U8(p, v) _InterlockedExchange8((volatile char*)(p), (char)(v))
 #elif __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) 
   #include <stdatomic.h>
   #define HAKO_ATOMIC_LOAD_U32(p)  atomic_load_explicit((_Atomic uint32_t*)(p), memory_order_acquire)
+  #define HAKO_ATOMIC_LOAD_U8(p)   atomic_load_explicit((_Atomic uint8_t*)(p), memory_order_acquire)
+  #define HAKO_ATOMIC_STORE_U8(p, v) atomic_store_explicit((_Atomic uint8_t*)(p), (v), memory_order_release)
 #else
   #define HAKO_ATOMIC_LOAD_U32(p)  __atomic_load_n((uint32_t*)(p), __ATOMIC_ACQUIRE)
+  #define HAKO_ATOMIC_LOAD_U8(p)   __atomic_load_n((uint8_t*)(p), __ATOMIC_ACQUIRE)
+  #define HAKO_ATOMIC_STORE_U8(p, v) __atomic_store_n((uint8_t*)(p), (v), __ATOMIC_RELEASE)
 #endif
 
 /* 旧マクロの実体は関数へ委譲（呼び出しシグネチャは維持） */
@@ -110,6 +119,10 @@ static inline int hako_pdu_put_fixed_data(char* buffer, const char* base_ptr, in
     meta->version = HAKO_PDU_META_DATA_VERSION;
     meta->base_off = HAKO_PDU_META_DATA_SIZE();
     meta->heap_off = meta->base_off + base_size;
+    meta->epoch = 0;
+    meta->flags = 0;
+    meta->reserved[0] = 0;
+    meta->reserved[1] = 0;
     if (buffer_size < (int)meta->heap_off) {
         return -1;
     }
@@ -133,6 +146,10 @@ static inline void* hako_create_empty_pdu(int base_size, int heap_size)
     meta->base_off = HAKO_PDU_META_DATA_SIZE();
     meta->heap_off = HAKO_PDU_META_DATA_SIZE() + HAKO_ALIGN_SIZE(base_size, HAKO_ALIGNMENT_SIZE);
     meta->total_size = total_size;
+    meta->epoch = 0;
+    meta->flags = 0;
+    meta->reserved[0] = 0;
+    meta->reserved[1] = 0;
     return HAKO_GET_BASE_PTR(top_ptr, meta);
 }
 static inline void* hako_get_top_ptr_pdu(void *base_ptr)
@@ -183,6 +200,32 @@ static inline int hako_destroy_pdu(void *base_ptr)
         return -1;
     }
     free(top_ptr);
+    return 0;
+}
+
+static inline int hako_pdu_get_epoch(const void* top_ptr, uint8_t* out_epoch)
+{
+    if ((top_ptr == NULL) || (out_epoch == NULL)) {
+        return -1;
+    }
+    const HakoPduMetaDataType* meta = (const HakoPduMetaDataType*)(top_ptr);
+    if (HAKO_PDU_METADATA_IS_INVALID(meta)) {
+        return -1;
+    }
+    *out_epoch = HAKO_ATOMIC_LOAD_U8(&meta->epoch);
+    return 0;
+}
+
+static inline int hako_pdu_set_epoch(void* top_ptr, uint8_t epoch)
+{
+    if (top_ptr == NULL) {
+        return -1;
+    }
+    HakoPduMetaDataType* meta = (HakoPduMetaDataType*)(top_ptr);
+    if (HAKO_PDU_METADATA_IS_INVALID(meta)) {
+        return -1;
+    }
+    HAKO_ATOMIC_STORE_U8(&meta->epoch, epoch);
     return 0;
 }
 #ifdef __cplusplus

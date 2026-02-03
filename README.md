@@ -184,14 +184,16 @@ Hakoniwa PDUs are serialized into the following binary layout:
 
 ### MetaData (24 bytes)
 
-| Offset | Type   | Description               |
-| -----: | ------ | ------------------------- |
-|      0 | uint32 | Magic number (0x12345678) |
-|      4 | uint32 | Version                   |
-|      8 | uint32 | BaseData offset           |
-|     12 | uint32 | HeapData offset           |
-|     16 | uint32 | Total size                |
-|     20 | uint32 | Reserved (padding)        |
+| Offset | Type    | Description               |
+| -----: | ------- | ------------------------- |
+|      0 | uint32  | Magic number (0x12345678) |
+|      4 | uint32  | Version                   |
+|      8 | uint32  | BaseData offset           |
+|     12 | uint32  | HeapData offset           |
+|     16 | uint32  | Total size                |
+|     20 | uint8   | Epoch (commit counter)    |
+|     21 | uint8   | Flags                     |
+|     22 | uint8[2] | Reserved                 |
 
 ### BaseData
 
@@ -210,6 +212,93 @@ Hakoniwa PDUs are serialized into the following binary layout:
 
 This design enables fast encoding/decoding and language-independent
 binary compatibility.
+
+---
+
+## 4. Epoch (Metadata)
+
+Epoch is a generation tag per PDU. It is not a timestamp and must not be
+compared by magnitude. Only "changed or not" matters.
+
+Rules:
+
+* Compare only equality: `epoch_prev != epoch_curr`
+* Do not use `<` or `>` comparisons
+* 8-bit wrap-around is acceptable
+
+Why embed epoch in PDU MetaData:
+
+* Allows immediate validation before reading payload
+* Enables fast discard of stale data
+* Minimal overhead (1 byte in MetaData)
+
+### Commit rule
+
+Writer order:
+
+1. Write BaseData / HeapData payload
+2. (Optional) write ExtMeta
+3. Update epoch last (commit)
+
+Reader behavior:
+
+* If epoch changed, treat as a new generation
+* If epoch unchanged, ignore
+
+Note: Epoch is primarily used by Runtime Delegation (RD) for ownership
+generation tracking. RD is mentioned here as background only; its formal
+specification is out of scope for this README.
+
+---
+
+## 5. Extended MetaData (ExtMeta) Placement
+
+Note: ExtMeta support is planned for the future. This section documents the
+intended specification only, and no implementation is included in this release.
+
+### Placement rules
+
+* Appended at the end of HeapData
+* Never referenced from BaseData
+* Existing converters only resolve (offset, size) references in BaseData, so
+  the extended region is completely ignored
+
+```
+[MetaData][BaseData][HeapData][ExtMeta][(optional Footer)]
+```
+
+### Write order (important)
+
+1. Write BaseData / HeapData body
+2. Write ExtMeta at the end of HeapData
+3. (Optional) write Footer
+4. Set MetaData.flags with HAS_EXT_META
+5. Update epoch last (commit)
+
+---
+
+## 6. Impact on Existing Converters (C#/Python)
+
+* Existing converters:
+  * Only follow (offset, size) references from BaseData into HeapData
+  * Do not interpret the entire HeapData semantically
+* Therefore:
+  * Appending to the Heap tail is ignored and has no effect
+  * Even with Version=2, behavior is identical to v1 unless ExtMeta is read
+
+Only new implementations (Bridge / Conductor) are affected.
+
+---
+
+## 7. Intended Uses of ExtMeta
+
+* Hakoniwa core logical time
+* RD helper flags
+* Debug/observation information
+
+Notes:
+* Large data (e.g., images) should continue to use BaseData/HeapData references
+* ExtMeta is limited to lightweight, auxiliary information
 
 ---
 

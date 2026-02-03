@@ -215,7 +215,7 @@ binary compatibility.
 
 ---
 
-## 4. Epoch (Metadata)
+## Epoch (Metadata)
 
 Epoch is a generation tag per PDU. It is not a timestamp and must not be
 compared by magnitude. Only "changed or not" matters.
@@ -248,57 +248,6 @@ Reader behavior:
 Note: Epoch is primarily used by Runtime Delegation (RD) for ownership
 generation tracking. RD is mentioned here as background only; its formal
 specification is out of scope for this README.
-
----
-
-## 5. Extended MetaData (ExtMeta) Placement
-
-Note: ExtMeta support is planned for the future. This section documents the
-intended specification only, and no implementation is included in this release.
-
-### Placement rules
-
-* Appended at the end of HeapData
-* Never referenced from BaseData
-* Existing converters only resolve (offset, size) references in BaseData, so
-  the extended region is completely ignored
-
-```
-[MetaData][BaseData][HeapData][ExtMeta][(optional Footer)]
-```
-
-### Write order (important)
-
-1. Write BaseData / HeapData body
-2. Write ExtMeta at the end of HeapData
-3. (Optional) write Footer
-4. Set MetaData.flags with HAS_EXT_META
-5. Update epoch last (commit)
-
----
-
-## 6. Impact on Existing Converters (C#/Python)
-
-* Existing converters:
-  * Only follow (offset, size) references from BaseData into HeapData
-  * Do not interpret the entire HeapData semantically
-* Therefore:
-  * Appending to the Heap tail is ignored and has no effect
-  * Even with Version=2, behavior is identical to v1 unless ExtMeta is read
-
-Only new implementations (Bridge / Conductor) are affected.
-
----
-
-## 7. Intended Uses of ExtMeta
-
-* Hakoniwa core logical time
-* RD helper flags
-* Debug/observation information
-
-Notes:
-* Large data (e.g., images) should continue to use BaseData/HeapData references
-* ExtMeta is limited to lightweight, auxiliary information
 
 ---
 
@@ -374,9 +323,10 @@ Notes:
 
 ## Relationship to Other Hakoniwa Components
 
-* **hakoniwa-core-pro**: Runtime execution and simulation
-* **hakoniwa-pdu-bridge**: Inter-process and inter-node communication
-* **hakoniwa-pdu-endpoint**: PDU io interfaces
+* **[hakoniwa-core-pro](https://github.com/hakoniwalab/hakoniwa-core-pro)**: Runtime execution and simulation
+* **[hakoniwa-pdu-bridge-core](https://github.com/hakoniwalab/hakoniwa-pdu-bridge-core)**: Inter-process and inter-node communication
+* **[hakoniwa-pdu-endpoint](https://github.com/hakoniwalab/hakoniwa-pdu-endpoint)**: PDU io interfaces
+* **[hakoniwa-pdu-rpc](https://github.com/hakoniwalab/hakoniwa-pdu-rpc)**: Remote procedure call over PDUs
 
 `hakoniwa-pdu-registry` provides the authoritative PDU definitions
 used by these components.
@@ -393,3 +343,54 @@ Planned improvements:
 * Validation and schema consistency tests
 * CI integration for reproducible generation
 * Additional language bindings
+
+---
+
+## Extended MetaData (ExtMeta) Placement
+
+Note: ExtMeta support is planned for the future. This section documents the
+intended specification only, and no implementation is included in this release.
+
+### Placement rules
+
+* Appended at the end of HeapData
+* Never referenced from BaseData
+* Existing converters only resolve (offset, size) references in BaseData, so
+  the extended region is completely ignored
+
+```
+[MetaData][BaseData][HeapData][ExtMeta][(optional Footer)]
+```
+
+### Write order (important)
+
+1. Write BaseData / HeapData body
+2. Write ExtMeta at the end of HeapData
+3. (Optional) write Footer
+4. Set MetaData.flags with HAS_EXT_META
+5. Update epoch last (commit)
+
+---
+
+## Impact on Existing Converters (C#/Python)
+
+* Existing converters:
+  * Only follow (offset, size) references from BaseData into HeapData
+  * Do not interpret the entire HeapData semantically
+* Therefore:
+  * Appending to the Heap tail is ignored and has no effect
+  * Even with Version=2, behavior is identical to v1 unless ExtMeta is read
+
+Only new implementations (Bridge / Conductor) are affected.
+
+---
+
+## Intended Uses of ExtMeta
+
+* Hakoniwa core logical time
+* RD helper flags
+* Debug/observation information
+
+Notes:
+* Large data (e.g., images) should continue to use BaseData/HeapData references
+* ExtMeta is limited to lightweight, auxiliary information

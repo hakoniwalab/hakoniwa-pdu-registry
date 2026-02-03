@@ -184,16 +184,54 @@ Hakoniwa PDUs are serialized into the following binary layout:
 
 ### MetaData (24 bytes)
 
-| Offset | Type    | Description               |
-| -----: | ------- | ------------------------- |
-|      0 | uint32  | Magic number (0x12345678) |
-|      4 | uint32  | Version                   |
-|      8 | uint32  | BaseData offset           |
-|     12 | uint32  | HeapData offset           |
-|     16 | uint32  | Total size                |
-|     20 | uint8   | Epoch (commit counter)    |
-|     21 | uint8   | Flags                     |
-|     22 | uint8[2] | Reserved                 |
+| Offset | Type     | Description                                                   |
+| -----: | -------- | ------------------------------------------------------------- |
+|      0 | uint32   | Magic number (0x12345678)                                     |
+|      4 | uint32   | Version (currently 0x00000001)                                |
+|      8 | uint32   | BaseData offset (from MetaData start)                         |
+|     12 | uint32   | HeapData offset (from MetaData start)                         |
+|     16 | uint32   | Total size (MetaData + BaseData + HeapData [+ ExtMeta])       |
+|     20 | uint8    | Epoch (generation tag, commit marker)                         |
+|     21 | uint8    | Flags (bitfield; e.g., HAS_EXT_META when ExtMeta is appended) |
+|     22 | uint8[2] | Reserved (must be 0)                                          |
+
+#### MetaData field semantics (current implementation)
+
+* `magicno`: Must be `0x12345678`. Validation checks this value only (with `version`).
+* `version`: Must be `0x00000001`. No other versions are accepted in current code.
+* `base_off`: Always `HAKO_PDU_META_DATA_SIZE()` in current creators.
+* `heap_off`: `base_off + aligned(base_size)` (alignment is `sizeof(void*)`).
+* `total_size`: Set only by `hako_create_empty_pdu` to the allocated size.
+  `hako_pdu_put_fixed_data` does not update this field.
+* `epoch`: 8-bit generation tag. Default `0`. Updated last by writers as a commit marker.
+* `flags`: Bitfield, currently unused by runtime code. Default `0`.
+* `reserved`: Must be `0`. Initialized to zero by creators.
+
+#### Epoch semantics
+
+Epoch is a generation tag per PDU. It is not a timestamp and must not be
+compared by magnitude. Only "changed or not" matters.
+
+Rules:
+
+* Compare only equality: `epoch_prev != epoch_curr`
+* Do not use `<` or `>` comparisons
+* 8-bit wrap-around is acceptable
+
+Commit rule:
+
+1. Write BaseData / HeapData payload
+2. (Optional) write ExtMeta
+3. Update epoch last (commit)
+
+Reader behavior:
+
+* If epoch changed, treat as a new generation
+* If epoch unchanged, ignore
+
+Note: Epoch is primarily used by Runtime Delegation (RD) for ownership
+generation tracking. RD is mentioned here as background only; its formal
+specification is out of scope for this README.
 
 ### BaseData
 
@@ -212,42 +250,6 @@ Hakoniwa PDUs are serialized into the following binary layout:
 
 This design enables fast encoding/decoding and language-independent
 binary compatibility.
-
----
-
-## Epoch (Metadata)
-
-Epoch is a generation tag per PDU. It is not a timestamp and must not be
-compared by magnitude. Only "changed or not" matters.
-
-Rules:
-
-* Compare only equality: `epoch_prev != epoch_curr`
-* Do not use `<` or `>` comparisons
-* 8-bit wrap-around is acceptable
-
-Why embed epoch in PDU MetaData:
-
-* Allows immediate validation before reading payload
-* Enables fast discard of stale data
-* Minimal overhead (1 byte in MetaData)
-
-### Commit rule
-
-Writer order:
-
-1. Write BaseData / HeapData payload
-2. (Optional) write ExtMeta
-3. Update epoch last (commit)
-
-Reader behavior:
-
-* If epoch changed, treat as a new generation
-* If epoch unchanged, ignore
-
-Note: Epoch is primarily used by Runtime Delegation (RD) for ownership
-generation tracking. RD is mentioned here as background only; its formal
-specification is out of scope for this README.
 
 ---
 

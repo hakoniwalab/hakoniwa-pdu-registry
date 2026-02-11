@@ -217,7 +217,7 @@ Generated `.msg` files appear under `idl/<srv_pkg>_msgs/msg/`.
 
 ## Status / Roadmap
 
-Current status: Experimental, but internally used in Hakoniwa core components.
+Current status: Internally used in Hakoniwa core components.
 
 Planned improvements:
 

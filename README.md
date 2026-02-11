@@ -6,6 +6,24 @@ tool, and bridge sees the same structure — reproducibly.
 
 Generated PDUs are treated as long-lived assets rather than disposable outputs.
 
+## Design Philosophy
+
+`hakoniwa-pdu-registry` prioritizes deterministic binary layout stability
+over conventional build-time generation workflows.
+
+The source of truth in this project is not only the IDL definitions,
+but the fully resolved, compiled, and offset-calculated binary layout
+that is committed into the repository.
+
+This design intentionally treats generated artifacts as part of the
+binary contract, not as disposable build outputs.
+
+Reproducibility across time, toolchains, and languages is considered
+more critical than minimizing repository size or diff noise.
+
+The committed artifacts are considered immutable historical records
+of the binary contract at each revision.
+
 ## What it is
 
 `hakoniwa-pdu-registry` is the authoritative place to define, generate, and manage Hakoniwa PDUs
@@ -207,6 +225,18 @@ Planned improvements:
 - Validation and schema consistency tests
 - CI integration for reproducible generation
 - Additional language bindings
+
+## Tradeoffs
+
+This project deliberately makes the following tradeoffs:
+
+- Larger repository size in exchange for deterministic layout preservation
+- Diff noise in exchange for visible cross-language impact
+- Strict Docker workflow in exchange for reproducible generation
+- Reduced flexibility in exchange for binary contract stability
+
+These tradeoffs are intentional and align with the requirements
+of long-lived distributed robotics systems.
 
 ## FAQ
 

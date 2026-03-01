@@ -24,16 +24,14 @@ class OffsetCalculator:
 
         last_line = lines[-1].strip()
         parts = last_line.split(':')
-        
+
         if len(parts) < 2:
             print(f"Warning: Unexpected format in offset file: {offset_file_path}")
             print(f"Line: {last_line}")
             return
-            
+
         try:
-            # The last entry should be the size, and the second to last should be the offset.
-            size = int(parts[-1])
-            offset = int(parts[-2])
+            offset, size = self._parse_size_fields(parts)
         except (ValueError, IndexError):
             print(f"Warning: Could not parse offset/size from line: {last_line}")
             return
@@ -52,6 +50,17 @@ class OffsetCalculator:
             f.write(str(aligned_size))
         
         print(f"Generated size file: {size_file_path}")
+
+    def _parse_size_fields(self, parts):
+        entry_kind = parts[0]
+        if entry_kind == 'single':
+            return int(parts[-2]), int(parts[-1])
+        if entry_kind == 'array':
+            return int(parts[-3]), int(parts[-2])
+        if entry_kind == 'varray':
+            # BaseData stores only the {len, off} pair for variable-length data.
+            return int(parts[-3]), 8
+        raise ValueError(f"Unsupported offset entry kind: {entry_kind}")
 
     def _write_offset_text(self, offset_data, pkg_name, msg_name, output_dir):
         base_output_dir = Path(output_dir).parent

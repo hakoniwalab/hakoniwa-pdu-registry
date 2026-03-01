@@ -144,7 +144,7 @@ export function binToValue(type_name, bin) {
     const littleEndian = true;
     switch (type_name) {
         case 'bool':
-            return view.getUint8(0) !== 0;
+            return view.getUint32(0, littleEndian) !== 0;
         case 'byte':
         case 'uint8':
             return view.getUint8(0);
@@ -293,7 +293,8 @@ export function typesToBin(type_name, values) {
     let type_size = 0;
     // Determine size of a single element
     switch (type_name) {
-        case 'bool': case 'byte': case 'uint8': case 'int8': type_size = 1; break;
+        case 'bool': type_size = 4; break;
+        case 'byte': case 'uint8': case 'int8': type_size = 1; break;
         case 'int16': case 'uint16': type_size = 2; break;
         case 'int32': case 'uint32': case 'float32': type_size = 4; break;
         case 'int64': case 'uint64': case 'float64': type_size = 8; break;
@@ -307,7 +308,7 @@ export function typesToBin(type_name, values) {
 
     for (const value of values) {
         switch (type_name) {
-            case 'bool': view.setUint8(offset, value ? 1 : 0); break;
+            case 'bool': view.setUint32(offset, value ? 1 : 0, littleEndian); break;
             case 'byte':
             case 'uint8': view.setUint8(offset, value); break;
             case 'int8': view.setInt8(offset, value); break;

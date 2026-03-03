@@ -115,28 +115,16 @@ export class ExecutionUnitRuntimeStatus {
             obj.unit_count = d.unit_count;
         }
         if (d.hasOwnProperty('status')) {
-            const item_class = uint8;
-            if (Array.isArray(d.status)) {
-                obj.status = d.status.map(item => item_class.fromDict(item));
-            }
+            obj.status = d.status;
         }
         if (d.hasOwnProperty('epoch')) {
-            const item_class = uint8;
-            if (Array.isArray(d.epoch)) {
-                obj.epoch = d.epoch.map(item => item_class.fromDict(item));
-            }
+            obj.epoch = d.epoch;
         }
         if (d.hasOwnProperty('curr_owner_node_id')) {
-            const item_class = uint8;
-            if (Array.isArray(d.curr_owner_node_id)) {
-                obj.curr_owner_node_id = d.curr_owner_node_id.map(item => item_class.fromDict(item));
-            }
+            obj.curr_owner_node_id = d.curr_owner_node_id;
         }
         if (d.hasOwnProperty('next_owner_node_id')) {
-            const item_class = uint8;
-            if (Array.isArray(d.next_owner_node_id)) {
-                obj.next_owner_node_id = d.next_owner_node_id.map(item => item_class.fromDict(item));
-            }
+            obj.next_owner_node_id = d.next_owner_node_id;
         }
         return obj;
     }

@@ -162,6 +162,78 @@ console.log(JSON.stringify({
     }
 
 
+def validate_javascript_from_dict_roundtrip(repo_root: Path):
+    script = """
+import { GameControllerOperation } from './pdu/javascript/hako_msgs/pdu_jstype_GameControllerOperation.js';
+import { SimpleStructVarray } from './pdu/javascript/hako_msgs/pdu_jstype_SimpleStructVarray.js';
+
+const gameInput = {
+  axis: [1.5, -2.25, 3.0],
+  button: [true, false, true]
+};
+const gameObj = GameControllerOperation.fromDict(gameInput);
+const gameJsonObj = GameControllerOperation.fromJSON(JSON.stringify(gameInput));
+
+const structInput = {
+  aaa: 7,
+  fixed_str: ['alpha', 'beta'],
+  varray_str: ['gamma', 'delta'],
+  fixed_array: [
+    { data: [1, 2], fixed_array: [3, 4], p_mem1: 5 },
+    { data: [6], fixed_array: [7], p_mem1: 8 }
+  ],
+  data: [
+    { data: [9], fixed_array: [10, 11], p_mem1: 12 }
+  ]
+};
+const structObj = SimpleStructVarray.fromDict(structInput);
+const structJsonObj = SimpleStructVarray.fromJSON(JSON.stringify(structInput));
+
+console.log(JSON.stringify({
+  gameAxis: gameObj.axis,
+  gameButtons: gameObj.button,
+  gameJsonAxis: gameJsonObj.axis,
+  gameJsonButtons: gameJsonObj.button,
+  fixedStr: structObj.fixed_str,
+  varrayStr: structObj.varray_str,
+  fixedArrayData0: structObj.fixed_array[0]?.data,
+  dataArray0: structObj.data[0]?.fixed_array,
+  fixedStrJson: structJsonObj.fixed_str,
+  varrayStrJson: structJsonObj.varray_str,
+  fixedArrayData0Json: structJsonObj.fixed_array[0]?.data,
+  dataArray0Json: structJsonObj.data[0]?.fixed_array
+}));
+"""
+    result = subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    data = json.loads(result.stdout)
+    return {
+        "game_axis": data["gameAxis"],
+        "expected_game_axis": [1.5, -2.25, 3.0],
+        "game_buttons": data["gameButtons"],
+        "expected_game_buttons": [True, False, True],
+        "game_json_axis": data["gameJsonAxis"],
+        "game_json_buttons": data["gameJsonButtons"],
+        "fixed_str": data["fixedStr"],
+        "expected_fixed_str": ["alpha", "beta"],
+        "varray_str": data["varrayStr"],
+        "expected_varray_str": ["gamma", "delta"],
+        "fixed_array_data0": data["fixedArrayData0"],
+        "expected_fixed_array_data0": [1, 2],
+        "data_array0": data["dataArray0"],
+        "expected_data_array0": [10, 11],
+        "fixed_str_json": data["fixedStrJson"],
+        "varray_str_json": data["varrayStrJson"],
+        "fixed_array_data0_json": data["fixedArrayData0Json"],
+        "data_array0_json": data["dataArray0Json"],
+    }
+
+
 def main():
     repo_root = Path(__file__).resolve().parents[2]
     failures = []
@@ -181,6 +253,32 @@ def main():
         failures.append("javascript bool[] serialization bytes do not match 4-byte bool layout")
     if js_result["restored_buttons"] != js_result["expected_buttons"]:
         failures.append("javascript bool[] roundtrip does not preserve values")
+
+    js_dict_result = validate_javascript_from_dict_roundtrip(repo_root)
+    if js_dict_result["game_axis"] != js_dict_result["expected_game_axis"]:
+        failures.append("javascript fromDict does not preserve primitive arrays")
+    if js_dict_result["game_buttons"] != js_dict_result["expected_game_buttons"]:
+        failures.append("javascript fromDict does not preserve bool arrays")
+    if js_dict_result["game_json_axis"] != js_dict_result["expected_game_axis"]:
+        failures.append("javascript fromJSON does not preserve primitive arrays")
+    if js_dict_result["game_json_buttons"] != js_dict_result["expected_game_buttons"]:
+        failures.append("javascript fromJSON does not preserve bool arrays")
+    if js_dict_result["fixed_str"] != js_dict_result["expected_fixed_str"]:
+        failures.append("javascript fromDict does not preserve string arrays")
+    if js_dict_result["varray_str"] != js_dict_result["expected_varray_str"]:
+        failures.append("javascript fromDict does not preserve varray string arrays")
+    if js_dict_result["fixed_array_data0"] != js_dict_result["expected_fixed_array_data0"]:
+        failures.append("javascript fromDict does not preserve struct arrays")
+    if js_dict_result["data_array0"] != js_dict_result["expected_data_array0"]:
+        failures.append("javascript fromDict does not preserve varray struct arrays")
+    if js_dict_result["fixed_str_json"] != js_dict_result["expected_fixed_str"]:
+        failures.append("javascript fromJSON does not preserve string arrays")
+    if js_dict_result["varray_str_json"] != js_dict_result["expected_varray_str"]:
+        failures.append("javascript fromJSON does not preserve varray string arrays")
+    if js_dict_result["fixed_array_data0_json"] != js_dict_result["expected_fixed_array_data0"]:
+        failures.append("javascript fromJSON does not preserve struct arrays")
+    if js_dict_result["data_array0_json"] != js_dict_result["expected_data_array0"]:
+        failures.append("javascript fromJSON does not preserve varray struct arrays")
 
     if failures:
         for failure in failures:

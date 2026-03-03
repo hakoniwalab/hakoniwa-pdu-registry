@@ -90,10 +90,7 @@ export class ExecutionUnitRuntimeContext {
             obj.owner_id = d.owner_id;
         }
         if (d.hasOwnProperty('context')) {
-            const item_class = uint8;
-            if (Array.isArray(d.context)) {
-                obj.context = d.context.map(item => item_class.fromDict(item));
-            }
+            obj.context = d.context;
         }
         return obj;
     }

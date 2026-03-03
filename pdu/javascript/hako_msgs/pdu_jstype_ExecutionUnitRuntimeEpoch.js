@@ -39,10 +39,7 @@ export class ExecutionUnitRuntimeEpoch {
     static fromDict(d) {
         const obj = new ExecutionUnitRuntimeEpoch();
         if (d.hasOwnProperty('epoch')) {
-            const item_class = uint8;
-            if (Array.isArray(d.epoch)) {
-                obj.epoch = d.epoch.map(item => item_class.fromDict(item));
-            }
+            obj.epoch = d.epoch;
         }
         return obj;
     }

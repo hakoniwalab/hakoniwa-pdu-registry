@@ -47,18 +47,21 @@ export class {{ container.class_name }} {
         const obj = new {{ container.class_name }}();
 {%- for field in container.json_data["fields"] %}
         if (d.hasOwnProperty('{{ field.name }}')) {
-    {%- if not container.is_primitive(field.type) and not container.is_string(field.type) %}
-        {%- if container.is_array(field.type) %}
+    {%- if container.is_array(field.type) %}
+        {%- set array_type = container.get_array_type(field.type) %}
+        {%- if not container.is_primitive(array_type) and not container.is_string(array_type) %}
             const item_class = {{ container.get_js_class_name(container.get_array_type(field.type)) }};
             if (Array.isArray(d.{{ field.name }})) {
                 obj.{{ field.name }} = d.{{ field.name }}.map(item => item_class.fromDict(item));
             }
         {%- else %}
+            obj.{{ field.name }} = d.{{ field.name }};
+        {%- endif %}
+    {%- elif not container.is_primitive(field.type) and not container.is_string(field.type) %}
             const field_class = {{ container.get_js_class_name(field.type) }};
             if (d.{{ field.name }}) {
                 obj.{{ field.name }} = field_class.fromDict(d.{{ field.name }});
             }
-        {%- endif %}
     {%- else %}
             obj.{{ field.name }} = d.{{ field.name }};
     {%- endif %}

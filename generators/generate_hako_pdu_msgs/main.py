@@ -115,7 +115,17 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             if offset_data:
                 code_gen.generate_javascript_converter(msg_def, offset_data, output_root_dir)
 
-        print("\n7. Generating PDU size registry...")
+        print("\n7. Generating C# v2 converters from offset files...")
+        for package_msg, msg_def in message_cache.items():
+            pkg_name = msg_def['package']
+            msg_name = msg_def['message']
+            offset_file = offset_output_dir / pkg_name / f"{msg_name}.offset"
+
+            offset_data = parse_offset_file(offset_file)
+            if offset_data:
+                code_gen.generate_csharp_v2_converter(msg_def, offset_data, output_root_dir)
+
+        print("\n8. Generating PDU size registry...")
         SizeRegistryGenerator().generate(output_root_dir)
 
         print("\n--- Generation Complete! ---")

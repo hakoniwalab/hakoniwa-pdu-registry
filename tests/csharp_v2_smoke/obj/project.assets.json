@@ -1,0 +1,70 @@
+{
+  "version": 3,
+  "targets": {
+    "net7.0": {}
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {
+    "net7.0": []
+  },
+  "packageFolders": {
+    "/Users/tmori/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/CSharpV2Smoke.csproj",
+      "projectName": "CSharpV2Smoke",
+      "projectPath": "/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/CSharpV2Smoke.csproj",
+      "packagesPath": "/Users/tmori/.nuget/packages/",
+      "outputPath": "/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/NuGet.Config",
+        "/Users/tmori/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net7.0"
+      ],
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "false",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "10.0.100"
+    },
+    "frameworks": {
+      "net7.0": {
+        "targetAlias": "net7.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.103/RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

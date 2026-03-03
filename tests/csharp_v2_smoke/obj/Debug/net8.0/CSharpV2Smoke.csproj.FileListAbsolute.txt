@@ -1,0 +1,14 @@
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.GeneratedMSBuildEditorConfig.editorconfig
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.AssemblyInfoInputs.cache
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.AssemblyInfo.cs
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.csproj.CoreCompileInputs.cache
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.sourcelink.json
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/bin/Debug/net8.0/CSharpV2Smoke.deps.json
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/bin/Debug/net8.0/CSharpV2Smoke.dll
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/bin/Debug/net8.0/CSharpV2Smoke.pdb
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.dll
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/refint/CSharpV2Smoke.dll
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.pdb
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/ref/CSharpV2Smoke.dll
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/bin/Debug/net8.0/CSharpV2Smoke.runtimeconfig.json
+/Users/tmori/project/oss/hakoniwa-pdu-registry/tests/csharp_v2_smoke/obj/Debug/net8.0/CSharpV2Smoke.genruntimeconfig.cache

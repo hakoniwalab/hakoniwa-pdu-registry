@@ -118,6 +118,47 @@ def get_csharp_type(name):
     }
     return type_map.get(get_array_type(name), get_msg_type(name))
 
+def get_csharp_v2_type_hint(name):
+    base_type = get_array_type(name)
+    cs_type = get_csharp_type(base_type)
+    if is_array(name):
+        return f"List<{cs_type}>"
+    return cs_type
+
+def get_csharp_v2_default_value(name):
+    if is_array(name):
+        return f"new {get_csharp_v2_type_hint(name)}()"
+    if is_primitive(name):
+        if name == 'float32':
+            return "0.0F"
+        if name == 'float64':
+            return "0.0"
+        if name == 'bool':
+            return "false"
+        return "0"
+    if is_string(name):
+        return 'string.Empty'
+    return f"new {get_msg_type(name)}()"
+
+def get_csharp_io_suffix(name):
+    suffix_map = {
+        "bool": "Bool",
+        "byte": "UInt8",
+        "char": "UInt8",
+        "int8": "Int8",
+        "uint8": "UInt8",
+        "int16": "Int16",
+        "uint16": "UInt16",
+        "int32": "Int32",
+        "uint32": "UInt32",
+        "int64": "Int64",
+        "uint64": "UInt64",
+        "float32": "Float32",
+        "float64": "Float64",
+        "string": "String",
+    }
+    return suffix_map[get_array_type(name)]
+
 # --- Python用ヘルパー関数 ---
 def get_python_class_name(name):
     return get_msg_type(name)
@@ -289,6 +330,9 @@ class CodeGenerator:
             'get_msg_pkg': lambda name: get_msg_pkg(name, root_pkg),
             'get_array_size': get_array_size, 'convert_snake': convert_snake,
             'get_csharp_type': get_csharp_type,
+            'get_csharp_v2_type_hint': get_csharp_v2_type_hint,
+            'get_csharp_v2_default_value': get_csharp_v2_default_value,
+            'get_csharp_io_suffix': get_csharp_io_suffix,
             'get_python_type_hint': get_python_type_hint,
             'get_python_default_value': get_python_default_value,
             'get_python_class_name': get_python_class_name,
@@ -315,17 +359,32 @@ class CodeGenerator:
             f.write(content)
         print(f"Generated {description}: {file_path}")
 
+    def _generate_shared_file(self, context, template_name, output_path, description):
+        content = self._render_template(template_name, context)
+        if not content.endswith('\n'):
+            content += '\n'
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(content)
+        print(f"Generated {description}: {output_path}")
+
     def generate_all(self, message_cache, varray_size_def, output_root_dir):
         types_dir = Path(output_root_dir) / 'types'
         csharp_dir = Path(output_root_dir) / 'csharp'
+        csharp_v2_dir = Path(output_root_dir) / 'csharp_v2'
         python_dir = Path(output_root_dir) / 'python'
         javascript_dir = Path(output_root_dir) / 'javascript'
+
+        shared_context = {'container': {}}
+        self._generate_shared_file(shared_context, 'pdu_csharp_v2_runtime_cs.tpl', csharp_v2_dir / "PduRuntime.cs", "C# v2 runtime")
 
         for package_msg in message_cache.keys():
             context = self._prepare_context(package_msg, message_cache, varray_size_def)
             # C/C++ and C#
             self._generate_file(context, 'pdu_ctypes_h.tpl', types_dir, "pdu_ctype_{msg_name}.h", "C header")
             self._generate_file(context, 'pdu_csharp_class.tpl', csharp_dir, "{msg_name}.cs", "C# class")
+            self._generate_file(context, 'pdu_csharp_v2_type_cs.tpl', csharp_v2_dir, "pdu_type_{msg_name}.cs", "C# v2 type definition")
             self._generate_file(context, 'pdu_cpptypes_hpp.tpl', types_dir, "pdu_cpptype_{msg_name}.hpp", "C++ type header")
             self._generate_file(context, 'pdu_ctypes_conv_cpp.tpl', types_dir, "pdu_ctype_conv_{msg_name}.hpp", "C->C++ conv header")
             self._generate_file(context, 'pdu_cpptypes_conv_cpp.tpl', types_dir, "pdu_cpptype_conv_{msg_name}.hpp", "C++->C conv header")
@@ -405,3 +464,43 @@ class CodeGenerator:
             }
         }
         self._generate_file(context, 'pdu_py_conv_py.tpl', python_dir, f"pdu_conv_{msg_name}.py", "Python converter")
+
+    def generate_csharp_v2_converter(self, msg_def, offset_data, output_root_dir):
+        csharp_v2_dir = Path(output_root_dir) / 'csharp_v2'
+        pkg_name = msg_def['package']
+        msg_name = msg_def['message']
+
+        cs_conv_imports = []
+        added_imports = set()
+        for item in offset_data:
+            if item.data_type == 'struct':
+                dep_pkg = get_msg_pkg(item.type_name, pkg_name)
+                dep_msg = get_msg_type(item.type_name)
+                if dep_pkg == pkg_name:
+                    continue
+                if dep_pkg not in added_imports:
+                    cs_conv_imports.append({
+                        'dep_pkg': dep_pkg,
+                        'msg_type': dep_msg,
+                    })
+                    added_imports.add(dep_pkg)
+
+        context = {
+            'container': {
+                'pkg_name': pkg_name,
+                'msg_type_name': msg_name,
+                'class_name': get_msg_type(msg_name),
+                'offset_data': [o.to_dict() for o in offset_data],
+                'cs_conv_imports': cs_conv_imports,
+                'get_msg_type': get_msg_type,
+                'get_array_type': get_array_type,
+                'get_csharp_type': get_csharp_type,
+                'get_csharp_v2_type_hint': get_csharp_v2_type_hint,
+                'get_csharp_v2_default_value': get_csharp_v2_default_value,
+                'get_csharp_io_suffix': get_csharp_io_suffix,
+                'is_primitive': is_primitive,
+                'is_string': is_string,
+                'is_array': is_array,
+            }
+        }
+        self._generate_file(context, 'pdu_csharp_v2_conv_cs.tpl', csharp_v2_dir, f"pdu_conv_{msg_name}.cs", "C# v2 converter")

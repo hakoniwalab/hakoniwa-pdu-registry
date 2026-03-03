@@ -7,6 +7,9 @@ from generators.generate_hako_pdu_msgs.validate_generated_artifacts import (
     validate_disturbance_python_encode_size_case,
     validate_disturbance_user_custom_python_encode_size_case,
     validate_disturbance_user_custom_cpp_oracle_interop,
+    validate_drone_visual_state_array_cpp_oracle_interop,
+    make_drone_visual_state_array_case,
+    validate_drone_visual_state_array_python_encode_size_case,
     validate_game_controller_operation_cpp_oracle_interop,
     validate_javascript_from_dict_roundtrip,
     validate_javascript_bool_array_roundtrip,
@@ -73,6 +76,22 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(result["cpp_to_javascript"], result["expected"])
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
+
+    def test_drone_visual_state_array_cpp_oracle_interop(self):
+        result = validate_drone_visual_state_array_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_python"], result["expected"])
+        self.assertEqual(result["cpp_to_javascript"], result["expected"])
+        self.assertEqual(result["python_generated"], result["expected"])
+        self.assertEqual(result["javascript_generated"], result["expected"])
+
+    def test_drone_visual_state_array_python_encode_size_0_case(self):
+        self.assert_python_js_size_case(validate_drone_visual_state_array_python_encode_size_case, [])
+
+    def test_drone_visual_state_array_python_encode_size_100_case(self):
+        self.assert_python_js_size_case(
+            validate_drone_visual_state_array_python_encode_size_case,
+            make_drone_visual_state_array_case(100, 4),
+        )
 
     def test_disturbance_js_python_interop_preserves_nested_varray(self):
         result = validate_disturbance_js_python_interop(self.repo_root)

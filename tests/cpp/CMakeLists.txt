@@ -10,6 +10,7 @@ enable_testing()
 find_package(GTest REQUIRED)
 
 add_executable(hakoniwa_pdu_cpp_tests
+  drone_visual_state_cpp_interop_test.cpp
   disturbance_cpp_interop_test.cpp
   disturbance_user_custom_cpp_interop_test.cpp
   game_controller_operation_cpp_interop_test.cpp
@@ -20,6 +21,10 @@ add_executable(hakoniwa_pdu_cpp_tests
 
 add_executable(disturbance_cpp_dump
   disturbance_cpp_dump.cpp
+)
+
+add_executable(drone_visual_state_array_cpp_dump
+  drone_visual_state_array_cpp_dump.cpp
 )
 
 add_executable(disturbance_user_custom_cpp_dump
@@ -51,6 +56,10 @@ target_link_libraries(hakoniwa_pdu_cpp_tests PRIVATE
 )
 
 target_include_directories(disturbance_cpp_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
+)
+
+target_include_directories(drone_visual_state_array_cpp_dump PRIVATE
   ${PROJECT_SOURCE_DIR}/../../pdu/types
 )
 

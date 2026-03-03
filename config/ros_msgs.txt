@@ -46,6 +46,8 @@ drone_srv_msgs/MagnetGrabResponsePacket
 hako_msgs/SimpleStructVarray
 hako_msgs/MonitorCameraCmd
 hako_msgs/MonitorCameraData
+hako_msgs/DroneVisualState
+hako_msgs/DroneVisualStateArray
 hako_msgs/DroneStatus
 hako_msgs/ShareObjectOwnerResponse
 hako_msgs/ShareObjectOwner

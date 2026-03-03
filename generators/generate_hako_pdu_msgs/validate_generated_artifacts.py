@@ -727,6 +727,169 @@ console.log(JSON.stringify({
         }
 
 
+def validate_drone_visual_state_array_python_encode_size_case(repo_root: Path, drones):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_DroneVisualStateArray } from './pdu/javascript/hako_msgs/pdu_conv_DroneVisualStateArray.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_DroneVisualStateArray(arrayBuffer);
+console.log(JSON.stringify({
+  sequence_id: obj.sequence_id,
+  chunk_index: obj.chunk_index,
+  chunk_count: obj.chunk_count,
+  start_index: obj.start_index,
+  valid_count: obj.valid_count,
+  drones: obj.drones.map(item => ({
+    x: item.x,
+    y: item.y,
+    z: item.z,
+    roll: item.roll,
+    pitch: item.pitch,
+    yaw: item.yaw,
+    pwm_duty: item.pwm_duty
+  }))
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_DroneVisualStateArray import (
+        pdu_to_py_DroneVisualStateArray,
+        py_to_pdu_DroneVisualStateArray,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_DroneVisualState import DroneVisualState
+    from pdu.python.hako_msgs.pdu_pytype_DroneVisualStateArray import DroneVisualStateArray
+
+    def f32(value):
+        return struct.unpack("<f", struct.pack("<f", float(value)))[0]
+
+    def normalize_drone(item):
+        pwm_duty = item.pwm_duty
+        if not isinstance(pwm_duty, list):
+            pwm_duty = list(struct.unpack(f"<{len(pwm_duty) // 4}f", bytes(pwm_duty))) if len(pwm_duty) > 0 else []
+        return {
+            "x": f32(item.x),
+            "y": f32(item.y),
+            "z": f32(item.z),
+            "roll": f32(item.roll),
+            "pitch": f32(item.pitch),
+            "yaw": f32(item.yaw),
+            "pwm_duty": [f32(value) for value in pwm_duty],
+        }
+
+    py_obj = DroneVisualStateArray()
+    py_obj.sequence_id = 42
+    py_obj.chunk_index = 3
+    py_obj.chunk_count = 10
+    py_obj.start_index = 300
+    py_obj.valid_count = len(drones)
+    for drone in drones:
+        item = DroneVisualState()
+        item.x = drone["x"]
+        item.y = drone["y"]
+        item.z = drone["z"]
+        item.roll = drone["roll"]
+        item.pitch = drone["pitch"]
+        item.yaw = drone["yaw"]
+        item.pwm_duty = list(drone["pwm_duty"])
+        py_obj.drones.append(item)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        py_bin_path = Path(tmpdir) / "drone_visual_state_array_py.bin"
+        py_bin_path.write_bytes(py_to_pdu_DroneVisualStateArray(py_obj))
+
+        restored = pdu_to_py_DroneVisualStateArray(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        js_decoded = json.loads(js_decode.stdout)
+
+        return {
+            "expected": {
+                "sequence_id": 42,
+                "chunk_index": 3,
+                "chunk_count": 10,
+                "start_index": 300,
+                "valid_count": len(drones),
+                "drones": [
+                    {
+                        "x": f32(drone["x"]),
+                        "y": f32(drone["y"]),
+                        "z": f32(drone["z"]),
+                        "roll": f32(drone["roll"]),
+                        "pitch": f32(drone["pitch"]),
+                        "yaw": f32(drone["yaw"]),
+                        "pwm_duty": [f32(value) for value in drone["pwm_duty"]],
+                    }
+                    for drone in drones
+                ],
+            },
+            "python_decoded": {
+                "sequence_id": restored.sequence_id,
+                "chunk_index": restored.chunk_index,
+                "chunk_count": restored.chunk_count,
+                "start_index": restored.start_index,
+                "valid_count": restored.valid_count,
+                "drones": [normalize_drone(item) for item in restored.drones],
+            },
+            "javascript_decoded": {
+                "sequence_id": js_decoded["sequence_id"],
+                "chunk_index": js_decoded["chunk_index"],
+                "chunk_count": js_decoded["chunk_count"],
+                "start_index": js_decoded["start_index"],
+                "valid_count": js_decoded["valid_count"],
+                "drones": [
+                    {
+                        "x": f32(item["x"]),
+                        "y": f32(item["y"]),
+                        "z": f32(item["z"]),
+                        "roll": f32(item["roll"]),
+                        "pitch": f32(item["pitch"]),
+                        "yaw": f32(item["yaw"]),
+                        "pwm_duty": [f32(value) for value in item["pwm_duty"]],
+                    }
+                    for item in js_decoded["drones"]
+                ],
+            },
+        }
+
+
+def make_drone_visual_state_array_case(drone_count=100, pwm_count=4):
+    def f32(value):
+        return struct.unpack("<f", struct.pack("<f", float(value)))[0]
+
+    def f32_add(lhs, rhs):
+        return f32(f32(lhs) + f32(rhs))
+
+    def f32_mul(lhs, rhs):
+        return f32(f32(lhs) * f32(rhs))
+
+    pwm_bases = [0.1, 0.2, 0.3, 0.4]
+    drones = []
+    for index in range(drone_count):
+        base = f32(index)
+        pwm_delta = f32_mul(base, 0.001)
+        drones.append(
+            {
+                "x": f32_add(base, 0.1),
+                "y": f32_add(base, 0.2),
+                "z": f32_add(base, 0.3),
+                "roll": f32_add(base, 0.01),
+                "pitch": f32_add(base, 0.02),
+                "yaw": f32_add(base, 0.03),
+                "pwm_duty": [f32_add(pwm_bases[slot], pwm_delta) for slot in range(pwm_count)],
+            }
+        )
+    return drones
+
+
 def ensure_cpp_oracle_tools(repo_root: Path):
     subprocess.run(
         ["cmake", "-S", str(repo_root / "tests" / "cpp"), "-B", str(CPP_ORACLE_BUILD_DIR)],
@@ -743,6 +906,7 @@ def ensure_cpp_oracle_tools(repo_root: Path):
             "-j4",
             "--target",
             "hakoniwa_pdu_cpp_tests",
+            "drone_visual_state_array_cpp_dump",
             "disturbance_cpp_dump",
             "disturbance_user_custom_cpp_dump",
             "game_controller_operation_cpp_dump",
@@ -757,6 +921,7 @@ def ensure_cpp_oracle_tools(repo_root: Path):
     )
     return {
         "test_bin": CPP_ORACLE_BUILD_DIR / "hakoniwa_pdu_cpp_tests",
+        "drone_visual_state_array_dump": CPP_ORACLE_BUILD_DIR / "drone_visual_state_array_cpp_dump",
         "disturbance_dump": CPP_ORACLE_BUILD_DIR / "disturbance_cpp_dump",
         "disturbance_user_custom_dump": CPP_ORACLE_BUILD_DIR / "disturbance_user_custom_cpp_dump",
         "game_controller_operation_dump": CPP_ORACLE_BUILD_DIR / "game_controller_operation_cpp_dump",
@@ -863,6 +1028,192 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_GameControllerOperation(ob
                 "button": [bool(value) for value in py_generated.button],
             },
             "javascript_generated": json.loads(js_generated_decode.stdout),
+        }
+
+
+def validate_drone_visual_state_array_cpp_oracle_interop(repo_root: Path):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_DroneVisualStateArray } from './pdu/javascript/hako_msgs/pdu_conv_DroneVisualStateArray.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_DroneVisualStateArray(arrayBuffer);
+console.log(JSON.stringify({
+  sequence_id: obj.sequence_id,
+  chunk_index: obj.chunk_index,
+  chunk_count: obj.chunk_count,
+  start_index: obj.start_index,
+  valid_count: obj.valid_count,
+  drones: obj.drones.map(item => ({
+    x: item.x,
+    y: item.y,
+    z: item.z,
+    roll: item.roll,
+    pitch: item.pitch,
+    yaw: item.yaw,
+    pwm_duty: item.pwm_duty
+  }))
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { pduToJs_DroneVisualStateArray, jsToPdu_DroneVisualStateArray } from './pdu/javascript/hako_msgs/pdu_conv_DroneVisualStateArray.js';
+import { DroneVisualStateArray } from './pdu/javascript/hako_msgs/pdu_jstype_DroneVisualStateArray.js';
+
+const src = fs.readFileSync(process.argv[1]);
+const srcArrayBuffer = src.buffer.slice(src.byteOffset, src.byteOffset + src.byteLength);
+const decoded = pduToJs_DroneVisualStateArray(srcArrayBuffer);
+const obj = DroneVisualStateArray.fromDict(decoded.toDict());
+
+fs.writeFileSync(process.argv[2], Buffer.from(jsToPdu_DroneVisualStateArray(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_DroneVisualStateArray import (
+        pdu_to_py_DroneVisualStateArray,
+        py_to_pdu_DroneVisualStateArray,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_DroneVisualState import DroneVisualState
+    from pdu.python.hako_msgs.pdu_pytype_DroneVisualStateArray import DroneVisualStateArray
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+
+    def f32(value):
+        return struct.unpack("<f", struct.pack("<f", float(value)))[0]
+
+    def normalize_drone(item):
+        pwm_duty = item.pwm_duty
+        if not isinstance(pwm_duty, list):
+            pwm_duty = list(struct.unpack(f"<{len(pwm_duty) // 4}f", bytes(pwm_duty))) if len(pwm_duty) > 0 else []
+        return {
+            "x": f32(item.x),
+            "y": f32(item.y),
+            "z": f32(item.z),
+            "roll": f32(item.roll),
+            "pitch": f32(item.pitch),
+            "yaw": f32(item.yaw),
+            "pwm_duty": [f32(value) for value in pwm_duty],
+        }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "drone_visual_state_array_cpp.bin"
+        py_bin_path = tmpdir_path / "drone_visual_state_array_py.bin"
+        js_bin_path = tmpdir_path / "drone_visual_state_array_js.bin"
+
+        subprocess.run(
+            [str(tools["drone_visual_state_array_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        cpp_to_python = pdu_to_py_DroneVisualStateArray(bytearray(cpp_bin_path.read_bytes()))
+        cpp_oracle = {
+            "sequence_id": cpp_to_python.sequence_id,
+            "chunk_index": cpp_to_python.chunk_index,
+            "chunk_count": cpp_to_python.chunk_count,
+            "start_index": cpp_to_python.start_index,
+            "valid_count": cpp_to_python.valid_count,
+            "drones": [normalize_drone(item) for item in cpp_to_python.drones],
+        }
+
+        py_obj = DroneVisualStateArray()
+        py_obj.sequence_id = cpp_oracle["sequence_id"]
+        py_obj.chunk_index = cpp_oracle["chunk_index"]
+        py_obj.chunk_count = cpp_oracle["chunk_count"]
+        py_obj.start_index = cpp_oracle["start_index"]
+        py_obj.valid_count = cpp_oracle["valid_count"]
+        for drone in cpp_oracle["drones"]:
+            item = DroneVisualState()
+            item.x = drone["x"]
+            item.y = drone["y"]
+            item.z = drone["z"]
+            item.roll = drone["roll"]
+            item.pitch = drone["pitch"]
+            item.yaw = drone["yaw"]
+            item.pwm_duty = list(drone["pwm_duty"])
+            py_obj.drones.append(item)
+
+        py_bin_path.write_bytes(py_to_pdu_DroneVisualStateArray(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(cpp_bin_path), str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_generated = pdu_to_py_DroneVisualStateArray(bytearray(py_bin_path.read_bytes()))
+        js_generated_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        js_decoded = json.loads(js_decode.stdout)
+        js_generated_decoded = json.loads(js_generated_decode.stdout)
+
+        return {
+            "expected": cpp_oracle,
+            "cpp_to_python": cpp_oracle,
+            "cpp_to_javascript": {
+                "sequence_id": js_decoded["sequence_id"],
+                "chunk_index": js_decoded["chunk_index"],
+                "chunk_count": js_decoded["chunk_count"],
+                "start_index": js_decoded["start_index"],
+                "valid_count": js_decoded["valid_count"],
+                "drones": [
+                    {
+                        "x": f32(item["x"]),
+                        "y": f32(item["y"]),
+                        "z": f32(item["z"]),
+                        "roll": f32(item["roll"]),
+                        "pitch": f32(item["pitch"]),
+                        "yaw": f32(item["yaw"]),
+                        "pwm_duty": [f32(value) for value in item["pwm_duty"]],
+                    }
+                    for item in js_decoded["drones"]
+                ],
+            },
+            "python_generated": {
+                "sequence_id": py_generated.sequence_id,
+                "chunk_index": py_generated.chunk_index,
+                "chunk_count": py_generated.chunk_count,
+                "start_index": py_generated.start_index,
+                "valid_count": py_generated.valid_count,
+                "drones": [normalize_drone(item) for item in py_generated.drones],
+            },
+            "javascript_generated": {
+                "sequence_id": js_generated_decoded["sequence_id"],
+                "chunk_index": js_generated_decoded["chunk_index"],
+                "chunk_count": js_generated_decoded["chunk_count"],
+                "start_index": js_generated_decoded["start_index"],
+                "valid_count": js_generated_decoded["valid_count"],
+                "drones": [
+                    {
+                        "x": f32(item["x"]),
+                        "y": f32(item["y"]),
+                        "z": f32(item["z"]),
+                        "roll": f32(item["roll"]),
+                        "pitch": f32(item["pitch"]),
+                        "yaw": f32(item["yaw"]),
+                        "pwm_duty": [f32(value) for value in item["pwm_duty"]],
+                    }
+                    for item in js_generated_decoded["drones"]
+                ],
+            },
         }
 
 

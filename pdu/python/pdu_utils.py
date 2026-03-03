@@ -23,13 +23,20 @@ class DynamicAllocator:
 
     def add(self, bytes_data, expected_offset=None, key=None):
         current_size = len(self.data)
-        #print(f"is_heap: {self.is_heap} current_size: {current_size} expected_offset: {expected_offset} len(bytes_data): {len(bytes_data)}")
-        if (current_size < expected_offset):
-            #print("Padding data to align with expected offset")
-            padding = bytearray(expected_offset - current_size)
-            self.data.extend(padding)
-        offset = len(self.data)
-        self.data.extend(bytes_data)
+        data_len = len(bytes_data)
+        if expected_offset is not None:
+            if current_size < expected_offset:
+                padding = bytearray(expected_offset - current_size)
+                self.data.extend(padding)
+                current_size = len(self.data)
+            end_offset = expected_offset + data_len
+            if current_size < end_offset:
+                self.data.extend(bytearray(end_offset - current_size))
+            self.data[expected_offset:end_offset] = bytes_data
+            offset = expected_offset
+        else:
+            offset = len(self.data)
+            self.data.extend(bytes_data)
         #print(f"add: {bytes_data} offset: {offset} len(self.data): {len(self.data)}")
         if key:
             self.offset_map[key] = offset

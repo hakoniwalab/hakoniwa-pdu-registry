@@ -4,7 +4,10 @@ import re
 import struct
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+CPP_ORACLE_BUILD_DIR = Path(tempfile.gettempdir()) / "hako-pdu-cpp-tests"
 
 
 def parse_offset_entry_size(parts):
@@ -234,6 +237,1781 @@ console.log(JSON.stringify({
     }
 
 
+def validate_python_disturbance_layout(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_Disturbance import py_to_pdu_Disturbance
+    from pdu.python.hako_msgs.pdu_pytype_Disturbance import Disturbance
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceAtm import DisturbanceAtm
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceBoundary import DisturbanceBoundary
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceTemperature import DisturbanceTemperature
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceUserCustom import DisturbanceUserCustom
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceWind import DisturbanceWind
+
+    obj = Disturbance()
+    obj.d_temp = DisturbanceTemperature()
+    obj.d_wind = DisturbanceWind()
+    obj.d_atm = DisturbanceAtm()
+    obj.d_boundary = DisturbanceBoundary()
+    item_1 = DisturbanceUserCustom()
+    item_1.data = [1.25, 2.5]
+    item_2 = DisturbanceUserCustom()
+    item_2.data = [3.75]
+    obj.d_user_custom = [item_1, item_2]
+
+    binary = bytes(py_to_pdu_Disturbance(obj))
+    heap_off = struct.unpack_from("<I", binary, 12)[0]
+    top_len, top_off = struct.unpack_from("<ii", binary, 24 + 88)
+    heap_bytes = binary[heap_off:]
+    expected_heap_bytes = (
+        struct.pack("<ii", 2, 16)
+        + struct.pack("<ii", 1, 32)
+        + struct.pack("<2d", 1.25, 2.5)
+        + struct.pack("<1d", 3.75)
+    )
+    return {
+        "top_len": top_len,
+        "top_off": top_off,
+        "heap_bytes": heap_bytes,
+        "expected_top_len": 2,
+        "expected_top_off": 0,
+        "expected_heap_bytes": expected_heap_bytes,
+    }
+
+
+def validate_python_joint_state_layout(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.builtin_interfaces.pdu_pytype_Time import Time
+    from pdu.python.sensor_msgs.pdu_conv_JointState import py_to_pdu_JointState
+    from pdu.python.sensor_msgs.pdu_pytype_JointState import JointState
+    from pdu.python.std_msgs.pdu_pytype_Header import Header
+
+    obj = JointState()
+    obj.header = Header()
+    obj.header.stamp = Time()
+    obj.header.frame_id = "frame"
+    obj.name = ["a", "b"]
+    obj.position = [1.0, 2.0]
+    obj.velocity = [3.0]
+    obj.effort = [4.0]
+
+    binary = bytes(py_to_pdu_JointState(obj))
+    heap_off = struct.unpack_from("<I", binary, 12)[0]
+    refs = {
+        "name": struct.unpack_from("<ii", binary, 24 + 136),
+        "position": struct.unpack_from("<ii", binary, 24 + 144),
+        "velocity": struct.unpack_from("<ii", binary, 24 + 152),
+        "effort": struct.unpack_from("<ii", binary, 24 + 160),
+    }
+    heap_bytes = binary[heap_off:]
+    expected_name_bytes = bytearray(256)
+    expected_name_bytes[0:2] = b"a\x00"
+    expected_name_bytes[128:130] = b"b\x00"
+    expected_heap_bytes = (
+        bytes(expected_name_bytes)
+        + struct.pack("<2d", 1.0, 2.0)
+        + struct.pack("<1d", 3.0)
+        + struct.pack("<1d", 4.0)
+    )
+    return {
+        "refs": refs,
+        "heap_bytes": heap_bytes,
+        "expected_refs": {
+            "name": (2, 0),
+            "position": (2, 256),
+            "velocity": (1, 272),
+            "effort": (1, 280),
+        },
+        "expected_heap_bytes": expected_heap_bytes,
+    }
+
+
+def validate_disturbance_js_python_interop(repo_root: Path):
+    py_to_js_script = """
+import fs from 'node:fs';
+import { pduToJs_Disturbance } from './pdu/javascript/hako_msgs/pdu_conv_Disturbance.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_Disturbance(arrayBuffer);
+console.log(JSON.stringify({
+  d_user_custom: obj.d_user_custom.map(item => item.data)
+}));
+"""
+    js_to_py_script = """
+import fs from 'node:fs';
+import { Disturbance } from './pdu/javascript/hako_msgs/pdu_jstype_Disturbance.js';
+import { DisturbanceTemperature } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceTemperature.js';
+import { DisturbanceWind } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceWind.js';
+import { DisturbanceAtm } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceAtm.js';
+import { DisturbanceBoundary } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceBoundary.js';
+import { DisturbanceUserCustom } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceUserCustom.js';
+import { jsToPdu_Disturbance } from './pdu/javascript/hako_msgs/pdu_conv_Disturbance.js';
+
+const obj = new Disturbance();
+obj.d_temp = new DisturbanceTemperature();
+obj.d_wind = new DisturbanceWind();
+obj.d_atm = new DisturbanceAtm();
+obj.d_boundary = new DisturbanceBoundary();
+
+const u1 = new DisturbanceUserCustom();
+u1.data = [1.25, 2.5];
+const u2 = new DisturbanceUserCustom();
+u2.data = [3.75];
+obj.d_user_custom = [u1, u2];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_Disturbance(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_Disturbance import (
+        pdu_to_py_Disturbance,
+        py_to_pdu_Disturbance,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_Disturbance import Disturbance
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceAtm import DisturbanceAtm
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceBoundary import DisturbanceBoundary
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceTemperature import DisturbanceTemperature
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceUserCustom import DisturbanceUserCustom
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceWind import DisturbanceWind
+
+    expected = [[1.25, 2.5], [3.75]]
+
+    py_obj = Disturbance()
+    py_obj.d_temp = DisturbanceTemperature()
+    py_obj.d_wind = DisturbanceWind()
+    py_obj.d_atm = DisturbanceAtm()
+    py_obj.d_boundary = DisturbanceBoundary()
+    user_1 = DisturbanceUserCustom()
+    user_1.data = [1.25, 2.5]
+    user_2 = DisturbanceUserCustom()
+    user_2.data = [3.75]
+    py_obj.d_user_custom = [user_1, user_2]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        js_bin_path = Path(tmpdir) / "disturbance_js.bin"
+        py_bin_path = Path(tmpdir) / "disturbance_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_Disturbance(py_obj))
+        py_to_js = subprocess.run(
+            ["node", "--input-type=module", "-e", py_to_js_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_to_js_data = json.loads(py_to_js.stdout)
+
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_to_py_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        restored = pdu_to_py_Disturbance(bytearray(js_bin_path.read_bytes()))
+        js_to_py_data = []
+        for item in restored.d_user_custom:
+            if isinstance(item.data, list):
+                js_to_py_data.append(item.data)
+            else:
+                count = len(item.data) // 8
+                js_to_py_data.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+
+        return {
+            "expected": expected,
+            "py_to_js": py_to_js_data["d_user_custom"],
+            "js_to_py": js_to_py_data,
+            "binaries_equal": py_bin_path.read_bytes() == js_bin_path.read_bytes(),
+        }
+
+
+def validate_disturbance_python_encode_size_case(repo_root: Path, data_sets):
+    py_to_js_script = """
+import fs from 'node:fs';
+import { pduToJs_Disturbance } from './pdu/javascript/hako_msgs/pdu_conv_Disturbance.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_Disturbance(arrayBuffer);
+console.log(JSON.stringify({
+  d_user_custom: obj.d_user_custom.map(item => item.data)
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_Disturbance import (
+        pdu_to_py_Disturbance,
+        py_to_pdu_Disturbance,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_Disturbance import Disturbance
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceAtm import DisturbanceAtm
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceBoundary import DisturbanceBoundary
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceTemperature import DisturbanceTemperature
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceUserCustom import DisturbanceUserCustom
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceWind import DisturbanceWind
+
+    py_obj = Disturbance()
+    py_obj.d_temp = DisturbanceTemperature()
+    py_obj.d_wind = DisturbanceWind()
+    py_obj.d_atm = DisturbanceAtm()
+    py_obj.d_boundary = DisturbanceBoundary()
+    py_obj.d_user_custom = []
+    for data in data_sets:
+        item = DisturbanceUserCustom()
+        item.data = list(data)
+        py_obj.d_user_custom.append(item)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        py_bin_path = Path(tmpdir) / "disturbance_py.bin"
+        py_bin_path.write_bytes(py_to_pdu_Disturbance(py_obj))
+
+        py_restored = pdu_to_py_Disturbance(bytearray(py_bin_path.read_bytes()))
+        py_decoded = []
+        for item in py_restored.d_user_custom:
+            if isinstance(item.data, list):
+                py_decoded.append(item.data)
+            else:
+                count = len(item.data) // 8
+                py_decoded.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", py_to_js_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": [list(data) for data in data_sets],
+            "python_decoded": py_decoded,
+            "javascript_decoded": json.loads(js_decode.stdout)["d_user_custom"],
+        }
+
+
+def validate_disturbance_user_custom_python_encode_size_case(repo_root: Path, data_values):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_DisturbanceUserCustom } from './pdu/javascript/hako_msgs/pdu_conv_DisturbanceUserCustom.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_DisturbanceUserCustom(arrayBuffer);
+console.log(JSON.stringify({ data: obj.data }));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_DisturbanceUserCustom import (
+        pdu_to_py_DisturbanceUserCustom,
+        py_to_pdu_DisturbanceUserCustom,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceUserCustom import DisturbanceUserCustom
+
+    py_obj = DisturbanceUserCustom()
+    py_obj.data = list(data_values)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        py_bin_path = Path(tmpdir) / "disturbance_user_custom_py.bin"
+        py_bin_path.write_bytes(py_to_pdu_DisturbanceUserCustom(py_obj))
+
+        py_restored = pdu_to_py_DisturbanceUserCustom(bytearray(py_bin_path.read_bytes()))
+        if isinstance(py_restored.data, list):
+            py_decoded = py_restored.data
+        else:
+            count = len(py_restored.data) // 8
+            py_decoded = list(struct.unpack(f"<{count}d", bytes(py_restored.data)))
+
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": list(data_values),
+            "python_decoded": py_decoded,
+            "javascript_decoded": json.loads(js_decode.stdout)["data"],
+        }
+
+
+def validate_joint_state_string_varray_interop(repo_root: Path):
+    py_to_js_script = """
+import fs from 'node:fs';
+import { pduToJs_JointState } from './pdu/javascript/sensor_msgs/pdu_conv_JointState.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_JointState(arrayBuffer);
+console.log(JSON.stringify({
+  name: obj.name,
+  position: obj.position,
+  velocity: obj.velocity,
+  effort: obj.effort
+}));
+"""
+    js_to_py_script = """
+import fs from 'node:fs';
+import { JointState } from './pdu/javascript/sensor_msgs/pdu_jstype_JointState.js';
+import { Header } from './pdu/javascript/std_msgs/pdu_jstype_Header.js';
+import { Time } from './pdu/javascript/builtin_interfaces/pdu_jstype_Time.js';
+import { jsToPdu_JointState } from './pdu/javascript/sensor_msgs/pdu_conv_JointState.js';
+
+const obj = new JointState();
+obj.header = new Header();
+obj.header.stamp = new Time();
+obj.header.frame_id = 'frame';
+obj.name = ['a', 'b'];
+obj.position = [1.0, 2.0];
+obj.velocity = [3.0];
+obj.effort = [4.0];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_JointState(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.builtin_interfaces.pdu_pytype_Time import Time
+    from pdu.python.sensor_msgs.pdu_conv_JointState import pdu_to_py_JointState, py_to_pdu_JointState
+    from pdu.python.sensor_msgs.pdu_pytype_JointState import JointState
+    from pdu.python.std_msgs.pdu_pytype_Header import Header
+
+    expected = {
+        "name": ["a", "b"],
+        "position": [1.0, 2.0],
+        "velocity": [3.0],
+        "effort": [4.0],
+    }
+
+    py_obj = JointState()
+    py_obj.header = Header()
+    py_obj.header.stamp = Time()
+    py_obj.header.frame_id = "frame"
+    py_obj.name = ["a", "b"]
+    py_obj.position = [1.0, 2.0]
+    py_obj.velocity = [3.0]
+    py_obj.effort = [4.0]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        js_bin_path = Path(tmpdir) / "joint_state_js.bin"
+        py_bin_path = Path(tmpdir) / "joint_state_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_JointState(py_obj))
+        py_to_js = subprocess.run(
+            ["node", "--input-type=module", "-e", py_to_js_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_to_js_data = json.loads(py_to_js.stdout)
+
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_to_py_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        restored = pdu_to_py_JointState(bytearray(js_bin_path.read_bytes()))
+        if isinstance(restored.name, list):
+            name_value = restored.name
+        else:
+            name_value = []
+            raw_name = bytes(restored.name)
+            for index in range(0, len(raw_name), 128):
+                chunk = raw_name[index:index + 128]
+                name_value.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
+        js_to_py_data = {
+            "name": name_value,
+            "position": list(struct.unpack(f"<{len(restored.position) // 8}d", bytes(restored.position))) if not isinstance(restored.position, list) else restored.position,
+            "velocity": list(struct.unpack(f"<{len(restored.velocity) // 8}d", bytes(restored.velocity))) if not isinstance(restored.velocity, list) else restored.velocity,
+            "effort": list(struct.unpack(f"<{len(restored.effort) // 8}d", bytes(restored.effort))) if not isinstance(restored.effort, list) else restored.effort,
+        }
+
+        return {
+            "expected": expected,
+            "py_to_js": py_to_js_data,
+            "js_to_py": js_to_py_data,
+            "binaries_equal": py_bin_path.read_bytes() == js_bin_path.read_bytes(),
+        }
+
+
+def validate_joint_state_python_encode_size_case(repo_root: Path, names, positions, velocities, efforts):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_JointState } from './pdu/javascript/sensor_msgs/pdu_conv_JointState.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_JointState(arrayBuffer);
+console.log(JSON.stringify({
+  name: obj.name,
+  position: obj.position,
+  velocity: obj.velocity,
+  effort: obj.effort
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.builtin_interfaces.pdu_pytype_Time import Time
+    from pdu.python.sensor_msgs.pdu_conv_JointState import pdu_to_py_JointState, py_to_pdu_JointState
+    from pdu.python.sensor_msgs.pdu_pytype_JointState import JointState
+    from pdu.python.std_msgs.pdu_pytype_Header import Header
+
+    py_obj = JointState()
+    py_obj.header = Header()
+    py_obj.header.stamp = Time()
+    py_obj.header.frame_id = "frame"
+    py_obj.name = list(names)
+    py_obj.position = list(positions)
+    py_obj.velocity = list(velocities)
+    py_obj.effort = list(efforts)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        py_bin_path = Path(tmpdir) / "joint_state_py.bin"
+        py_bin_path.write_bytes(py_to_pdu_JointState(py_obj))
+
+        restored = pdu_to_py_JointState(bytearray(py_bin_path.read_bytes()))
+        if isinstance(restored.name, list):
+            restored_name = restored.name
+        else:
+            restored_name = []
+            raw_name = bytes(restored.name)
+            for index in range(0, len(raw_name), 128):
+                chunk = raw_name[index:index + 128]
+                restored_name.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
+
+        def decode_numeric(value):
+            if isinstance(value, list):
+                return value
+            count = len(value) // 8
+            return list(struct.unpack(f"<{count}d", bytes(value)))
+
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": {
+                "name": list(names),
+                "position": list(positions),
+                "velocity": list(velocities),
+                "effort": list(efforts),
+            },
+            "python_decoded": {
+                "name": restored_name,
+                "position": decode_numeric(restored.position),
+                "velocity": decode_numeric(restored.velocity),
+                "effort": decode_numeric(restored.effort),
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
+def ensure_cpp_oracle_tools(repo_root: Path):
+    subprocess.run(
+        ["cmake", "-S", str(repo_root / "tests" / "cpp"), "-B", str(CPP_ORACLE_BUILD_DIR)],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(CPP_ORACLE_BUILD_DIR),
+            "-j4",
+            "--target",
+            "hakoniwa_pdu_cpp_tests",
+            "disturbance_cpp_dump",
+            "disturbance_user_custom_cpp_dump",
+            "game_controller_operation_cpp_dump",
+            "joint_state_cpp_dump",
+            "point_cloud2_cpp_dump",
+            "simple_struct_varray_cpp_dump",
+        ],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return {
+        "test_bin": CPP_ORACLE_BUILD_DIR / "hakoniwa_pdu_cpp_tests",
+        "disturbance_dump": CPP_ORACLE_BUILD_DIR / "disturbance_cpp_dump",
+        "disturbance_user_custom_dump": CPP_ORACLE_BUILD_DIR / "disturbance_user_custom_cpp_dump",
+        "game_controller_operation_dump": CPP_ORACLE_BUILD_DIR / "game_controller_operation_cpp_dump",
+        "joint_state_dump": CPP_ORACLE_BUILD_DIR / "joint_state_cpp_dump",
+        "point_cloud2_dump": CPP_ORACLE_BUILD_DIR / "point_cloud2_cpp_dump",
+        "simple_struct_varray_dump": CPP_ORACLE_BUILD_DIR / "simple_struct_varray_cpp_dump",
+    }
+
+
+def validate_game_controller_operation_cpp_oracle_interop(repo_root: Path):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_GameControllerOperation } from './pdu/javascript/hako_msgs/pdu_conv_GameControllerOperation.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_GameControllerOperation(arrayBuffer);
+console.log(JSON.stringify({
+  axis: obj.axis,
+  button: obj.button
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { GameControllerOperation } from './pdu/javascript/hako_msgs/pdu_jstype_GameControllerOperation.js';
+import { jsToPdu_GameControllerOperation } from './pdu/javascript/hako_msgs/pdu_conv_GameControllerOperation.js';
+
+const obj = new GameControllerOperation();
+obj.axis = [0.5, -1.0, 2.0, -3.0, 4.0, -5.0];
+obj.button = [true, false, true, true, false, true, false, true, true, false, true, false, true, true, false];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_GameControllerOperation(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_GameControllerOperation import (
+        pdu_to_py_GameControllerOperation,
+        py_to_pdu_GameControllerOperation,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_GameControllerOperation import (
+        GameControllerOperation,
+    )
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {
+        "axis": [0.5, -1.0, 2.0, -3.0, 4.0, -5.0],
+        "button": [True, False, True, True, False, True, False, True, True, False, True, False, True, True, False],
+    }
+
+    py_obj = GameControllerOperation()
+    py_obj.axis = expected["axis"].copy()
+    py_obj.button = expected["button"].copy()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "game_controller_operation_cpp.bin"
+        py_bin_path = tmpdir_path / "game_controller_operation_py.bin"
+        js_bin_path = tmpdir_path / "game_controller_operation_js.bin"
+
+        subprocess.run(
+            [str(tools["game_controller_operation_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_bin_path.write_bytes(py_to_pdu_GameControllerOperation(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        cpp_to_python = pdu_to_py_GameControllerOperation(bytearray(cpp_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_generated = pdu_to_py_GameControllerOperation(bytearray(py_bin_path.read_bytes()))
+        js_generated_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "cpp_to_python": {
+                "axis": list(cpp_to_python.axis),
+                "button": [bool(value) for value in cpp_to_python.button],
+            },
+            "cpp_to_javascript": json.loads(js_decode.stdout),
+            "python_generated": {
+                "axis": list(py_generated.axis),
+                "button": [bool(value) for value in py_generated.button],
+            },
+            "javascript_generated": json.loads(js_generated_decode.stdout),
+        }
+
+
+def validate_disturbance_cpp_oracle_interop(repo_root: Path):
+    py_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_Disturbance } from './pdu/javascript/hako_msgs/pdu_conv_Disturbance.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_Disturbance(arrayBuffer);
+console.log(JSON.stringify({
+  d_user_custom: obj.d_user_custom.map(item => item.data)
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { Disturbance } from './pdu/javascript/hako_msgs/pdu_jstype_Disturbance.js';
+import { DisturbanceTemperature } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceTemperature.js';
+import { DisturbanceWind } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceWind.js';
+import { DisturbanceAtm } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceAtm.js';
+import { DisturbanceBoundary } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceBoundary.js';
+import { DisturbanceUserCustom } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceUserCustom.js';
+import { jsToPdu_Disturbance } from './pdu/javascript/hako_msgs/pdu_conv_Disturbance.js';
+
+const obj = new Disturbance();
+obj.d_temp = new DisturbanceTemperature();
+obj.d_wind = new DisturbanceWind();
+obj.d_atm = new DisturbanceAtm();
+obj.d_boundary = new DisturbanceBoundary();
+const item1 = new DisturbanceUserCustom();
+item1.data = [1.25, 2.5];
+const item2 = new DisturbanceUserCustom();
+item2.data = [3.75];
+obj.d_user_custom = [item1, item2];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_Disturbance(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_Disturbance import (
+        pdu_to_py_Disturbance,
+        py_to_pdu_Disturbance,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_Disturbance import Disturbance
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceAtm import DisturbanceAtm
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceBoundary import DisturbanceBoundary
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceTemperature import DisturbanceTemperature
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceUserCustom import DisturbanceUserCustom
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceWind import DisturbanceWind
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = [[1.25, 2.5], [3.75]]
+
+    py_obj = Disturbance()
+    py_obj.d_temp = DisturbanceTemperature()
+    py_obj.d_wind = DisturbanceWind()
+    py_obj.d_atm = DisturbanceAtm()
+    py_obj.d_boundary = DisturbanceBoundary()
+    item_1 = DisturbanceUserCustom()
+    item_1.data = [1.25, 2.5]
+    item_2 = DisturbanceUserCustom()
+    item_2.data = [3.75]
+    py_obj.d_user_custom = [item_1, item_2]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "disturbance_cpp.bin"
+        py_bin_path = tmpdir_path / "disturbance_py.bin"
+        js_bin_path = tmpdir_path / "disturbance_js.bin"
+
+        subprocess.run(
+            [str(tools["disturbance_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_bin_path.write_bytes(py_to_pdu_Disturbance(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        py_restored = pdu_to_py_Disturbance(bytearray(cpp_bin_path.read_bytes()))
+        py_decoded = []
+        for item in py_restored.d_user_custom:
+            if isinstance(item.data, list):
+                py_decoded.append(item.data)
+            else:
+                count = len(item.data) // 8
+                py_decoded.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", py_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        py_generated = pdu_to_py_Disturbance(bytearray(py_bin_path.read_bytes()))
+        py_generated_decoded = []
+        for item in py_generated.d_user_custom:
+            if isinstance(item.data, list):
+                py_generated_decoded.append(item.data)
+            else:
+                count = len(item.data) // 8
+                py_generated_decoded.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+
+        js_generated_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", py_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "cpp_to_python": py_decoded,
+            "cpp_to_javascript": json.loads(js_decode.stdout)["d_user_custom"],
+            "python_generated": py_generated_decoded,
+            "javascript_generated": json.loads(js_generated_decode.stdout)["d_user_custom"],
+        }
+
+
+def validate_disturbance_user_custom_cpp_oracle_interop(repo_root: Path):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_DisturbanceUserCustom } from './pdu/javascript/hako_msgs/pdu_conv_DisturbanceUserCustom.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_DisturbanceUserCustom(arrayBuffer);
+console.log(JSON.stringify({
+  data: obj.data
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { DisturbanceUserCustom } from './pdu/javascript/hako_msgs/pdu_jstype_DisturbanceUserCustom.js';
+import { jsToPdu_DisturbanceUserCustom } from './pdu/javascript/hako_msgs/pdu_conv_DisturbanceUserCustom.js';
+
+const obj = new DisturbanceUserCustom();
+obj.data = [1.25, 2.5];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_DisturbanceUserCustom(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_DisturbanceUserCustom import (
+        pdu_to_py_DisturbanceUserCustom,
+        py_to_pdu_DisturbanceUserCustom,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_DisturbanceUserCustom import (
+        DisturbanceUserCustom,
+    )
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {"data": [1.25, 2.5]}
+
+    py_obj = DisturbanceUserCustom()
+    py_obj.data = expected["data"].copy()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "disturbance_user_custom_cpp.bin"
+        py_bin_path = tmpdir_path / "disturbance_user_custom_py.bin"
+        js_bin_path = tmpdir_path / "disturbance_user_custom_js.bin"
+
+        subprocess.run(
+            [str(tools["disturbance_user_custom_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_bin_path.write_bytes(py_to_pdu_DisturbanceUserCustom(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        cpp_to_python = pdu_to_py_DisturbanceUserCustom(bytearray(cpp_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_generated = pdu_to_py_DisturbanceUserCustom(bytearray(py_bin_path.read_bytes()))
+        js_generated_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        def decode_data(value):
+            if isinstance(value, list):
+                return value
+            count = len(value) // 8
+            return list(struct.unpack(f"<{count}d", bytes(value)))
+
+        return {
+            "expected": expected,
+            "cpp_to_python": {"data": decode_data(cpp_to_python.data)},
+            "cpp_to_javascript": json.loads(js_decode.stdout),
+            "python_generated": {"data": decode_data(py_generated.data)},
+            "javascript_generated": json.loads(js_generated_decode.stdout),
+        }
+
+
+def validate_simple_struct_varray_cpp_oracle_interop(repo_root: Path):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_SimpleStructVarray } from './pdu/javascript/hako_msgs/pdu_conv_SimpleStructVarray.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_SimpleStructVarray(arrayBuffer);
+console.log(JSON.stringify({
+  aaa: obj.aaa,
+  fixed_str: obj.fixed_str,
+  varray_str: obj.varray_str,
+  fixed_array: obj.fixed_array.map(item => ({ data: item.data, fixed_array: item.fixed_array, p_mem1: item.p_mem1 })),
+  data: obj.data.map(item => ({ data: item.data, fixed_array: item.fixed_array, p_mem1: item.p_mem1 }))
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { SimpleStructVarray } from './pdu/javascript/hako_msgs/pdu_jstype_SimpleStructVarray.js';
+import { SimpleVarray } from './pdu/javascript/hako_msgs/pdu_jstype_SimpleVarray.js';
+import { jsToPdu_SimpleStructVarray } from './pdu/javascript/hako_msgs/pdu_conv_SimpleStructVarray.js';
+
+function makeSimpleVarray(data, fixedArray, pMem1) {
+  const obj = new SimpleVarray();
+  obj.data = data;
+  obj.fixed_array = [...fixedArray, ...new Array(10 - fixedArray.length).fill(0)];
+  obj.p_mem1 = pMem1;
+  return obj;
+}
+
+const obj = new SimpleStructVarray();
+obj.aaa = 7;
+obj.fixed_str = ['alpha', 'beta'];
+obj.varray_str = ['gamma', 'delta'];
+obj.fixed_array = [
+  makeSimpleVarray([1, 2], [3, 4], 5),
+  makeSimpleVarray([6], [7, 8], 9),
+  makeSimpleVarray([], [], 0),
+  makeSimpleVarray([], [], 0),
+  makeSimpleVarray([], [], 0),
+];
+obj.data = [
+  makeSimpleVarray([10, 11], [12, 13], 14),
+  makeSimpleVarray([15], [16, 17], 18),
+];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_SimpleStructVarray(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_SimpleStructVarray import (
+        pdu_to_py_SimpleStructVarray,
+        py_to_pdu_SimpleStructVarray,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_SimpleStructVarray import SimpleStructVarray
+    from pdu.python.hako_msgs.pdu_pytype_SimpleVarray import SimpleVarray
+
+    def make_simple_varray(data_values, fixed_values, p_mem1):
+        obj = SimpleVarray()
+        obj.data = list(data_values)
+        obj.fixed_array = list(fixed_values) + [0] * (10 - len(fixed_values))
+        obj.p_mem1 = p_mem1
+        return obj
+
+    def decode_simple_varray(item):
+        data_value = item.data if isinstance(item.data, list) else list(bytes(item.data))
+        fixed_value = item.fixed_array if isinstance(item.fixed_array, list) else list(bytes(item.fixed_array))
+        return {
+            "data": list(data_value),
+            "fixed_array": list(fixed_value),
+            "p_mem1": item.p_mem1,
+        }
+
+    expected = {
+        "aaa": 7,
+        "fixed_str": ["alpha", "beta"],
+        "varray_str": ["gamma", "delta"],
+        "fixed_array": [
+            {"data": [1, 2], "fixed_array": [3, 4] + [0] * 8, "p_mem1": 5},
+            {"data": [6], "fixed_array": [7, 8] + [0] * 8, "p_mem1": 9},
+            {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+            {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+            {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+        ],
+        "data": [
+            {"data": [10, 11], "fixed_array": [12, 13] + [0] * 8, "p_mem1": 14},
+            {"data": [15], "fixed_array": [16, 17] + [0] * 8, "p_mem1": 18},
+        ],
+    }
+
+    py_obj = SimpleStructVarray()
+    py_obj.aaa = expected["aaa"]
+    py_obj.fixed_str = expected["fixed_str"].copy()
+    py_obj.varray_str = expected["varray_str"].copy()
+    py_obj.fixed_array = [
+        make_simple_varray([1, 2], [3, 4], 5),
+        make_simple_varray([6], [7, 8], 9),
+        make_simple_varray([], [], 0),
+        make_simple_varray([], [], 0),
+        make_simple_varray([], [], 0),
+    ]
+    py_obj.data = [
+        make_simple_varray([10, 11], [12, 13], 14),
+        make_simple_varray([15], [16, 17], 18),
+    ]
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "simple_struct_varray_cpp.bin"
+        py_bin_path = tmpdir_path / "simple_struct_varray_py.bin"
+        js_bin_path = tmpdir_path / "simple_struct_varray_js.bin"
+
+        subprocess.run(
+            [str(tools["simple_struct_varray_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_bin_path.write_bytes(py_to_pdu_SimpleStructVarray(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        cpp_to_python = pdu_to_py_SimpleStructVarray(bytearray(cpp_bin_path.read_bytes()))
+        py_generated = pdu_to_py_SimpleStructVarray(bytearray(py_bin_path.read_bytes()))
+        cpp_to_js = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        js_generated = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        def decode_struct(obj):
+            return {
+                "aaa": obj.aaa,
+                "fixed_str": list(obj.fixed_str) if obj.fixed_str is not None else [],
+                "varray_str": list(obj.varray_str) if isinstance(obj.varray_str, list) else [],
+                "fixed_array": [decode_simple_varray(item) for item in obj.fixed_array],
+                "data": [decode_simple_varray(item) for item in obj.data],
+            }
+
+        return {
+            "expected": expected,
+            "cpp_to_python": decode_struct(cpp_to_python),
+            "cpp_to_javascript": json.loads(cpp_to_js.stdout),
+            "python_generated": decode_struct(py_generated),
+            "javascript_generated": json.loads(js_generated.stdout),
+        }
+
+
+def validate_simple_struct_varray_python_encode_size_case(repo_root: Path, varray_str_values, data_entries):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_SimpleStructVarray } from './pdu/javascript/hako_msgs/pdu_conv_SimpleStructVarray.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_SimpleStructVarray(arrayBuffer);
+console.log(JSON.stringify({
+  varray_str: obj.varray_str,
+  data: obj.data.map(item => ({ data: item.data, fixed_array: item.fixed_array, p_mem1: item.p_mem1 }))
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_SimpleStructVarray import (
+        pdu_to_py_SimpleStructVarray,
+        py_to_pdu_SimpleStructVarray,
+    )
+    from pdu.python.hako_msgs.pdu_pytype_SimpleStructVarray import SimpleStructVarray
+    from pdu.python.hako_msgs.pdu_pytype_SimpleVarray import SimpleVarray
+
+    def make_simple_varray(spec):
+        obj = SimpleVarray()
+        obj.data = list(spec["data"])
+        obj.fixed_array = list(spec["fixed_array"]) + [0] * (10 - len(spec["fixed_array"]))
+        obj.p_mem1 = spec["p_mem1"]
+        return obj
+
+    def decode_simple_varray(item):
+        data_value = item.data if isinstance(item.data, list) else list(bytes(item.data))
+        fixed_value = item.fixed_array if isinstance(item.fixed_array, list) else list(bytes(item.fixed_array))
+        return {
+            "data": list(data_value),
+            "fixed_array": list(fixed_value),
+            "p_mem1": item.p_mem1,
+        }
+
+    py_obj = SimpleStructVarray()
+    py_obj.aaa = 7
+    py_obj.fixed_str = ["alpha", "beta"]
+    py_obj.varray_str = list(varray_str_values)
+    py_obj.fixed_array = [make_simple_varray({"data": [], "fixed_array": [], "p_mem1": 0}) for _ in range(5)]
+    py_obj.data = [make_simple_varray(spec) for spec in data_entries]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        py_bin_path = Path(tmpdir) / "simple_struct_varray_py.bin"
+        py_bin_path.write_bytes(py_to_pdu_SimpleStructVarray(py_obj))
+
+        restored = pdu_to_py_SimpleStructVarray(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": {
+                "varray_str": list(varray_str_values),
+                "data": [
+                    {
+                        "data": list(spec["data"]),
+                        "fixed_array": list(spec["fixed_array"]) + [0] * (10 - len(spec["fixed_array"])),
+                        "p_mem1": spec["p_mem1"],
+                    }
+                    for spec in data_entries
+                ],
+            },
+            "python_decoded": {
+                "varray_str": list(restored.varray_str) if isinstance(restored.varray_str, list) else [],
+                "data": [decode_simple_varray(item) for item in restored.data],
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
+def validate_joint_state_cpp_oracle_interop(repo_root: Path):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_JointState } from './pdu/javascript/sensor_msgs/pdu_conv_JointState.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_JointState(arrayBuffer);
+console.log(JSON.stringify({
+  frame_id: obj.header.frame_id,
+  name: obj.name,
+  position: obj.position,
+  velocity: obj.velocity,
+  effort: obj.effort
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { JointState } from './pdu/javascript/sensor_msgs/pdu_jstype_JointState.js';
+import { Header } from './pdu/javascript/std_msgs/pdu_jstype_Header.js';
+import { Time } from './pdu/javascript/builtin_interfaces/pdu_jstype_Time.js';
+import { jsToPdu_JointState } from './pdu/javascript/sensor_msgs/pdu_conv_JointState.js';
+
+const obj = new JointState();
+obj.header = new Header();
+obj.header.stamp = new Time();
+obj.header.frame_id = 'frame';
+obj.name = ['a', 'b'];
+obj.position = [1.0, 2.0];
+obj.velocity = [3.0];
+obj.effort = [4.0];
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_JointState(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.builtin_interfaces.pdu_pytype_Time import Time
+    from pdu.python.sensor_msgs.pdu_conv_JointState import pdu_to_py_JointState, py_to_pdu_JointState
+    from pdu.python.sensor_msgs.pdu_pytype_JointState import JointState
+    from pdu.python.std_msgs.pdu_pytype_Header import Header
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {
+        "frame_id": "frame",
+        "name": ["a", "b"],
+        "position": [1.0, 2.0],
+        "velocity": [3.0],
+        "effort": [4.0],
+    }
+
+    py_obj = JointState()
+    py_obj.header = Header()
+    py_obj.header.stamp = Time()
+    py_obj.header.frame_id = "frame"
+    py_obj.name = ["a", "b"]
+    py_obj.position = [1.0, 2.0]
+    py_obj.velocity = [3.0]
+    py_obj.effort = [4.0]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "joint_state_cpp.bin"
+        py_bin_path = tmpdir_path / "joint_state_py.bin"
+        js_bin_path = tmpdir_path / "joint_state_js.bin"
+
+        subprocess.run(
+            [str(tools["joint_state_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_bin_path.write_bytes(py_to_pdu_JointState(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        restored = pdu_to_py_JointState(bytearray(cpp_bin_path.read_bytes()))
+        if isinstance(restored.name, list):
+            restored_name = restored.name
+        else:
+            restored_name = []
+            raw_name = bytes(restored.name)
+            for index in range(0, len(raw_name), 128):
+                chunk = raw_name[index:index + 128]
+                restored_name.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
+
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        py_generated = pdu_to_py_JointState(bytearray(py_bin_path.read_bytes()))
+        if isinstance(py_generated.name, list):
+            py_generated_name = py_generated.name
+        else:
+            py_generated_name = []
+            raw_name = bytes(py_generated.name)
+            for index in range(0, len(raw_name), 128):
+                chunk = raw_name[index:index + 128]
+                py_generated_name.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
+
+        js_generated_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "cpp_to_python": {
+                "frame_id": restored.header.frame_id,
+                "name": restored_name,
+                "position": restored.position if isinstance(restored.position, list) else list(struct.unpack(f"<{len(restored.position) // 8}d", bytes(restored.position))),
+                "velocity": restored.velocity if isinstance(restored.velocity, list) else list(struct.unpack(f"<{len(restored.velocity) // 8}d", bytes(restored.velocity))),
+                "effort": restored.effort if isinstance(restored.effort, list) else list(struct.unpack(f"<{len(restored.effort) // 8}d", bytes(restored.effort))),
+            },
+            "cpp_to_javascript": json.loads(js_decode.stdout),
+            "python_generated": {
+                "frame_id": py_generated.header.frame_id,
+                "name": py_generated_name,
+                "position": py_generated.position if isinstance(py_generated.position, list) else list(struct.unpack(f"<{len(py_generated.position) // 8}d", bytes(py_generated.position))),
+                "velocity": py_generated.velocity if isinstance(py_generated.velocity, list) else list(struct.unpack(f"<{len(py_generated.velocity) // 8}d", bytes(py_generated.velocity))),
+                "effort": py_generated.effort if isinstance(py_generated.effort, list) else list(struct.unpack(f"<{len(py_generated.effort) // 8}d", bytes(py_generated.effort))),
+            },
+            "javascript_generated": json.loads(js_generated_decode.stdout),
+        }
+
+
+def validate_point_cloud2_cpp_oracle_interop(repo_root: Path):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_PointCloud2 } from './pdu/javascript/sensor_msgs/pdu_conv_PointCloud2.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_PointCloud2(arrayBuffer);
+console.log(JSON.stringify({
+  header: {
+    stamp: { sec: obj.header.stamp.sec, nanosec: obj.header.stamp.nanosec },
+    frame_id: obj.header.frame_id
+  },
+  height: obj.height,
+  width: obj.width,
+  fields: obj.fields.map(item => ({ name: item.name, offset: item.offset, datatype: item.datatype, count: item.count })),
+  is_bigendian: obj.is_bigendian,
+  point_step: obj.point_step,
+  row_step: obj.row_step,
+  data: obj.data,
+  is_dense: obj.is_dense
+}));
+"""
+    js_encode_script = """
+import fs from 'node:fs';
+import { PointCloud2 } from './pdu/javascript/sensor_msgs/pdu_jstype_PointCloud2.js';
+import { PointField } from './pdu/javascript/sensor_msgs/pdu_jstype_PointField.js';
+import { jsToPdu_PointCloud2 } from './pdu/javascript/sensor_msgs/pdu_conv_PointCloud2.js';
+
+const makePointField = (name, offset, datatype, count) => {
+  const field = new PointField();
+  field.name = name;
+  field.offset = offset;
+  field.datatype = datatype;
+  field.count = count;
+  return field;
+};
+
+const obj = new PointCloud2();
+obj.header.stamp.sec = 1;
+obj.header.stamp.nanosec = 200;
+obj.header.frame_id = 'pc';
+obj.height = 2;
+obj.width = 3;
+obj.fields = [
+  makePointField('x', 0, 7, 1),
+  makePointField('intensity', 4, 7, 1)
+];
+obj.is_bigendian = false;
+obj.point_step = 8;
+obj.row_step = 24;
+obj.data = [1, 2, 3, 4, 5, 6];
+obj.is_dense = true;
+
+fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_PointCloud2(obj)));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_PointCloud2 import pdu_to_py_PointCloud2, py_to_pdu_PointCloud2
+    from pdu.python.sensor_msgs.pdu_pytype_PointCloud2 import PointCloud2
+    from pdu.python.sensor_msgs.pdu_pytype_PointField import PointField
+
+    def decode_field(item):
+        return {
+            "name": item.name,
+            "offset": item.offset,
+            "datatype": item.datatype,
+            "count": item.count,
+        }
+
+    def decode_point_cloud(obj):
+        data_value = obj.data if isinstance(obj.data, list) else list(bytes(obj.data))
+        return {
+            "header": {
+                "stamp": {"sec": obj.header.stamp.sec, "nanosec": obj.header.stamp.nanosec},
+                "frame_id": obj.header.frame_id,
+            },
+            "height": obj.height,
+            "width": obj.width,
+            "fields": [decode_field(item) for item in obj.fields],
+            "is_bigendian": bool(obj.is_bigendian),
+            "point_step": obj.point_step,
+            "row_step": obj.row_step,
+            "data": list(data_value),
+            "is_dense": bool(obj.is_dense),
+        }
+
+    def make_point_field(name, offset, datatype, count):
+        field = PointField()
+        field.name = name
+        field.offset = offset
+        field.datatype = datatype
+        field.count = count
+        return field
+
+    expected = {
+        "header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "pc"},
+        "height": 2,
+        "width": 3,
+        "fields": [
+            {"name": "x", "offset": 0, "datatype": 7, "count": 1},
+            {"name": "intensity", "offset": 4, "datatype": 7, "count": 1},
+        ],
+        "is_bigendian": False,
+        "point_step": 8,
+        "row_step": 24,
+        "data": [1, 2, 3, 4, 5, 6],
+        "is_dense": True,
+    }
+
+    py_obj = PointCloud2()
+    py_obj.header.stamp.sec = 1
+    py_obj.header.stamp.nanosec = 200
+    py_obj.header.frame_id = "pc"
+    py_obj.height = 2
+    py_obj.width = 3
+    py_obj.fields = [
+        make_point_field("x", 0, 7, 1),
+        make_point_field("intensity", 4, 7, 1),
+    ]
+    py_obj.is_bigendian = False
+    py_obj.point_step = 8
+    py_obj.row_step = 24
+    py_obj.data = expected["data"].copy()
+    py_obj.is_dense = True
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "point_cloud2_cpp.bin"
+        py_bin_path = tmpdir_path / "point_cloud2_py.bin"
+        js_bin_path = tmpdir_path / "point_cloud2_js.bin"
+
+        subprocess.run(
+            [str(tools["point_cloud2_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        py_bin_path.write_bytes(py_to_pdu_PointCloud2(py_obj))
+        subprocess.run(
+            ["node", "--input-type=module", "-e", js_encode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        cpp_to_python = pdu_to_py_PointCloud2(bytearray(cpp_bin_path.read_bytes()))
+        py_generated = pdu_to_py_PointCloud2(bytearray(py_bin_path.read_bytes()))
+        cpp_to_js = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        js_generated = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(js_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "cpp_to_python": decode_point_cloud(cpp_to_python),
+            "cpp_to_javascript": json.loads(cpp_to_js.stdout),
+            "python_generated": decode_point_cloud(py_generated),
+            "javascript_generated": json.loads(js_generated.stdout),
+        }
+
+
+def validate_point_cloud2_python_encode_size_case(repo_root: Path, field_specs, data_values):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_PointCloud2 } from './pdu/javascript/sensor_msgs/pdu_conv_PointCloud2.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_PointCloud2(arrayBuffer);
+console.log(JSON.stringify({
+  fields: obj.fields.map(item => ({ name: item.name, offset: item.offset, datatype: item.datatype, count: item.count })),
+  data: obj.data
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_PointCloud2 import pdu_to_py_PointCloud2, py_to_pdu_PointCloud2
+    from pdu.python.sensor_msgs.pdu_pytype_PointCloud2 import PointCloud2
+    from pdu.python.sensor_msgs.pdu_pytype_PointField import PointField
+
+    def make_point_field(spec):
+        field = PointField()
+        field.name = spec["name"]
+        field.offset = spec["offset"]
+        field.datatype = spec["datatype"]
+        field.count = spec["count"]
+        return field
+
+    def decode_point_field(item):
+        return {
+            "name": item.name,
+            "offset": item.offset,
+            "datatype": item.datatype,
+            "count": item.count,
+        }
+
+    py_obj = PointCloud2()
+    py_obj.header.stamp.sec = 1
+    py_obj.header.stamp.nanosec = 200
+    py_obj.header.frame_id = "pc"
+    py_obj.height = 2
+    py_obj.width = 3
+    py_obj.fields = [make_point_field(spec) for spec in field_specs]
+    py_obj.is_bigendian = False
+    py_obj.point_step = 8
+    py_obj.row_step = 24
+    py_obj.data = list(data_values)
+    py_obj.is_dense = True
+
+    expected = {
+        "fields": [dict(spec) for spec in field_specs],
+        "data": list(data_values),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        py_bin_path = tmpdir_path / "point_cloud2_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_PointCloud2(py_obj))
+        restored = pdu_to_py_PointCloud2(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "python_decoded": {
+                "fields": [decode_point_field(item) for item in restored.fields],
+                "data": list(restored.data if isinstance(restored.data, list) else bytes(restored.data)),
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
+def validate_laser_scan_python_encode_size_case(repo_root: Path, ranges, intensities):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_LaserScan } from './pdu/javascript/sensor_msgs/pdu_conv_LaserScan.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_LaserScan(arrayBuffer);
+console.log(JSON.stringify({
+  ranges: obj.ranges,
+  intensities: obj.intensities
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_LaserScan import pdu_to_py_LaserScan, py_to_pdu_LaserScan
+    from pdu.python.sensor_msgs.pdu_pytype_LaserScan import LaserScan
+
+    def decode_float32_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 4}f", bytes(value)))
+
+    py_obj = LaserScan()
+    py_obj.header.stamp.sec = 1
+    py_obj.header.stamp.nanosec = 200
+    py_obj.header.frame_id = "laser"
+    py_obj.angle_min = -1.0
+    py_obj.angle_max = 1.0
+    py_obj.angle_increment = 0.5
+    py_obj.time_increment = 0.1
+    py_obj.scan_time = 0.2
+    py_obj.range_min = 0.3
+    py_obj.range_max = 30.0
+    py_obj.ranges = list(ranges)
+    py_obj.intensities = list(intensities)
+
+    expected = {
+        "ranges": list(ranges),
+        "intensities": list(intensities),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        py_bin_path = tmpdir_path / "laser_scan_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_LaserScan(py_obj))
+        restored = pdu_to_py_LaserScan(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "python_decoded": {
+                "ranges": decode_float32_varray(restored.ranges),
+                "intensities": decode_float32_varray(restored.intensities),
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
+def validate_camera_info_python_encode_size_case(repo_root: Path, d_values):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_CameraInfo } from './pdu/javascript/sensor_msgs/pdu_conv_CameraInfo.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_CameraInfo(arrayBuffer);
+console.log(JSON.stringify({
+  d: obj.d
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_CameraInfo import pdu_to_py_CameraInfo, py_to_pdu_CameraInfo
+    from pdu.python.sensor_msgs.pdu_pytype_CameraInfo import CameraInfo
+
+    def decode_float64_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+
+    py_obj = CameraInfo()
+    py_obj.header.stamp.sec = 1
+    py_obj.header.stamp.nanosec = 200
+    py_obj.header.frame_id = "cam"
+    py_obj.height = 480
+    py_obj.width = 640
+    py_obj.distortion_model = "plumb_bob"
+    py_obj.d = list(d_values)
+    py_obj.k = [1.0] * 9
+    py_obj.r = [2.0] * 9
+    py_obj.p = [3.0] * 12
+    py_obj.binning_x = 1
+    py_obj.binning_y = 2
+    py_obj.roi.x_offset = 3
+    py_obj.roi.y_offset = 4
+    py_obj.roi.height = 5
+    py_obj.roi.width = 6
+    py_obj.roi.do_rectify = True
+
+    expected = {
+        "d": list(d_values),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        py_bin_path = tmpdir_path / "camera_info_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_CameraInfo(py_obj))
+        restored = pdu_to_py_CameraInfo(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "python_decoded": {
+                "d": decode_float64_varray(restored.d),
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
+def validate_multi_array_layout_python_encode_size_case(repo_root: Path, dim_specs):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_MultiArrayLayout } from './pdu/javascript/std_msgs/pdu_conv_MultiArrayLayout.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_MultiArrayLayout(arrayBuffer);
+console.log(JSON.stringify({
+  dim: obj.dim.map(item => ({ label: item.label, size: item.size, stride: item.stride })),
+  data_offset: obj.data_offset
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.std_msgs.pdu_conv_MultiArrayLayout import pdu_to_py_MultiArrayLayout, py_to_pdu_MultiArrayLayout
+    from pdu.python.std_msgs.pdu_pytype_MultiArrayDimension import MultiArrayDimension
+    from pdu.python.std_msgs.pdu_pytype_MultiArrayLayout import MultiArrayLayout
+
+    def make_dim(spec):
+        dim = MultiArrayDimension()
+        dim.label = spec["label"]
+        dim.size = spec["size"]
+        dim.stride = spec["stride"]
+        return dim
+
+    py_obj = MultiArrayLayout()
+    py_obj.dim = [make_dim(spec) for spec in dim_specs]
+    py_obj.data_offset = 9
+
+    expected = {
+        "dim": [dict(spec) for spec in dim_specs],
+        "data_offset": 9,
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        py_bin_path = tmpdir_path / "multi_array_layout_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_MultiArrayLayout(py_obj))
+        restored = pdu_to_py_MultiArrayLayout(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "python_decoded": {
+                "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in restored.dim],
+                "data_offset": restored.data_offset,
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
+def validate_float64_multi_array_python_encode_size_case(repo_root: Path, dim_specs, data_values):
+    js_decode_script = """
+import fs from 'node:fs';
+import { pduToJs_Float64MultiArray } from './pdu/javascript/std_msgs/pdu_conv_Float64MultiArray.js';
+
+const bin = fs.readFileSync(process.argv[1]);
+const arrayBuffer = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+const obj = pduToJs_Float64MultiArray(arrayBuffer);
+console.log(JSON.stringify({
+  layout: {
+    dim: obj.layout.dim.map(item => ({ label: item.label, size: item.size, stride: item.stride })),
+    data_offset: obj.layout.data_offset
+  },
+  data: obj.data
+}));
+"""
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.std_msgs.pdu_conv_Float64MultiArray import pdu_to_py_Float64MultiArray, py_to_pdu_Float64MultiArray
+    from pdu.python.std_msgs.pdu_pytype_Float64MultiArray import Float64MultiArray
+    from pdu.python.std_msgs.pdu_pytype_MultiArrayDimension import MultiArrayDimension
+
+    def make_dim(spec):
+        dim = MultiArrayDimension()
+        dim.label = spec["label"]
+        dim.size = spec["size"]
+        dim.stride = spec["stride"]
+        return dim
+
+    def decode_float64_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+
+    py_obj = Float64MultiArray()
+    py_obj.layout.dim = [make_dim(spec) for spec in dim_specs]
+    py_obj.layout.data_offset = 9
+    py_obj.data = list(data_values)
+
+    expected = {
+        "layout": {
+            "dim": [dict(spec) for spec in dim_specs],
+            "data_offset": 9,
+        },
+        "data": list(data_values),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        py_bin_path = tmpdir_path / "float64_multi_array_py.bin"
+
+        py_bin_path.write_bytes(py_to_pdu_Float64MultiArray(py_obj))
+        restored = pdu_to_py_Float64MultiArray(bytearray(py_bin_path.read_bytes()))
+        js_decode = subprocess.run(
+            ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        return {
+            "expected": expected,
+            "python_decoded": {
+                "layout": {
+                    "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in restored.layout.dim],
+                    "data_offset": restored.layout.data_offset,
+                },
+                "data": decode_float64_varray(restored.data),
+            },
+            "javascript_decoded": json.loads(js_decode.stdout),
+        }
+
+
 def main():
     repo_root = Path(__file__).resolve().parents[2]
     failures = []
@@ -279,6 +2057,22 @@ def main():
         failures.append("javascript fromJSON does not preserve struct arrays")
     if js_dict_result["data_array0_json"] != js_dict_result["expected_data_array0"]:
         failures.append("javascript fromJSON does not preserve varray struct arrays")
+
+    disturbance_interop = validate_disturbance_js_python_interop(repo_root)
+    if disturbance_interop["py_to_js"] != disturbance_interop["expected"]:
+        failures.append("python -> javascript disturbance interop does not preserve nested varray data")
+    if disturbance_interop["js_to_py"] != disturbance_interop["expected"]:
+        failures.append("javascript -> python disturbance interop does not preserve nested varray data")
+    if not disturbance_interop["binaries_equal"]:
+        failures.append("python and javascript disturbance binaries do not match")
+
+    joint_state_interop = validate_joint_state_string_varray_interop(repo_root)
+    if joint_state_interop["py_to_js"] != joint_state_interop["expected"]:
+        failures.append("python -> javascript joint_state interop does not preserve string varray data")
+    if joint_state_interop["js_to_py"] != joint_state_interop["expected"]:
+        failures.append("javascript -> python joint_state interop does not preserve string varray data")
+    if not joint_state_interop["binaries_equal"]:
+        failures.append("python and javascript joint_state binaries do not match")
 
     if failures:
         for failure in failures:

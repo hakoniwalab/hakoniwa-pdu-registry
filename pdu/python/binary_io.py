@@ -147,8 +147,12 @@ def binTovalue(type, arg):
         return binTostring(arg)
     else:
         return None
-def binToArrayValues(type, arg):
+def binToArrayValues(type, arg, array_len=None, elm_size=None):
     # little endian
+    if array_len is not None:
+        array_len = int(array_len)
+    if elm_size is not None:
+        elm_size = int(elm_size)
     if (type == "int8"):
         return struct.unpack(f'<{len(arg)}b', arg)
     elif (type == "uint8"):
@@ -171,6 +175,15 @@ def binToArrayValues(type, arg):
         return struct.unpack(f'<{len(arg)//4}f', arg)
     elif (type == "float64"):
         return struct.unpack(f'<{len(arg)//8}d', arg)
+    elif (type == "string"):
+        if array_len is None or elm_size is None:
+            raise ValueError("array_len and elm_size required for string array")
+        values = []
+        for index in range(array_len):
+            start = index * elm_size
+            end = start + elm_size
+            values.append(binTostring(arg[start:end], elm_size))
+        return values
     else:
         return None
 

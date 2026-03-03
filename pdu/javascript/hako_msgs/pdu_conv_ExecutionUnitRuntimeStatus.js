@@ -46,7 +46,7 @@ export function binary_read_recursive_ExecutionUnitRuntimeStatus(meta, binary_da
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("uint8" === 'string') {
-            js_obj.status = PduUtils.binToValue("string", array_bin);
+            js_obj.status = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.status = PduUtils.binToArrayValues("uint8", array_bin, array_size);
         }
@@ -61,7 +61,7 @@ export function binary_read_recursive_ExecutionUnitRuntimeStatus(meta, binary_da
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("uint8" === 'string') {
-            js_obj.epoch = PduUtils.binToValue("string", array_bin);
+            js_obj.epoch = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.epoch = PduUtils.binToArrayValues("uint8", array_bin, array_size);
         }
@@ -76,7 +76,7 @@ export function binary_read_recursive_ExecutionUnitRuntimeStatus(meta, binary_da
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("uint8" === 'string') {
-            js_obj.curr_owner_node_id = PduUtils.binToValue("string", array_bin);
+            js_obj.curr_owner_node_id = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.curr_owner_node_id = PduUtils.binToArrayValues("uint8", array_bin, array_size);
         }
@@ -91,7 +91,7 @@ export function binary_read_recursive_ExecutionUnitRuntimeStatus(meta, binary_da
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("uint8" === 'string') {
-            js_obj.next_owner_node_id = PduUtils.binToValue("string", array_bin);
+            js_obj.next_owner_node_id = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.next_owner_node_id = PduUtils.binToArrayValues("uint8", array_bin, array_size);
         }
@@ -152,8 +152,8 @@ export function binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off, bw
         let data_buffer;
         let array_size;
         if ("uint8" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.status);
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.status, 1);
+            array_size = js_obj.status.length;
         } else {
             data_buffer = PduUtils.typesToBin("uint8", js_obj.status);
             array_size = js_obj.status.length;
@@ -174,8 +174,8 @@ export function binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off, bw
         let data_buffer;
         let array_size;
         if ("uint8" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.epoch);
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.epoch, 1);
+            array_size = js_obj.epoch.length;
         } else {
             data_buffer = PduUtils.typesToBin("uint8", js_obj.epoch);
             array_size = js_obj.epoch.length;
@@ -196,8 +196,8 @@ export function binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off, bw
         let data_buffer;
         let array_size;
         if ("uint8" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.curr_owner_node_id);
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.curr_owner_node_id, 1);
+            array_size = js_obj.curr_owner_node_id.length;
         } else {
             data_buffer = PduUtils.typesToBin("uint8", js_obj.curr_owner_node_id);
             array_size = js_obj.curr_owner_node_id.length;
@@ -218,8 +218,8 @@ export function binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off, bw
         let data_buffer;
         let array_size;
         if ("uint8" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.next_owner_node_id);
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.next_owner_node_id, 1);
+            array_size = js_obj.next_owner_node_id.length;
         } else {
             data_buffer = PduUtils.typesToBin("uint8", js_obj.next_owner_node_id);
             array_size = js_obj.next_owner_node_id.length;

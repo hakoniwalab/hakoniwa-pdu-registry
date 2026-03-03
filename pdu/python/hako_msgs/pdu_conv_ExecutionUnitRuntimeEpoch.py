@@ -30,7 +30,9 @@ def binary_read_recursive_ExecutionUnitRuntimeEpoch(meta: binary_io.PduMetaData,
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 0 + 4, 4))
     one_elm_size = 1 
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
+    
     py_obj.epoch = array_value
+    
     
     return py_obj
 
@@ -74,14 +76,12 @@ def binary_write_recursive_ExecutionUnitRuntimeEpoch(parent_off: int, bw_contain
     off = 0
 
     offset_from_heap = bw_container.heap_allocator.size()
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     array_size = len(py_obj.epoch)
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
     binary = binary_io.typeTobin_array(type, py_obj.epoch, 1)
-    bw_container.heap_allocator.add(binary, expected_offset=0)
+    bw_container.heap_allocator.add(binary)
     
 
 if __name__ == "__main__":

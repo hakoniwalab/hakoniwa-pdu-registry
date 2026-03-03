@@ -52,7 +52,9 @@ def binary_read_recursive_ExecutionUnitRuntimeStatus(meta: binary_io.PduMetaData
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 8 + 4, 4))
     one_elm_size = 1 
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
+    
     py_obj.status = array_value
+    
     
     # array_type: varray 
     # data_type: primitive 
@@ -65,7 +67,9 @@ def binary_read_recursive_ExecutionUnitRuntimeStatus(meta: binary_io.PduMetaData
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 16 + 4, 4))
     one_elm_size = 1 
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
+    
     py_obj.epoch = array_value
+    
     
     # array_type: varray 
     # data_type: primitive 
@@ -78,7 +82,9 @@ def binary_read_recursive_ExecutionUnitRuntimeStatus(meta: binary_io.PduMetaData
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 24 + 4, 4))
     one_elm_size = 1 
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
+    
     py_obj.curr_owner_node_id = array_value
+    
     
     # array_type: varray 
     # data_type: primitive 
@@ -91,7 +97,9 @@ def binary_read_recursive_ExecutionUnitRuntimeStatus(meta: binary_io.PduMetaData
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 32 + 4, 4))
     one_elm_size = 1 
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
+    
     py_obj.next_owner_node_id = array_value
+    
     
     return py_obj
 
@@ -163,14 +171,12 @@ def binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off: int, bw_contai
     off = 8
 
     offset_from_heap = bw_container.heap_allocator.size()
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     array_size = len(py_obj.status)
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
     binary = binary_io.typeTobin_array(type, py_obj.status, 1)
-    bw_container.heap_allocator.add(binary, expected_offset=0)
+    bw_container.heap_allocator.add(binary)
     
     # array_type: varray 
     # data_type: primitive 
@@ -182,14 +188,12 @@ def binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off: int, bw_contai
     off = 16
 
     offset_from_heap = bw_container.heap_allocator.size()
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     array_size = len(py_obj.epoch)
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
     binary = binary_io.typeTobin_array(type, py_obj.epoch, 1)
-    bw_container.heap_allocator.add(binary, expected_offset=0)
+    bw_container.heap_allocator.add(binary)
     
     # array_type: varray 
     # data_type: primitive 
@@ -201,14 +205,12 @@ def binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off: int, bw_contai
     off = 24
 
     offset_from_heap = bw_container.heap_allocator.size()
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     array_size = len(py_obj.curr_owner_node_id)
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
     binary = binary_io.typeTobin_array(type, py_obj.curr_owner_node_id, 1)
-    bw_container.heap_allocator.add(binary, expected_offset=0)
+    bw_container.heap_allocator.add(binary)
     
     # array_type: varray 
     # data_type: primitive 
@@ -220,14 +222,12 @@ def binary_write_recursive_ExecutionUnitRuntimeStatus(parent_off: int, bw_contai
     off = 32
 
     offset_from_heap = bw_container.heap_allocator.size()
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     array_size = len(py_obj.next_owner_node_id)
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
     binary = binary_io.typeTobin_array(type, py_obj.next_owner_node_id, 1)
-    bw_container.heap_allocator.add(binary, expected_offset=0)
+    bw_container.heap_allocator.add(binary)
     
 
 if __name__ == "__main__":

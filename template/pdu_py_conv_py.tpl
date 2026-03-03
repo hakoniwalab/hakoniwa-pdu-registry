@@ -34,13 +34,21 @@ def binary_read_recursive_{{ container.msg_type_name }}(meta: binary_io.PduMetaD
     py_obj.{{ item.member_name }} = binary_io.binTovalue("{{ item.type_name }}", bin)
     {% elif item.array_type == 'array' %}
     array_value = binary_io.readBinary(binary_data, base_off + {{ item.offset }}, {{ item.size }})
+    {% if item.type_name == 'string' %}
+    py_obj.{{ item.member_name }} = binary_io.binToArrayValues("{{ item.type_name }}", array_value, {{ item.array_len }}, {{ item.size }} / {{ item.array_len }})
+    {% else %}
     py_obj.{{ item.member_name }} = binary_io.binToArrayValues("{{ item.type_name }}", array_value)
+    {% endif %}
     {% else -%}
     array_size = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + {{ item.offset }}, 4))
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + {{ item.offset }} + 4, 4))
     one_elm_size = {{ item.size }} 
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
+    {% if item.type_name == 'string' %}
+    py_obj.{{ item.member_name }} = binary_io.binToArrayValues("{{ item.type_name }}", array_value, array_size, one_elm_size)
+    {% else %}
     py_obj.{{ item.member_name }} = array_value
+    {% endif %}
     {% endif -%}
 {% else -%}
     {% if item.array_type == 'single' %}
@@ -120,42 +128,35 @@ def binary_write_recursive_{{ container.get_msg_type(container.msg_type_name) }}
     bin = get_binary(type, bin, {{ item.size }})
     allocator.add(bin, expected_offset=parent_off + off)
     {% elif item.array_type == 'array' %}
-    elm_size =  {{ item.size }} 
-    array_size = int({{ (item.size / item.array_len) }})
-    one_elm_size = int(elm_size / array_size)
+    one_elm_size = int({{ item.size / item.array_len }})
     binary = binary_io.typeTobin_array(type, py_obj.{{ item.member_name }}, one_elm_size)
     allocator.add(binary, expected_offset=(parent_off + off))
     {% else -%}
     offset_from_heap = bw_container.heap_allocator.size()
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     array_size = len(py_obj.{{ item.member_name}})
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
     binary = binary_io.typeTobin_array(type, py_obj.{{ item.member_name}}, {{ item.size }})
-    bw_container.heap_allocator.add(binary, expected_offset=0)
+    bw_container.heap_allocator.add(binary)
     {% endif -%}
 {% else -%}
     {% if item.array_type == 'single' %}
     binary_write_recursive_{{ container.get_msg_type(item.type_name) }}(parent_off + off, bw_container, allocator, py_obj.{{ item.member_name }})
     {% elif item.array_type == 'array' %}
     for i, elm in enumerate(py_obj.{{ item.member_name }}):
-        elm_size = {{ item.size }}
-        array_size = int({{ item.size / item.array_len }})
-        one_elm_size = int(elm_size / array_size)
+        one_elm_size = int({{ item.size / item.array_len }})
         binary_write_recursive_{{ container.get_msg_type(item.type_name) }}((parent_off + off + i * one_elm_size), bw_container, allocator, elm)
     {% else %}
     offset_from_heap = bw_container.heap_allocator.size()
     array_size = len(py_obj.{{ item.member_name }})
-    if allocator.is_heap:
-        offset_from_heap += 8 # 8 bytes for array_size and offset
     a_b = array_size.to_bytes(4, byteorder='little')
     o_b = offset_from_heap.to_bytes(4, byteorder='little')
     allocator.add(a_b + o_b, expected_offset=parent_off + off)
+    bw_container.heap_allocator.add(bytearray(array_size * {{ item.size }}), expected_offset=offset_from_heap)
     for i, elm in enumerate(py_obj.{{ item.member_name }}):
         one_elm_size =  {{ item.size }}
-        binary_write_recursive_{{ container.get_msg_type(item.type_name) }}((parent_off + i * one_elm_size), bw_container, bw_container.heap_allocator, elm)
+        binary_write_recursive_{{ container.get_msg_type(item.type_name) }}((offset_from_heap + i * one_elm_size), bw_container, bw_container.heap_allocator, elm)
     {% endif -%}
 {% endif -%}
 {% endfor %}

@@ -30,7 +30,7 @@ export function binary_read_recursive_ExecutionUnitRuntimeEpoch(meta, binary_dat
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("uint8" === 'string') {
-            js_obj.epoch = PduUtils.binToValue("string", array_bin);
+            js_obj.epoch = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.epoch = PduUtils.binToArrayValues("uint8", array_bin, array_size);
         }
@@ -75,8 +75,8 @@ export function binary_write_recursive_ExecutionUnitRuntimeEpoch(parent_off, bw_
         let data_buffer;
         let array_size;
         if ("uint8" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.epoch);
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.epoch, 1);
+            array_size = js_obj.epoch.length;
         } else {
             data_buffer = PduUtils.typesToBin("uint8", js_obj.epoch);
             array_size = js_obj.epoch.length;

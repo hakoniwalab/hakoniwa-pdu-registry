@@ -270,4 +270,3 @@ int main(int argc, char **argv)
    svarray_ros2pdu_test2();
    return 0;
 }
-

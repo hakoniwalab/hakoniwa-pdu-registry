@@ -54,7 +54,7 @@ export function binary_read_recursive_ExecutionUnitRuntimeContext(meta, binary_d
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("uint8" === 'string') {
-            js_obj.context = PduUtils.binToValue("string", array_bin);
+            js_obj.context = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.context = PduUtils.binToArrayValues("uint8", array_bin, array_size);
         }
@@ -123,8 +123,8 @@ export function binary_write_recursive_ExecutionUnitRuntimeContext(parent_off, b
         let data_buffer;
         let array_size;
         if ("uint8" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.context);
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.context, 1);
+            array_size = js_obj.context.length;
         } else {
             data_buffer = PduUtils.typesToBin("uint8", js_obj.context);
             array_size = js_obj.context.length;

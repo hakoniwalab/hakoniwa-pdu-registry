@@ -39,7 +39,7 @@ export function binary_read_recursive_{{ container.msg_type_name }}(meta, binary
     {% elif item.array_type == 'array' %}
     {
         const array_bin = PduUtils.readBinary(binary_data, base_off + {{ item.offset }}, {{ item.size }});
-        js_obj.{{ item.member_name }} = PduUtils.binToArrayValues("{{ container.get_array_type(item.type_name) }}", array_bin, {{ item.array_len }});
+        js_obj.{{ item.member_name }} = PduUtils.binToArrayValues("{{ container.get_array_type(item.type_name) }}", array_bin, {{ item.array_len }}, {{ item.size }} / {{ item.array_len }});
     }
     {% else -%}
     { // varray
@@ -49,7 +49,7 @@ export function binary_read_recursive_{{ container.msg_type_name }}(meta, binary
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
         
         if ("{{ item.type_name }}" === 'string') {
-            js_obj.{{ item.member_name }} = PduUtils.binToValue("string", array_bin);
+            js_obj.{{ item.member_name }} = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
             js_obj.{{ item.member_name }} = PduUtils.binToArrayValues("{{ item.type_name }}", array_bin, array_size);
         }
@@ -134,7 +134,7 @@ export function binary_write_recursive_{{ container.msg_type_name }}(parent_off,
     }
     {% elif item.array_type == 'array' %}
     {
-        const buffer = PduUtils.typesToBin("{{ container.get_array_type(item.type_name) }}", js_obj.{{ item.member_name }});
+        const buffer = PduUtils.typesToBin("{{ container.get_array_type(item.type_name) }}", js_obj.{{ item.member_name }}, {{ item.size }} / {{ item.array_len }});
         allocator.add(buffer, parent_off + {{ item.offset }});
     }
     {% else -%}
@@ -143,8 +143,8 @@ export function binary_write_recursive_{{ container.msg_type_name }}(parent_off,
         let data_buffer;
         let array_size;
         if ("{{ item.type_name }}" === 'string') {
-            data_buffer = new TextEncoder().encode(js_obj.{{ item.member_name }});
-            array_size = data_buffer.byteLength;
+            data_buffer = PduUtils.typesToBin("string", js_obj.{{ item.member_name }}, {{ item.size }});
+            array_size = js_obj.{{ item.member_name }}.length;
         } else {
             data_buffer = PduUtils.typesToBin("{{ item.type_name }}", js_obj.{{ item.member_name }});
             array_size = js_obj.{{ item.member_name }}.length;
@@ -173,14 +173,17 @@ export function binary_write_recursive_{{ container.msg_type_name }}(parent_off,
     {% else %}
     { // varray
         const offset_from_heap = bw_container.heap_allocator.size();
+        const array_size = js_obj.{{ item.member_name }}.length;
         const one_elm_size = {{ item.size }};
-        for (const elm of js_obj.{{ item.member_name }}) {
-            binary_write_recursive_{{ container.get_js_class_name(item.type_name) }}(0, bw_container, bw_container.heap_allocator, elm);
+        const array_base_offset = bw_container.heap_allocator.add(new ArrayBuffer(one_elm_size * array_size));
+        for (let item_index = 0; item_index < array_size; item_index++) {
+            const item_offset = array_base_offset + (item_index * one_elm_size);
+            binary_write_recursive_{{ container.get_js_class_name(item.type_name) }}(item_offset, bw_container, bw_container.heap_allocator, js_obj.{{ item.member_name }}[item_index]);
         }
 
         const ref_buffer = new ArrayBuffer(8);
         const ref_view = new DataView(ref_buffer);
-        ref_view.setInt32(0, js_obj.{{ item.member_name }}.length, littleEndian); // array_size
+        ref_view.setInt32(0, array_size, littleEndian); // array_size
         ref_view.setInt32(4, offset_from_heap, littleEndian);
         allocator.add(ref_buffer, parent_off + {{ item.offset }});
     }

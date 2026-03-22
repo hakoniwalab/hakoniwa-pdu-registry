@@ -52,6 +52,9 @@ Typical outputs include:
 - Python types and converters under `pdu/python/`
 - JavaScript types and converters under `pdu/javascript/`
 - C# types under `pdu/csharp/`
+- Godot GDScript type definitions under `pdu/godot_gd/`
+- Godot C++ converters under `pdu/godot_cpp/`
+- Godot C++ runtime helpers under `pdu/godot_cpp_runtime/`
 - Offset files under `pdu/offset/` and `pdu/offset_text/`
 - Aligned size registry under `pdu/pdu_size/`
 
@@ -102,6 +105,9 @@ pdu/types/
 pdu/python/
 pdu/javascript/
 pdu/csharp/
+pdu/godot_gd/
+pdu/godot_cpp/
+pdu/godot_cpp_runtime/
 pdu/offset/
 pdu/offset_text/
 pdu/pdu_size/
@@ -196,6 +202,137 @@ restored = pdu_to_py_Point(pdu_bytes)
 
 Generated JS files live under `pdu/javascript/<pkg>/`.
 Converters follow the `pdu_conv_<Msg>.js` naming convention.
+
+### Godot
+
+Godot is now a first-class target in this registry.
+
+What is generated:
+
+- `pdu/godot_gd/`: generated `GDScript` types with `from_dict()` / `to_dict()`
+- `pdu/godot_cpp/`: generated C++ converters for `PackedByteArray <-> Dictionary`
+- `pdu/godot_cpp_runtime/`: shared Godot C++ runtime helpers
+
+What is validated:
+
+- generated `GDScript` smoke
+- headless Godot runtime smoke
+- GDExtension bridge smoke
+- binary interop tests in `tests.test_generated_artifacts`
+
+Current Godot binary interop coverage includes:
+
+- `hako_msgs/GameControllerOperation`
+- `hako_msgs/DisturbanceUserCustom`
+- `hako_msgs/Disturbance`
+- `sensor_msgs/JointState`
+- `hako_msgs/SimpleStructVarray`
+- `sensor_msgs/PointCloud2`
+- `sensor_msgs/LaserScan`
+- `sensor_msgs/CameraInfo`
+- `std_msgs/MultiArrayLayout`
+- `std_msgs/Float64MultiArray`
+
+Godot support currently has two separate version concerns:
+
+- Verified Godot runtime/editor: `4.6.1`
+- Native binding source dependency: `godot-cpp` branch `4.5`
+
+This combination is intentional.
+At the time this setup was validated, the official `godot-cpp` repository
+did not provide a `4.6` branch, so the native binding side uses `4.5`
+while runtime validation is performed with Godot `4.6.1`.
+
+In other words:
+
+- `GDScript` runtime tests are verified against Godot `4.6.1`
+- `GDExtension` / native bridge work is currently expected to build against `godot-cpp` `4.5`
+
+If this repository later adopts a newer official `godot-cpp` branch,
+the native bridge side should be updated explicitly rather than assumed.
+
+### Godot setup
+
+#### 1. Install Godot
+
+Use Godot `4.6.1` if you want the validated setup.
+
+Default test path on macOS:
+
+```bash
+/Applications/Godot_mono.app/Contents/MacOS/Godot
+```
+
+If your binary is elsewhere, set:
+
+```bash
+export HAKO_GODOT_BIN=/path/to/Godot
+```
+
+#### 2. Install `scons`
+
+`godot-cpp` uses `scons` to build the native binding library.
+
+```bash
+brew install scons
+```
+
+#### 3. Clone and build `godot-cpp`
+
+```bash
+cd /path/to/your/oss
+git clone https://github.com/godotengine/godot-cpp.git
+cd godot-cpp
+git submodule update --init --recursive
+git checkout 4.5
+scons platform=macos target=template_debug arch=universal
+```
+
+Then point this repository at that checkout:
+
+```bash
+export HAKO_GODOT_CPP_ROOT=/path/to/your/oss/godot-cpp
+```
+
+Expected inputs from that directory are:
+
+- `include/`
+- `gen/include/`
+- `gdextension/`
+- `bin/libgodot-cpp.macos.template_debug.universal.a`
+
+### Godot test quickstart
+
+Run the Godot-related tests in this order:
+
+```bash
+python3 -m unittest tests.test_godot_generator
+python3 -m unittest tests.test_godot_runtime
+python3 -m unittest tests.test_godot_cpp_bridge
+python3 -m unittest tests.test_generated_artifacts
+```
+
+If you only want the Godot-heavy binary interop checks:
+
+```bash
+python3 -m unittest tests.test_generated_artifacts
+```
+
+This test suite will:
+
+- build C++ oracle dump tools under `tests/cpp/`
+- build the minimal Godot GDExtension bridge under `tests/godot_cpp_smoke/`
+- run headless Godot
+- compare Godot conversion results against canonical expectations
+
+Environment variables used by the tests:
+
+```bash
+export HAKO_GODOT_BIN=/path/to/Godot
+export HAKO_GODOT_CPP_ROOT=/path/to/godot-cpp
+```
+
+For detailed test scope, see `test-spec-binary-conversion.md`.
 
 ## Service message generator (ROS .srv -> Hakoniwa .msg)
 

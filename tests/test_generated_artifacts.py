@@ -7,24 +7,44 @@ from generators.generate_hako_pdu_msgs.validate_generated_artifacts import (
     validate_disturbance_python_encode_size_case,
     validate_disturbance_user_custom_python_encode_size_case,
     validate_disturbance_user_custom_cpp_oracle_interop,
+    validate_disturbance_godot_cpp_oracle_interop,
+    validate_disturbance_godot_cpp_size_case,
+    validate_disturbance_user_custom_godot_cpp_oracle_interop,
+    validate_disturbance_user_custom_godot_cpp_size_case,
     validate_drone_visual_state_array_cpp_oracle_interop,
     make_drone_visual_state_array_case,
     validate_drone_visual_state_array_python_encode_size_case,
     validate_game_controller_operation_cpp_oracle_interop,
+    validate_game_controller_operation_godot_cpp_oracle_interop,
+    validate_godot_from_dict_roundtrip,
     validate_javascript_from_dict_roundtrip,
     validate_javascript_bool_array_roundtrip,
     validate_joint_state_cpp_oracle_interop,
+    validate_joint_state_godot_cpp_oracle_interop,
+    validate_joint_state_godot_cpp_size_case,
     validate_joint_state_python_encode_size_case,
     validate_joint_state_string_varray_interop,
     validate_point_cloud2_cpp_oracle_interop,
+    validate_laser_scan_godot_cpp_oracle_interop,
+    validate_point_cloud2_godot_cpp_oracle_interop,
+    validate_point_cloud2_godot_cpp_size_case,
     validate_point_cloud2_python_encode_size_case,
+    validate_camera_info_godot_cpp_oracle_interop,
+    validate_laser_scan_godot_cpp_size_case,
     validate_laser_scan_python_encode_size_case,
+    validate_multi_array_layout_godot_cpp_oracle_interop,
+    validate_camera_info_godot_cpp_size_case,
     validate_camera_info_python_encode_size_case,
+    validate_float64_multi_array_godot_cpp_oracle_interop,
+    validate_multi_array_layout_godot_cpp_size_case,
     validate_multi_array_layout_python_encode_size_case,
+    validate_float64_multi_array_godot_cpp_size_case,
     validate_float64_multi_array_python_encode_size_case,
     validate_python_disturbance_layout,
     validate_python_joint_state_layout,
     validate_python_bool_array_roundtrip,
+    validate_simple_struct_varray_godot_cpp_oracle_interop,
+    validate_simple_struct_varray_godot_cpp_size_case,
     validate_simple_struct_varray_cpp_oracle_interop,
     validate_simple_struct_varray_python_encode_size_case,
     validate_size_registries,
@@ -70,12 +90,23 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(result["fixed_array_data0_json"], result["expected_fixed_array_data0"])
         self.assertEqual(result["data_array0_json"], result["expected_data_array0"])
 
+    def test_godot_from_dict_handles_nested_struct_and_arrays(self):
+        result = validate_godot_from_dict_roundtrip(self.repo_root)
+        if result.get("skipped"):
+            self.skipTest(result["reason"])
+        self.assertTrue(result["ok"], msg=f"stdout:\n{result['stdout']}\nstderr:\n{result['stderr']}")
+
     def test_game_controller_operation_cpp_oracle_interop(self):
         result = validate_game_controller_operation_cpp_oracle_interop(self.repo_root)
         self.assertEqual(result["cpp_to_python"], result["expected"])
         self.assertEqual(result["cpp_to_javascript"], result["expected"])
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
+
+    def test_game_controller_operation_godot_cpp_oracle_interop(self):
+        result = validate_game_controller_operation_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
 
     def test_drone_visual_state_array_cpp_oracle_interop(self):
         result = validate_drone_visual_state_array_cpp_oracle_interop(self.repo_root)
@@ -115,6 +146,26 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
 
+    def test_disturbance_user_custom_godot_cpp_oracle_interop(self):
+        result = validate_disturbance_user_custom_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
+
+    def test_disturbance_user_custom_godot_cpp_size_0_case(self):
+        result = validate_disturbance_user_custom_godot_cpp_size_case(self.repo_root, [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_disturbance_user_custom_godot_cpp_size_1_case(self):
+        result = validate_disturbance_user_custom_godot_cpp_size_case(self.repo_root, [3.75])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_disturbance_user_custom_godot_cpp_size_2_case(self):
+        result = validate_disturbance_user_custom_godot_cpp_size_case(self.repo_root, [1.25, 2.5])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_disturbance_user_custom_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_disturbance_user_custom_python_encode_size_case, [])
 
@@ -131,6 +182,26 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
 
+    def test_disturbance_godot_cpp_oracle_interop(self):
+        result = validate_disturbance_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
+
+    def test_disturbance_godot_cpp_size_0_case(self):
+        result = validate_disturbance_godot_cpp_size_case(self.repo_root, [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_disturbance_godot_cpp_size_1_case(self):
+        result = validate_disturbance_godot_cpp_size_case(self.repo_root, [[3.75]])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_disturbance_godot_cpp_size_2_case(self):
+        result = validate_disturbance_godot_cpp_size_case(self.repo_root, [[1.25, 2.5], [3.75]])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_joint_state_js_python_interop_preserves_string_varray(self):
         result = validate_joint_state_string_varray_interop(self.repo_root)
         self.assertEqual(result["py_to_js"], result["expected"])
@@ -144,12 +215,69 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
 
+    def test_joint_state_godot_cpp_oracle_interop(self):
+        result = validate_joint_state_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
+
+    def test_joint_state_godot_cpp_size_0_case(self):
+        result = validate_joint_state_godot_cpp_size_case(self.repo_root, [], [], [], [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_joint_state_godot_cpp_size_1_case(self):
+        result = validate_joint_state_godot_cpp_size_case(self.repo_root, ["joint1"], [0.1], [1.5], [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_joint_state_godot_cpp_size_2_case(self):
+        result = validate_joint_state_godot_cpp_size_case(
+            self.repo_root,
+            ["joint1", "joint2"],
+            [0.1, 0.2],
+            [1.5, 2.5],
+            [3.5, 4.5],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_point_cloud2_cpp_oracle_interop(self):
         result = validate_point_cloud2_cpp_oracle_interop(self.repo_root)
         self.assertEqual(result["cpp_to_python"], result["expected"])
         self.assertEqual(result["cpp_to_javascript"], result["expected"])
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
+
+    def test_point_cloud2_godot_cpp_oracle_interop(self):
+        result = validate_point_cloud2_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
+
+    def test_point_cloud2_godot_cpp_size_0_case(self):
+        result = validate_point_cloud2_godot_cpp_size_case(self.repo_root, [], [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_point_cloud2_godot_cpp_size_1_case(self):
+        result = validate_point_cloud2_godot_cpp_size_case(
+            self.repo_root,
+            [{"name": "x", "offset": 0, "datatype": 7, "count": 1}],
+            [1],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_point_cloud2_godot_cpp_size_2_case(self):
+        result = validate_point_cloud2_godot_cpp_size_case(
+            self.repo_root,
+            [
+                {"name": "x", "offset": 0, "datatype": 7, "count": 1},
+                {"name": "intensity", "offset": 4, "datatype": 7, "count": 1},
+            ],
+            [1, 2],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
 
     def test_point_cloud2_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_point_cloud2_python_encode_size_case, [], [])
@@ -174,29 +302,87 @@ class GeneratedArtifactsTest(unittest.TestCase):
     def test_laser_scan_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_laser_scan_python_encode_size_case, [], [])
 
+    def test_laser_scan_godot_cpp_size_0_case(self):
+        result = validate_laser_scan_godot_cpp_size_case(self.repo_root, [], [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_laser_scan_godot_cpp_oracle_interop(self):
+        result = validate_laser_scan_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
+
     def test_laser_scan_python_encode_size_1_case(self):
         self.assert_python_js_size_case(validate_laser_scan_python_encode_size_case, [1.5], [10.0])
+
+    def test_laser_scan_godot_cpp_size_1_case(self):
+        result = validate_laser_scan_godot_cpp_size_case(self.repo_root, [1.5], [10.0])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
 
     def test_laser_scan_python_encode_size_2_case(self):
         self.assert_python_js_size_case(validate_laser_scan_python_encode_size_case, [1.5, 2.5], [10.0, 20.0])
 
+    def test_laser_scan_godot_cpp_size_2_case(self):
+        result = validate_laser_scan_godot_cpp_size_case(self.repo_root, [1.5, 2.5], [10.0, 20.0])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_camera_info_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_camera_info_python_encode_size_case, [])
+
+    def test_camera_info_godot_cpp_size_0_case(self):
+        result = validate_camera_info_godot_cpp_size_case(self.repo_root, [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_camera_info_godot_cpp_oracle_interop(self):
+        result = validate_camera_info_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
 
     def test_camera_info_python_encode_size_1_case(self):
         self.assert_python_js_size_case(validate_camera_info_python_encode_size_case, [0.1])
 
+    def test_camera_info_godot_cpp_size_1_case(self):
+        result = validate_camera_info_godot_cpp_size_case(self.repo_root, [0.1])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_camera_info_python_encode_size_2_case(self):
         self.assert_python_js_size_case(validate_camera_info_python_encode_size_case, [0.1, 0.2])
 
+    def test_camera_info_godot_cpp_size_2_case(self):
+        result = validate_camera_info_godot_cpp_size_case(self.repo_root, [0.1, 0.2])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_multi_array_layout_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_multi_array_layout_python_encode_size_case, [])
+
+    def test_multi_array_layout_godot_cpp_size_0_case(self):
+        result = validate_multi_array_layout_godot_cpp_size_case(self.repo_root, [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_multi_array_layout_godot_cpp_oracle_interop(self):
+        result = validate_multi_array_layout_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
 
     def test_multi_array_layout_python_encode_size_1_case(self):
         self.assert_python_js_size_case(
             validate_multi_array_layout_python_encode_size_case,
             [{"label": "x", "size": 1, "stride": 1}],
         )
+
+    def test_multi_array_layout_godot_cpp_size_1_case(self):
+        result = validate_multi_array_layout_godot_cpp_size_case(
+            self.repo_root,
+            [{"label": "x", "size": 1, "stride": 1}],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
 
     def test_multi_array_layout_python_encode_size_2_case(self):
         self.assert_python_js_size_case(
@@ -207,8 +393,29 @@ class GeneratedArtifactsTest(unittest.TestCase):
             ],
         )
 
+    def test_multi_array_layout_godot_cpp_size_2_case(self):
+        result = validate_multi_array_layout_godot_cpp_size_case(
+            self.repo_root,
+            [
+                {"label": "x", "size": 2, "stride": 2},
+                {"label": "y", "size": 3, "stride": 6},
+            ],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_float64_multi_array_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_float64_multi_array_python_encode_size_case, [], [])
+
+    def test_float64_multi_array_godot_cpp_size_0_case(self):
+        result = validate_float64_multi_array_godot_cpp_size_case(self.repo_root, [], [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_float64_multi_array_godot_cpp_oracle_interop(self):
+        result = validate_float64_multi_array_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
 
     def test_float64_multi_array_python_encode_size_1_case(self):
         self.assert_python_js_size_case(
@@ -216,6 +423,15 @@ class GeneratedArtifactsTest(unittest.TestCase):
             [{"label": "x", "size": 1, "stride": 1}],
             [1.5],
         )
+
+    def test_float64_multi_array_godot_cpp_size_1_case(self):
+        result = validate_float64_multi_array_godot_cpp_size_case(
+            self.repo_root,
+            [{"label": "x", "size": 1, "stride": 1}],
+            [1.5],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
 
     def test_float64_multi_array_python_encode_size_2_case(self):
         self.assert_python_js_size_case(
@@ -227,12 +443,55 @@ class GeneratedArtifactsTest(unittest.TestCase):
             [1.5, 2.5],
         )
 
+    def test_float64_multi_array_godot_cpp_size_2_case(self):
+        result = validate_float64_multi_array_godot_cpp_size_case(
+            self.repo_root,
+            [
+                {"label": "x", "size": 2, "stride": 2},
+                {"label": "y", "size": 3, "stride": 6},
+            ],
+            [1.5, 2.5],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
     def test_simple_struct_varray_cpp_oracle_interop(self):
         result = validate_simple_struct_varray_cpp_oracle_interop(self.repo_root)
         self.assertEqual(result["cpp_to_python"], result["expected"])
         self.assertEqual(result["cpp_to_javascript"], result["expected"])
         self.assertEqual(result["python_generated"], result["expected"])
         self.assertEqual(result["javascript_generated"], result["expected"])
+
+    def test_simple_struct_varray_godot_cpp_oracle_interop(self):
+        result = validate_simple_struct_varray_godot_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(result["cpp_to_godot"], result["expected"])
+        self.assertEqual(result["godot_generated"], result["expected"])
+
+    def test_simple_struct_varray_godot_cpp_size_0_case(self):
+        result = validate_simple_struct_varray_godot_cpp_size_case(self.repo_root, [], [])
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_simple_struct_varray_godot_cpp_size_1_case(self):
+        result = validate_simple_struct_varray_godot_cpp_size_case(
+            self.repo_root,
+            ["gamma"],
+            [{"data": [10], "fixed_array": [12, 13], "p_mem1": 14}],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
+
+    def test_simple_struct_varray_godot_cpp_size_2_case(self):
+        result = validate_simple_struct_varray_godot_cpp_size_case(
+            self.repo_root,
+            ["gamma", "delta"],
+            [
+                {"data": [10, 11], "fixed_array": [12, 13], "p_mem1": 14},
+                {"data": [15], "fixed_array": [16, 17], "p_mem1": 18},
+            ],
+        )
+        self.assertEqual(result["godot_decoded"], result["expected"])
+        self.assertEqual(result["python_decoded"], result["expected"])
 
     def test_simple_struct_varray_python_encode_size_0_case(self):
         self.assert_python_js_size_case(validate_simple_struct_varray_python_encode_size_case, [], [])

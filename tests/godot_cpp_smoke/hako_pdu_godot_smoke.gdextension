@@ -1,0 +1,7 @@
+[configuration]
+entry_symbol = "hako_pdu_godot_smoke_init"
+compatibility_minimum = "4.5"
+
+[libraries]
+macos.debug = "res://bin/libhako_pdu_godot_smoke.dylib"
+macos.release = "res://bin/libhako_pdu_godot_smoke.dylib"

@@ -47,6 +47,22 @@ add_executable(point_cloud2_cpp_dump
   point_cloud2_cpp_dump.cpp
 )
 
+add_executable(laser_scan_cpp_dump
+  laser_scan_cpp_dump.cpp
+)
+
+add_executable(camera_info_cpp_dump
+  camera_info_cpp_dump.cpp
+)
+
+add_executable(multi_array_layout_cpp_dump
+  multi_array_layout_cpp_dump.cpp
+)
+
+add_executable(float64_multi_array_cpp_dump
+  float64_multi_array_cpp_dump.cpp
+)
+
 target_include_directories(hakoniwa_pdu_cpp_tests PRIVATE
   ${PROJECT_SOURCE_DIR}/../../pdu/types
 )
@@ -80,6 +96,22 @@ target_include_directories(simple_struct_varray_cpp_dump PRIVATE
 )
 
 target_include_directories(point_cloud2_cpp_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
+)
+
+target_include_directories(laser_scan_cpp_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
+)
+
+target_include_directories(camera_info_cpp_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
+)
+
+target_include_directories(multi_array_layout_cpp_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
+)
+
+target_include_directories(float64_multi_array_cpp_dump PRIVATE
   ${PROJECT_SOURCE_DIR}/../../pdu/types
 )
 

@@ -159,6 +159,25 @@ def get_csharp_io_suffix(name):
     }
     return suffix_map[get_array_type(name)]
 
+def get_godot_io_suffix(name):
+    suffix_map = {
+        "bool": "Bool",
+        "byte": "UInt8",
+        "char": "UInt8",
+        "int8": "Int8",
+        "uint8": "UInt8",
+        "int16": "Int16",
+        "uint16": "UInt16",
+        "int32": "Int32",
+        "uint32": "UInt32",
+        "int64": "Int64",
+        "uint64": "UInt64",
+        "float32": "Float32",
+        "float64": "Float64",
+        "string": "String",
+    }
+    return suffix_map[get_array_type(name)]
+
 # --- Python用ヘルパー関数 ---
 def get_python_class_name(name):
     return get_msg_type(name)
@@ -234,6 +253,111 @@ def get_js_default_value(name):
     return f"new {get_js_class_name(name)}()"
 
 
+# --- Godot / GDScript用ヘルパー関数 ---
+def get_godot_class_name(name):
+    return get_msg_type(name)
+
+def get_godot_global_class_name(pkg_name, msg_name):
+    return f"HakoPdu_{pkg_name}_{msg_name}"
+
+def get_godot_type_hint_with_pkg(name, default_pkg):
+    base_type = get_array_type(name)
+    if is_array(name):
+        if is_string(base_type):
+            return "Array[String]"
+        if is_primitive(base_type):
+            return get_godot_type_hint(name)
+        return "Array"
+    if is_primitive(base_type) or is_string(base_type):
+        return get_godot_type_hint(base_type)
+    return get_godot_global_class_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))
+
+def get_godot_type_hint(name):
+    type_map = {
+        "bool": "bool",
+        "byte": "int",
+        "char": "int",
+        "float32": "float",
+        "float64": "float",
+        "int8": "int",
+        "uint8": "int",
+        "int16": "int",
+        "uint16": "int",
+        "int32": "int",
+        "uint32": "int",
+        "int64": "int",
+        "uint64": "int",
+        "string": "String",
+    }
+    packed_array_map = {
+        "byte": "PackedByteArray",
+        "char": "PackedByteArray",
+        "uint8": "PackedByteArray",
+        "int32": "PackedInt32Array",
+        "int64": "PackedInt64Array",
+        "float32": "PackedFloat32Array",
+        "float64": "PackedFloat64Array",
+    }
+    base_type = get_array_type(name)
+    if is_array(name):
+        if is_string(base_type):
+            return "Array[String]"
+        if is_primitive(base_type):
+            return packed_array_map.get(base_type, "Array")
+        return "Array"
+    return type_map.get(base_type, get_godot_class_name(base_type))
+
+def get_godot_default_value(name):
+    base_type = get_array_type(name)
+    if is_array(name):
+        if is_string(base_type):
+            return "[]"
+        if is_primitive(base_type):
+            packed_defaults = {
+                "byte": "PackedByteArray()",
+                "char": "PackedByteArray()",
+                "uint8": "PackedByteArray()",
+                "int32": "PackedInt32Array()",
+                "int64": "PackedInt64Array()",
+                "float32": "PackedFloat32Array()",
+                "float64": "PackedFloat64Array()",
+            }
+            return packed_defaults.get(base_type, "[]")
+        return "[]"
+    if is_primitive(name):
+        if name == 'bool':
+            return "false"
+        if name in ['float32', 'float64']:
+            return "0.0"
+        return "0"
+    if is_string(name):
+        return '""'
+    return f"{get_godot_class_name(name)}.new()"
+
+def get_godot_default_value_with_pkg(name, default_pkg):
+    base_type = get_array_type(name)
+    if is_primitive(base_type) or is_string(base_type) or is_array(name):
+        return get_godot_default_value(name)
+    return f"{get_godot_global_class_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))}.new()"
+
+def get_godot_cpp_array_container(name):
+    base_type = get_array_type(name)
+    packed_array_map = {
+        "byte": "PackedByteArray",
+        "char": "PackedByteArray",
+        "uint8": "PackedByteArray",
+        "int32": "PackedInt32Array",
+        "int64": "PackedInt64Array",
+        "float32": "PackedFloat32Array",
+        "float64": "PackedFloat64Array",
+    }
+    if is_string(base_type):
+        return "Array"
+    if is_primitive(base_type):
+        return packed_array_map.get(base_type, "Array")
+    return "Array"
+
+
 def get_struct_format(ros_type_name):
     """ROSのプリミティブ型名をPythonのstructモジュールのフォーマット文字に変換"""
     format_map = {
@@ -292,6 +416,7 @@ class CodeGenerator:
         conv_cpp_includes = OrderedDict()
         py_imports        = OrderedDict()
         js_imports        = OrderedDict()
+        godot_imports     = OrderedDict()
 
         _collect_dependencies(package_msg, message_cache, root_pkg,
                           visited=set(),
@@ -299,9 +424,15 @@ class CodeGenerator:
                           csharp_includes=csharp_includes,
                           cpp_includes=cpp_includes,
                           conv_includes=conv_includes,
-                          conv_cpp_includes=conv_cpp_includes,
-                          py_imports=py_imports,
-                          js_imports=js_imports)
+                              conv_cpp_includes=conv_cpp_includes,
+                              py_imports=py_imports,
+                              js_imports=js_imports)
+
+        for dep_pkg_msg, dep in js_imports.items():
+            godot_imports[dep_pkg_msg] = {
+                'dep_pkg': dep['dep_pkg'],
+                'class_name': dep['class_name'],
+            }
 
         def get_array_size(mem_name, type_name_from_tpl):
             try:
@@ -323,6 +454,7 @@ class CodeGenerator:
             'conv_cpp_includes': sorted(conv_cpp_includes),
             'py_imports': sorted(py_imports.values(), key=lambda x: x['class_name']),
             'js_imports': sorted(js_imports.values(), key=lambda x: x['class_name']),
+            'godot_imports': sorted(godot_imports.values(), key=lambda x: (x['dep_pkg'], x['class_name'])),
             'is_primitive': is_primitive, 'is_string': is_string, 'is_array': is_array,
             'is_primitive_array': is_primitive_array, 'is_string_array': is_string_array,
             'get_array_type': get_array_type, 'get_struct_array_type': get_struct_array_type,
@@ -339,6 +471,15 @@ class CodeGenerator:
             'get_js_type_hint': get_js_type_hint,
             'get_js_default_value': get_js_default_value,
             'get_js_class_name': get_js_class_name,
+            'get_godot_type_hint': get_godot_type_hint,
+            'get_godot_type_hint_with_pkg': lambda name: get_godot_type_hint_with_pkg(name, root_pkg),
+            'get_godot_default_value': get_godot_default_value,
+            'get_godot_default_value_with_pkg': lambda name: get_godot_default_value_with_pkg(name, root_pkg),
+            'get_godot_class_name': get_godot_class_name,
+            'get_godot_global_class_name': lambda pkg_name, msg_name: get_godot_global_class_name(pkg_name, msg_name),
+            'get_godot_io_suffix': get_godot_io_suffix,
+            'get_godot_cpp_array_container': get_godot_cpp_array_container,
+            'godot_global_class_name': get_godot_global_class_name(root_pkg, msg_name),
             'get_struct_format': get_struct_format
         }
         return {'container': container}
@@ -375,9 +516,12 @@ class CodeGenerator:
         csharp_v2_dir = Path(output_root_dir) / 'csharp_v2'
         python_dir = Path(output_root_dir) / 'python'
         javascript_dir = Path(output_root_dir) / 'javascript'
+        godot_gd_dir = Path(output_root_dir) / 'godot_gd'
+        godot_cpp_runtime_dir = Path(output_root_dir) / 'godot_cpp_runtime'
 
         shared_context = {'container': {}}
         self._generate_shared_file(shared_context, 'pdu_csharp_v2_runtime_cs.tpl', csharp_v2_dir / "PduRuntime.cs", "C# v2 runtime")
+        self._generate_shared_file(shared_context, 'pdu_godot_runtime_hpp.tpl', godot_cpp_runtime_dir / "PduRuntime.hpp", "Godot C++ runtime")
 
         for package_msg in message_cache.keys():
             context = self._prepare_context(package_msg, message_cache, varray_size_def)
@@ -392,6 +536,8 @@ class CodeGenerator:
             self._generate_file(context, 'pdu_pytypes_py.tpl', python_dir, "pdu_pytype_{msg_name}.py", "Python type definition")
             # JavaScript
             self._generate_file(context, 'pdu_jstypes_js.tpl', javascript_dir, "pdu_jstype_{msg_name}.js", "JavaScript type definition")
+            # Godot GDScript
+            self._generate_file(context, 'pdu_godot_types_gd.tpl', godot_gd_dir, "{msg_name}.gd", "Godot GDScript type definition")
 
     def generate_javascript_converter(self, msg_def, offset_data, output_root_dir):
         javascript_dir = Path(output_root_dir) / 'javascript'
@@ -504,3 +650,42 @@ class CodeGenerator:
             }
         }
         self._generate_file(context, 'pdu_csharp_v2_conv_cs.tpl', csharp_v2_dir, f"pdu_conv_{msg_name}.cs", "C# v2 converter")
+
+    def generate_godot_cpp_converter(self, msg_def, offset_data, output_root_dir):
+        godot_cpp_dir = Path(output_root_dir) / 'godot_cpp'
+        pkg_name = msg_def['package']
+        msg_name = msg_def['message']
+
+        godot_cpp_imports = []
+        added_imports = set()
+        for item in offset_data:
+            if item.data_type == 'struct':
+                dep_pkg = get_msg_pkg(item.type_name, pkg_name)
+                dep_msg = get_msg_type(item.type_name)
+                dep_key = f"{dep_pkg}/{dep_msg}"
+                if dep_key in added_imports:
+                    continue
+                godot_cpp_imports.append({
+                    'dep_pkg': dep_pkg,
+                    'msg_type': dep_msg,
+                })
+                added_imports.add(dep_key)
+
+        context = {
+            'container': {
+                'pkg_name': pkg_name,
+                'msg_type_name': msg_name,
+                'offset_data': [o.to_dict() for o in offset_data],
+                'base_data_size': get_base_data_size([o.to_dict() for o in offset_data]),
+                'godot_cpp_imports': godot_cpp_imports,
+                'get_msg_type': get_msg_type,
+                'get_array_type': get_array_type,
+                'get_msg_pkg': lambda name: get_msg_pkg(name, pkg_name),
+                'get_godot_io_suffix': get_godot_io_suffix,
+                'get_godot_cpp_array_container': get_godot_cpp_array_container,
+                'is_primitive': is_primitive,
+                'is_string': is_string,
+                'is_array': is_array,
+            }
+        }
+        self._generate_file(context, 'pdu_godot_conv_hpp.tpl', godot_cpp_dir, f"pdu_conv_{msg_name}.hpp", "Godot C++ converter")

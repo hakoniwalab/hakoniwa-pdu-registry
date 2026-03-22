@@ -1,11 +1,16 @@
 import importlib.util
 import json
+import os
 import re
+import shutil
 import struct
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
+
+from .code_generator import CodeGenerator
 
 CPP_ORACLE_BUILD_DIR = Path(tempfile.gettempdir()) / "hako-pdu-cpp-tests"
 
@@ -235,6 +240,1946 @@ console.log(JSON.stringify({
         "fixed_array_data0_json": data["fixedArrayData0Json"],
         "data_array0_json": data["dataArray0Json"],
     }
+
+
+def ensure_godot_cpp_bridge(repo_root: Path):
+    godot_cpp_root = Path(
+        os.environ.get(
+            "HAKO_GODOT_CPP_ROOT",
+            "/Users/tmori/project/oss/godot-cpp",
+        )
+    )
+    if not godot_cpp_root.exists():
+        raise FileNotFoundError(f"godot-cpp root not found: {godot_cpp_root}")
+
+    bridge_dir = repo_root / "tests" / "godot_cpp_smoke"
+    subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(bridge_dir),
+            "-B",
+            str(bridge_dir / "build"),
+        ],
+        cwd=repo_root,
+        env={**os.environ, "HAKO_GODOT_CPP_ROOT": str(godot_cpp_root)},
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(bridge_dir / "build"),
+            "-j4",
+        ],
+        cwd=repo_root,
+        env={**os.environ, "HAKO_GODOT_CPP_ROOT": str(godot_cpp_root)},
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return {
+        "bridge_dir": bridge_dir,
+        "library_path": bridge_dir / "bin" / "libhako_pdu_godot_smoke.dylib",
+        "gdextension_path": bridge_dir / "hako_pdu_godot_smoke.gdextension",
+    }
+
+
+def run_godot_cpp_bridge_script(repo_root: Path, script_body: str):
+    godot_bin = Path(
+        os.environ.get(
+            "HAKO_GODOT_BIN",
+            "/Applications/Godot_mono.app/Contents/MacOS/Godot",
+        )
+    )
+    if not godot_bin.exists():
+        raise FileNotFoundError(f"Godot executable not found: {godot_bin}")
+
+    bridge = ensure_godot_cpp_bridge(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        project_dir = Path(tmpdir)
+        (project_dir / "project.godot").write_text(
+            'config_version=5\n\n[application]\nconfig/name="hakoniwa-pdu-godot-cpp-validator"\n'
+        )
+        (project_dir / "hako_pdu_godot_smoke.gdextension").write_text(
+            bridge["gdextension_path"].read_text()
+        )
+        (project_dir / "bin").mkdir()
+        (project_dir / "bin" / "libhako_pdu_godot_smoke.dylib").write_bytes(
+            bridge["library_path"].read_bytes()
+        )
+        (project_dir / "run_bridge.gd").write_text(script_body)
+        return subprocess.run(
+            [
+                str(godot_bin),
+                "--headless",
+                "--path",
+                str(project_dir),
+                "--script",
+                "res://run_bridge.gd",
+            ],
+            cwd=repo_root,
+            env={**os.environ, "HOME": str(project_dir)},
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+
+
+def validate_godot_from_dict_roundtrip(repo_root: Path):
+    godot_bin = Path(
+        os.environ.get(
+            "HAKO_GODOT_BIN",
+            "/Applications/Godot_mono.app/Contents/MacOS/Godot",
+        )
+    )
+    if not godot_bin.exists():
+        return {
+            "skipped": True,
+            "reason": f"Godot executable not found: {godot_bin}",
+        }
+
+    generator = CodeGenerator(repo_root / "template")
+    message_cache = {
+        "builtin_interfaces/Time": {
+            "package": "builtin_interfaces",
+            "message": "Time",
+            "fields": [
+                {"name": "sec", "type": "int32"},
+                {"name": "nanosec", "type": "uint32"},
+            ],
+        },
+        "std_msgs/Header": {
+            "package": "std_msgs",
+            "message": "Header",
+            "fields": [
+                {"name": "stamp", "type": "builtin_interfaces/Time"},
+                {"name": "frame_id", "type": "string"},
+            ],
+        },
+        "geometry_msgs/Point": {
+            "package": "geometry_msgs",
+            "message": "Point",
+            "fields": [
+                {"name": "x", "type": "float64"},
+                {"name": "y", "type": "float64"},
+                {"name": "z", "type": "float64"},
+            ],
+        },
+        "geometry_msgs/Vector3": {
+            "package": "geometry_msgs",
+            "message": "Vector3",
+            "fields": [
+                {"name": "x", "type": "float64"},
+                {"name": "y", "type": "float64"},
+                {"name": "z", "type": "float64"},
+            ],
+        },
+        "hako_msgs/DisturbanceTemperature": {
+            "package": "hako_msgs",
+            "message": "DisturbanceTemperature",
+            "fields": [{"name": "value", "type": "float64"}],
+        },
+        "hako_msgs/DisturbanceWind": {
+            "package": "hako_msgs",
+            "message": "DisturbanceWind",
+            "fields": [{"name": "value", "type": "geometry_msgs/Vector3"}],
+        },
+        "hako_msgs/DisturbanceAtm": {
+            "package": "hako_msgs",
+            "message": "DisturbanceAtm",
+            "fields": [{"name": "sea_level_atm", "type": "float64"}],
+        },
+        "hako_msgs/DisturbanceBoundary": {
+            "package": "hako_msgs",
+            "message": "DisturbanceBoundary",
+            "fields": [
+                {"name": "boundary_point", "type": "geometry_msgs/Point"},
+                {"name": "boundary_normal", "type": "geometry_msgs/Vector3"},
+            ],
+        },
+        "hako_msgs/DisturbanceUserCustom": {
+            "package": "hako_msgs",
+            "message": "DisturbanceUserCustom",
+            "fields": [{"name": "data", "type": "float64[]"}],
+        },
+        "hako_msgs/Disturbance": {
+            "package": "hako_msgs",
+            "message": "Disturbance",
+            "fields": [
+                {"name": "d_temp", "type": "hako_msgs/DisturbanceTemperature"},
+                {"name": "d_wind", "type": "hako_msgs/DisturbanceWind"},
+                {"name": "d_atm", "type": "hako_msgs/DisturbanceAtm"},
+                {"name": "d_boundary", "type": "hako_msgs/DisturbanceBoundary"},
+                {"name": "d_user_custom", "type": "hako_msgs/DisturbanceUserCustom[]"},
+            ],
+        },
+        "hako_msgs/SimpleVarray": {
+            "package": "hako_msgs",
+            "message": "SimpleVarray",
+            "fields": [
+                {"name": "data", "type": "int32[]"},
+                {"name": "fixed_array", "type": "int32[2]"},
+                {"name": "p_mem1", "type": "int32"},
+            ],
+        },
+        "hako_msgs/SimpleStructVarray": {
+            "package": "hako_msgs",
+            "message": "SimpleStructVarray",
+            "fields": [
+                {"name": "aaa", "type": "int32"},
+                {"name": "fixed_str", "type": "string[2]"},
+                {"name": "varray_str", "type": "string[]"},
+                {"name": "fixed_array", "type": "hako_msgs/SimpleVarray[5]"},
+                {"name": "data", "type": "hako_msgs/SimpleVarray[]"},
+            ],
+        },
+        "sensor_msgs/JointState": {
+            "package": "sensor_msgs",
+            "message": "JointState",
+            "fields": [
+                {"name": "header", "type": "std_msgs/Header"},
+                {"name": "name", "type": "string[]"},
+                {"name": "position", "type": "float64[]"},
+                {"name": "velocity", "type": "float64[]"},
+                {"name": "effort", "type": "float64[]"},
+            ],
+        },
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        project_dir = Path(tmpdir)
+        generator.generate_all(message_cache, {}, project_dir)
+        for name in ["types", "python", "javascript", "csharp", "csharp_v2", "godot_cpp_runtime"]:
+            shutil.rmtree(project_dir / name)
+
+        (project_dir / "project.godot").write_text(
+            'config_version=5\n\n[application]\nconfig/name="hakoniwa-pdu-registry-godot-validator"\n'
+        )
+        (project_dir / "run_validator.gd").write_text(
+            textwrap.dedent(
+                """
+                extends SceneTree
+
+                const JointStateScript = preload("res://godot_gd/sensor_msgs/JointState.gd")
+                const DisturbanceScript = preload("res://godot_gd/hako_msgs/Disturbance.gd")
+                const SimpleStructVarrayScript = preload("res://godot_gd/hako_msgs/SimpleStructVarray.gd")
+
+                func fail(message: String) -> void:
+                    push_error(message)
+                    quit(1)
+
+                func expect_equal(actual, expected, label: String) -> void:
+                    if actual != expected:
+                        fail("%s: expected=%s actual=%s" % [label, str(expected), str(actual)])
+
+                func make_joint_state_dict() -> Dictionary:
+                    return {
+                        "header": {"stamp": {"sec": 12, "nanosec": 34}, "frame_id": "base_link"},
+                        "name": ["joint1", "joint2"],
+                        "position": PackedFloat64Array([0.1, 0.2]),
+                        "velocity": PackedFloat64Array([1.5]),
+                        "effort": PackedFloat64Array()
+                    }
+
+                func make_disturbance_dict() -> Dictionary:
+                    return {
+                        "d_temp": {"value": 22.5},
+                        "d_wind": {"value": {"x": 1.0, "y": 2.0, "z": 3.0}},
+                        "d_atm": {"sea_level_atm": 1000.0},
+                        "d_boundary": {
+                            "boundary_point": {"x": 10.0, "y": 11.0, "z": 12.0},
+                            "boundary_normal": {"x": 0.0, "y": 1.0, "z": 0.0}
+                        },
+                        "d_user_custom": [
+                            {"data": PackedFloat64Array([1.25, 2.5])},
+                            {"data": PackedFloat64Array([3.75])}
+                        ]
+                    }
+
+                func make_simple_struct_varray_dict() -> Dictionary:
+                    return {
+                        "aaa": 7,
+                        "fixed_str": ["alpha", "beta"],
+                        "varray_str": ["x", "y", "z"],
+                        "fixed_array": [
+                            {"data": [1, 2], "fixed_array": [3, 4], "p_mem1": 5},
+                            {"data": [], "fixed_array": [6, 7], "p_mem1": 8}
+                        ],
+                        "data": [
+                            {"data": [9], "fixed_array": [10, 11], "p_mem1": 12}
+                        ]
+                    }
+
+                func run_case(script_obj, input_dict: Dictionary, label: String) -> void:
+                    var obj = script_obj.from_dict(input_dict)
+                    var restored = obj.to_dict()
+                    expect_equal(restored, input_dict, label)
+
+                func _init() -> void:
+                    run_case(JointStateScript, make_joint_state_dict(), "JointState roundtrip")
+                    run_case(DisturbanceScript, make_disturbance_dict(), "Disturbance roundtrip")
+                    run_case(SimpleStructVarrayScript, make_simple_struct_varray_dict(), "SimpleStructVarray roundtrip")
+                    print("GODOT_VALIDATOR_OK")
+                    quit(0)
+                """
+            ).lstrip()
+        )
+
+        result = subprocess.run(
+            [
+                str(godot_bin),
+                "--headless",
+                "--path",
+                str(project_dir),
+                "--script",
+                "res://run_validator.gd",
+            ],
+            cwd=repo_root,
+            env={**os.environ, "HOME": str(project_dir)},
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        return {
+            "skipped": False,
+            "ok": "GODOT_VALIDATOR_OK" in (result.stdout + result.stderr),
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
+
+
+def validate_disturbance_user_custom_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_DisturbanceUserCustom import (
+        pdu_to_py_DisturbanceUserCustom,
+    )
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {"data": [1.25, 2.5]}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "disturbance_user_custom_cpp.bin"
+        godot_bin_path = tmpdir_path / "disturbance_user_custom_godot.bin"
+        subprocess.run(
+            [str(tools["disturbance_user_custom_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_disturbance_user_custom(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{"data": Array(restored["data"])}}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_disturbance_user_custom({{"data": PackedFloat64Array([1.25, 2.5])}})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+
+        godot_generated = pdu_to_py_DisturbanceUserCustom(bytearray(godot_bin_path.read_bytes()))
+        if isinstance(godot_generated.data, list):
+            godot_generated_data = godot_generated.data
+        else:
+            count = len(godot_generated.data) // 8
+            godot_generated_data = list(struct.unpack(f"<{count}d", bytes(godot_generated.data)))
+
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {"data": godot_generated_data},
+        }
+
+
+def validate_game_controller_operation_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_GameControllerOperation import (
+        pdu_to_py_GameControllerOperation,
+    )
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {
+        "axis": [0.5, -1.0, 2.0, -3.0, 4.0, -5.0],
+        "button": [True, False, True, True, False, True, False, True, True, False, True, False, True, True, False],
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "game_controller_operation_cpp.bin"
+        godot_bin_path = tmpdir_path / "game_controller_operation_godot.bin"
+        subprocess.run(
+            [str(tools["game_controller_operation_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_game_controller_operation(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{
+                    "axis": Array(restored["axis"]),
+                    "button": Array(restored["button"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_game_controller_operation({json.dumps(expected)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+
+        godot_generated = pdu_to_py_GameControllerOperation(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {
+                "axis": list(godot_generated.axis),
+                "button": [bool(value) for value in godot_generated.button],
+            },
+        }
+
+
+def validate_disturbance_user_custom_godot_cpp_size_case(repo_root: Path, data_values):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_DisturbanceUserCustom import (
+        pdu_to_py_DisturbanceUserCustom,
+    )
+
+    expected = {"data": list(data_values)}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "disturbance_user_custom_godot.bin"
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_disturbance_user_custom({{"data": PackedFloat64Array({json.dumps(list(data_values))})}})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_disturbance_user_custom(binary)
+                print(JSON.stringify({{"data": Array(restored["data"])}}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, encode_script)
+        godot_decoded = json.loads(result.stdout.strip().splitlines()[-1])
+
+        py_generated = pdu_to_py_DisturbanceUserCustom(bytearray(godot_bin_path.read_bytes()))
+        if isinstance(py_generated.data, list):
+            python_decoded = py_generated.data
+        else:
+            count = len(py_generated.data) // 8
+            python_decoded = list(struct.unpack(f"<{count}d", bytes(py_generated.data)))
+
+        return {
+            "expected": expected,
+            "godot_decoded": godot_decoded,
+            "python_decoded": {"data": python_decoded},
+        }
+
+
+def validate_joint_state_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_JointState import pdu_to_py_JointState
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {
+        "frame_id": "frame",
+        "name": ["a", "b"],
+        "position": [1.0, 2.0],
+        "velocity": [3.0],
+        "effort": [4.0],
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "joint_state_cpp.bin"
+        godot_bin_path = tmpdir_path / "joint_state_godot.bin"
+        subprocess.run(
+            [str(tools["joint_state_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_joint_state(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{
+                    "frame_id": restored["header"]["frame_id"],
+                    "name": Array(restored["name"]),
+                    "position": Array(restored["position"]),
+                    "velocity": Array(restored["velocity"]),
+                    "effort": Array(restored["effort"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_joint_state({{
+                    "header": {{"stamp": {{"sec": 0, "nanosec": 0}}, "frame_id": "frame"}},
+                    "name": ["a", "b"],
+                    "position": PackedFloat64Array([1.0, 2.0]),
+                    "velocity": PackedFloat64Array([3.0]),
+                    "effort": PackedFloat64Array([4.0])
+                }})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+
+        godot_generated = pdu_to_py_JointState(bytearray(godot_bin_path.read_bytes()))
+        if isinstance(godot_generated.name, list):
+            godot_generated_name = godot_generated.name
+        else:
+            godot_generated_name = []
+            raw_name = bytes(godot_generated.name)
+            for index in range(0, len(raw_name), 128):
+                chunk = raw_name[index:index + 128]
+                godot_generated_name.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
+
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {
+                "frame_id": godot_generated.header.frame_id,
+                "name": godot_generated_name,
+                "position": godot_generated.position if isinstance(godot_generated.position, list) else list(struct.unpack(f"<{len(godot_generated.position) // 8}d", bytes(godot_generated.position))),
+                "velocity": godot_generated.velocity if isinstance(godot_generated.velocity, list) else list(struct.unpack(f"<{len(godot_generated.velocity) // 8}d", bytes(godot_generated.velocity))),
+                "effort": godot_generated.effort if isinstance(godot_generated.effort, list) else list(struct.unpack(f"<{len(godot_generated.effort) // 8}d", bytes(godot_generated.effort))),
+            },
+        }
+
+
+def validate_joint_state_godot_cpp_size_case(repo_root: Path, names, positions, velocities, efforts):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_JointState import pdu_to_py_JointState
+
+    expected = {
+        "name": list(names),
+        "position": list(positions),
+        "velocity": list(velocities),
+        "effort": list(efforts),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "joint_state_godot.bin"
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_joint_state({{
+                    "header": {{"stamp": {{"sec": 0, "nanosec": 0}}, "frame_id": "frame"}},
+                    "name": {json.dumps(list(names))},
+                    "position": PackedFloat64Array({json.dumps(list(positions))}),
+                    "velocity": PackedFloat64Array({json.dumps(list(velocities))}),
+                    "effort": PackedFloat64Array({json.dumps(list(efforts))})
+                }})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_joint_state(binary)
+                print(JSON.stringify({{
+                    "name": Array(restored["name"]),
+                    "position": Array(restored["position"]),
+                    "velocity": Array(restored["velocity"]),
+                    "effort": Array(restored["effort"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, encode_script)
+        godot_decoded = json.loads(result.stdout.strip().splitlines()[-1])
+
+        python_generated = pdu_to_py_JointState(bytearray(godot_bin_path.read_bytes()))
+        if isinstance(python_generated.name, list):
+            python_names = python_generated.name
+        else:
+            python_names = []
+            raw_name = bytes(python_generated.name)
+            for index in range(0, len(raw_name), 128):
+                chunk = raw_name[index:index + 128]
+                python_names.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
+
+        return {
+            "expected": expected,
+            "godot_decoded": godot_decoded,
+            "python_decoded": {
+                "name": python_names,
+                "position": python_generated.position if isinstance(python_generated.position, list) else list(struct.unpack(f"<{len(python_generated.position) // 8}d", bytes(python_generated.position))),
+                "velocity": python_generated.velocity if isinstance(python_generated.velocity, list) else list(struct.unpack(f"<{len(python_generated.velocity) // 8}d", bytes(python_generated.velocity))),
+                "effort": python_generated.effort if isinstance(python_generated.effort, list) else list(struct.unpack(f"<{len(python_generated.effort) // 8}d", bytes(python_generated.effort))),
+            },
+        }
+
+
+def validate_simple_struct_varray_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_SimpleStructVarray import pdu_to_py_SimpleStructVarray
+
+    def decode_simple_varray(item):
+        data_value = item.data if isinstance(item.data, list) else list(bytes(item.data))
+        fixed_value = item.fixed_array if isinstance(item.fixed_array, list) else list(bytes(item.fixed_array))
+        return {
+            "data": list(data_value),
+            "fixed_array": list(fixed_value),
+            "p_mem1": item.p_mem1,
+        }
+
+    expected = {
+        "aaa": 7,
+        "fixed_str": ["alpha", "beta"],
+        "varray_str": ["gamma", "delta"],
+        "fixed_array": [
+            {"data": [1, 2], "fixed_array": [3, 4] + [0] * 8, "p_mem1": 5},
+            {"data": [6], "fixed_array": [7, 8] + [0] * 8, "p_mem1": 9},
+            {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+            {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+            {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+        ],
+        "data": [
+            {"data": [10, 11], "fixed_array": [12, 13] + [0] * 8, "p_mem1": 14},
+            {"data": [15], "fixed_array": [16, 17] + [0] * 8, "p_mem1": 18},
+        ],
+    }
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "simple_struct_varray_cpp.bin"
+        godot_bin_path = tmpdir_path / "simple_struct_varray_godot.bin"
+        subprocess.run(
+            [str(tools["simple_struct_varray_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func normalize_entry(entry: Dictionary) -> Dictionary:
+                return {{
+                    "data": Array(entry["data"]),
+                    "fixed_array": Array(entry["fixed_array"]),
+                    "p_mem1": entry["p_mem1"]
+                }}
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_simple_struct_varray(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{
+                    "aaa": restored["aaa"],
+                    "fixed_str": Array(restored["fixed_str"]),
+                    "varray_str": Array(restored["varray_str"]),
+                    "fixed_array": restored["fixed_array"].map(normalize_entry),
+                    "data": restored["data"].map(normalize_entry)
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_simple_struct_varray({json.dumps(expected)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+
+        godot_generated = pdu_to_py_SimpleStructVarray(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {
+                "aaa": godot_generated.aaa,
+                "fixed_str": list(godot_generated.fixed_str) if godot_generated.fixed_str is not None else [],
+                "varray_str": list(godot_generated.varray_str) if isinstance(godot_generated.varray_str, list) else [],
+                "fixed_array": [decode_simple_varray(item) for item in godot_generated.fixed_array],
+                "data": [decode_simple_varray(item) for item in godot_generated.data],
+            },
+        }
+
+
+def validate_simple_struct_varray_godot_cpp_size_case(repo_root: Path, varray_str_values, data_entries):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_SimpleStructVarray import pdu_to_py_SimpleStructVarray
+
+    def decode_simple_varray(item):
+        data_value = item.data if isinstance(item.data, list) else list(bytes(item.data))
+        fixed_value = item.fixed_array if isinstance(item.fixed_array, list) else list(bytes(item.fixed_array))
+        return {
+            "data": list(data_value),
+            "fixed_array": list(fixed_value),
+            "p_mem1": item.p_mem1,
+        }
+
+    fixed_defaults = [{"data": [], "fixed_array": [0] * 10, "p_mem1": 0} for _ in range(5)]
+    expected = {
+        "varray_str": list(varray_str_values),
+        "data": [
+            {
+                "data": list(spec["data"]),
+                "fixed_array": list(spec["fixed_array"]) + [0] * (10 - len(spec["fixed_array"])),
+                "p_mem1": spec["p_mem1"],
+            }
+            for spec in data_entries
+        ],
+    }
+    encode_input = {
+        "aaa": 7,
+        "fixed_str": ["alpha", "beta"],
+        "varray_str": list(varray_str_values),
+        "fixed_array": fixed_defaults,
+        "data": expected["data"],
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "simple_struct_varray_godot.bin"
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func normalize_entry(entry: Dictionary) -> Dictionary:
+                return {{
+                    "data": Array(entry["data"]),
+                    "fixed_array": Array(entry["fixed_array"]),
+                    "p_mem1": entry["p_mem1"]
+                }}
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_simple_struct_varray({json.dumps(encode_input)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_simple_struct_varray(binary)
+                print(JSON.stringify({{
+                    "varray_str": Array(restored["varray_str"]),
+                    "data": restored["data"].map(normalize_entry)
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, encode_script)
+        godot_decoded = json.loads(result.stdout.strip().splitlines()[-1])
+
+        python_generated = pdu_to_py_SimpleStructVarray(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "godot_decoded": godot_decoded,
+            "python_decoded": {
+                "varray_str": list(python_generated.varray_str) if isinstance(python_generated.varray_str, list) else [],
+                "data": [decode_simple_varray(item) for item in python_generated.data],
+            },
+        }
+
+
+def validate_disturbance_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_Disturbance import pdu_to_py_Disturbance
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    expected = {"d_user_custom": [[1.25, 2.5], [3.75]]}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "disturbance_cpp.bin"
+        godot_bin_path = tmpdir_path / "disturbance_godot.bin"
+        subprocess.run(
+            [str(tools["disturbance_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func normalize_custom(item: Dictionary) -> Array:
+                return Array(item["data"])
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_disturbance(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{
+                    "d_user_custom": restored["d_user_custom"].map(normalize_custom)
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_disturbance({{
+                    "d_temp": {{"value": 0.0}},
+                    "d_wind": {{"value": {{"x": 0.0, "y": 0.0, "z": 0.0}}}},
+                    "d_atm": {{"sea_level_atm": 0.0}},
+                    "d_boundary": {{
+                        "boundary_point": {{"x": 0.0, "y": 0.0, "z": 0.0}},
+                        "boundary_normal": {{"x": 0.0, "y": 0.0, "z": 0.0}}
+                    }},
+                    "d_user_custom": [
+                        {{"data": PackedFloat64Array([1.25, 2.5])}},
+                        {{"data": PackedFloat64Array([3.75])}}
+                    ]
+                }})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+
+        godot_generated = pdu_to_py_Disturbance(bytearray(godot_bin_path.read_bytes()))
+        decoded_generated = []
+        for item in godot_generated.d_user_custom:
+            if isinstance(item.data, list):
+                decoded_generated.append(item.data)
+            else:
+                count = len(item.data) // 8
+                decoded_generated.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {"d_user_custom": decoded_generated},
+        }
+
+
+def validate_disturbance_godot_cpp_size_case(repo_root: Path, data_sets):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.hako_msgs.pdu_conv_Disturbance import pdu_to_py_Disturbance
+
+    expected = {"d_user_custom": [list(values) for values in data_sets]}
+    godot_items = [
+        {"data": list(values)}
+        for values in data_sets
+    ]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "disturbance_godot.bin"
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func normalize_custom(item: Dictionary) -> Array:
+                return Array(item["data"])
+
+            func make_item(values: Array) -> Dictionary:
+                return {{"data": PackedFloat64Array(values)}}
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var custom_items: Array = []
+                for item in {json.dumps(godot_items)}:
+                    custom_items.append(make_item(item["data"]))
+                var binary = bridge.godot_to_pdu_disturbance({{
+                    "d_temp": {{"value": 0.0}},
+                    "d_wind": {{"value": {{"x": 0.0, "y": 0.0, "z": 0.0}}}},
+                    "d_atm": {{"sea_level_atm": 0.0}},
+                    "d_boundary": {{
+                        "boundary_point": {{"x": 0.0, "y": 0.0, "z": 0.0}},
+                        "boundary_normal": {{"x": 0.0, "y": 0.0, "z": 0.0}}
+                    }},
+                    "d_user_custom": custom_items
+                }})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_disturbance(binary)
+                print(JSON.stringify({{
+                    "d_user_custom": restored["d_user_custom"].map(normalize_custom)
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, encode_script)
+        godot_decoded = json.loads(result.stdout.strip().splitlines()[-1])
+
+        python_generated = pdu_to_py_Disturbance(bytearray(godot_bin_path.read_bytes()))
+        decoded_generated = []
+        for item in python_generated.d_user_custom:
+            if isinstance(item.data, list):
+                decoded_generated.append(item.data)
+            else:
+                count = len(item.data) // 8
+                decoded_generated.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+
+        return {
+            "expected": expected,
+            "godot_decoded": godot_decoded,
+            "python_decoded": {"d_user_custom": decoded_generated},
+        }
+
+
+def validate_point_cloud2_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_PointCloud2 import pdu_to_py_PointCloud2
+
+    def decode_point_cloud(obj):
+        data_value = obj.data if isinstance(obj.data, list) else list(bytes(obj.data))
+        return {
+            "header": {
+                "stamp": {"sec": obj.header.stamp.sec, "nanosec": obj.header.stamp.nanosec},
+                "frame_id": obj.header.frame_id,
+            },
+            "height": obj.height,
+            "width": obj.width,
+            "fields": [
+                {"name": item.name, "offset": item.offset, "datatype": item.datatype, "count": item.count}
+                for item in obj.fields
+            ],
+            "is_bigendian": bool(obj.is_bigendian),
+            "point_step": obj.point_step,
+            "row_step": obj.row_step,
+            "data": list(data_value),
+            "is_dense": bool(obj.is_dense),
+        }
+
+    expected = {
+        "header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "pc"},
+        "height": 2,
+        "width": 3,
+        "fields": [
+            {"name": "x", "offset": 0, "datatype": 7, "count": 1},
+            {"name": "intensity", "offset": 4, "datatype": 7, "count": 1},
+        ],
+        "is_bigendian": False,
+        "point_step": 8,
+        "row_step": 24,
+        "data": [1, 2, 3, 4, 5, 6],
+        "is_dense": True,
+    }
+
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "point_cloud2_cpp.bin"
+        godot_bin_path = tmpdir_path / "point_cloud2_godot.bin"
+        subprocess.run(
+            [str(tools["point_cloud2_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func normalize_field(item: Dictionary) -> Dictionary:
+                return {{
+                    "name": item["name"],
+                    "offset": item["offset"],
+                    "datatype": item["datatype"],
+                    "count": item["count"]
+                }}
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_point_cloud2(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{
+                    "header": {{
+                        "stamp": {{"sec": restored["header"]["stamp"]["sec"], "nanosec": restored["header"]["stamp"]["nanosec"]}},
+                        "frame_id": restored["header"]["frame_id"]
+                    }},
+                    "height": restored["height"],
+                    "width": restored["width"],
+                    "fields": restored["fields"].map(normalize_field),
+                    "is_bigendian": restored["is_bigendian"],
+                    "point_step": restored["point_step"],
+                    "row_step": restored["row_step"],
+                    "data": Array(restored["data"]),
+                    "is_dense": restored["is_dense"]
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_point_cloud2({json.dumps(expected)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": decode_point_cloud(pdu_to_py_PointCloud2(bytearray(godot_bin_path.read_bytes()))),
+        }
+
+
+def validate_point_cloud2_godot_cpp_size_case(repo_root: Path, field_specs, data_values):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_PointCloud2 import pdu_to_py_PointCloud2
+
+    expected = {
+        "fields": [dict(spec) for spec in field_specs],
+        "data": list(data_values),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "point_cloud2_godot.bin"
+
+        encode_input = {
+            "header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "pc"},
+            "height": 2,
+            "width": 3,
+            "fields": [dict(spec) for spec in field_specs],
+            "is_bigendian": False,
+            "point_step": 8,
+            "row_step": 24,
+            "data": list(data_values),
+            "is_dense": True,
+        }
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+
+            func normalize_field(item: Dictionary) -> Dictionary:
+                return {{
+                    "name": item["name"],
+                    "offset": item["offset"],
+                    "datatype": item["datatype"],
+                    "count": item["count"]
+                }}
+
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_point_cloud2({json.dumps(encode_input)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_point_cloud2(binary)
+                print(JSON.stringify({{
+                    "fields": restored["fields"].map(normalize_field),
+                    "data": Array(restored["data"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, encode_script)
+        godot_decoded = json.loads(result.stdout.strip().splitlines()[-1])
+
+        python_generated = pdu_to_py_PointCloud2(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "godot_decoded": godot_decoded,
+            "python_decoded": {
+                "fields": [
+                    {"name": item.name, "offset": item.offset, "datatype": item.datatype, "count": item.count}
+                    for item in python_generated.fields
+                ],
+                "data": list(python_generated.data if isinstance(python_generated.data, list) else bytes(python_generated.data)),
+            },
+        }
+
+
+def validate_laser_scan_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_LaserScan import pdu_to_py_LaserScan
+
+    def decode_float32_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 4}f", bytes(value)))
+
+    expected = {"ranges": [1.5, 2.5], "intensities": [10.0, 20.0]}
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "laser_scan_cpp.bin"
+        godot_bin_path = tmpdir_path / "laser_scan_godot.bin"
+        subprocess.run(
+            [str(tools["laser_scan_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_laser_scan(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{"ranges": Array(restored["ranges"]), "intensities": Array(restored["intensities"])}}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_laser_scan({json.dumps({"header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "laser"}, "angle_min": -1.0, "angle_max": 1.0, "angle_increment": 0.5, "time_increment": 0.1, "scan_time": 0.2, "range_min": 0.3, "range_max": 30.0, "ranges": [1.5, 2.5], "intensities": [10.0, 20.0]})})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+        py_generated = pdu_to_py_LaserScan(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {
+                "ranges": decode_float32_varray(py_generated.ranges),
+                "intensities": decode_float32_varray(py_generated.intensities),
+            },
+        }
+
+
+def validate_laser_scan_godot_cpp_size_case(repo_root: Path, ranges, intensities):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_LaserScan import pdu_to_py_LaserScan
+
+    def decode_float32_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 4}f", bytes(value)))
+
+    expected = {
+        "ranges": list(ranges),
+        "intensities": list(intensities),
+    }
+    encode_input = {
+        "header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "laser"},
+        "angle_min": -1.0,
+        "angle_max": 1.0,
+        "angle_increment": 0.5,
+        "time_increment": 0.1,
+        "scan_time": 0.2,
+        "range_min": 0.3,
+        "range_max": 30.0,
+        "ranges": list(ranges),
+        "intensities": list(intensities),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "laser_scan_godot.bin"
+        script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_laser_scan({json.dumps(encode_input)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_laser_scan(binary)
+                print(JSON.stringify({{
+                    "ranges": Array(restored["ranges"]),
+                    "intensities": Array(restored["intensities"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, script)
+        python_generated = pdu_to_py_LaserScan(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "godot_decoded": json.loads(result.stdout.strip().splitlines()[-1]),
+            "python_decoded": {
+                "ranges": decode_float32_varray(python_generated.ranges),
+                "intensities": decode_float32_varray(python_generated.intensities),
+            },
+        }
+
+
+def validate_camera_info_godot_cpp_size_case(repo_root: Path, d_values):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_CameraInfo import pdu_to_py_CameraInfo
+
+    def decode_float64_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+
+    expected = {"d": list(d_values)}
+    encode_input = {
+        "header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "cam"},
+        "height": 480,
+        "width": 640,
+        "distortion_model": "plumb_bob",
+        "d": list(d_values),
+        "k": [1.0] * 9,
+        "r": [2.0] * 9,
+        "p": [3.0] * 12,
+        "binning_x": 1,
+        "binning_y": 2,
+        "roi": {"x_offset": 3, "y_offset": 4, "height": 5, "width": 6, "do_rectify": True},
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "camera_info_godot.bin"
+        script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_camera_info({json.dumps(encode_input)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_camera_info(binary)
+                print(JSON.stringify({{"d": Array(restored["d"])}}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, script)
+        python_generated = pdu_to_py_CameraInfo(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "godot_decoded": json.loads(result.stdout.strip().splitlines()[-1]),
+            "python_decoded": {"d": decode_float64_varray(python_generated.d)},
+        }
+
+
+def validate_camera_info_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.sensor_msgs.pdu_conv_CameraInfo import pdu_to_py_CameraInfo
+
+    def decode_float64_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+
+    expected = {"d": [0.1, 0.2]}
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "camera_info_cpp.bin"
+        godot_bin_path = tmpdir_path / "camera_info_godot.bin"
+        subprocess.run(
+            [str(tools["camera_info_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_camera_info(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{"d": Array(restored["d"])}}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_camera_info({json.dumps({"header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "cam"}, "height": 480, "width": 640, "distortion_model": "plumb_bob", "d": [0.1, 0.2], "k": [1.0] * 9, "r": [2.0] * 9, "p": [3.0] * 12, "binning_x": 1, "binning_y": 2, "roi": {"x_offset": 3, "y_offset": 4, "height": 5, "width": 6, "do_rectify": True}})})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+        py_generated = pdu_to_py_CameraInfo(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {"d": decode_float64_varray(py_generated.d)},
+        }
+
+
+def validate_multi_array_layout_godot_cpp_size_case(repo_root: Path, dim_specs):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.std_msgs.pdu_conv_MultiArrayLayout import pdu_to_py_MultiArrayLayout
+
+    expected = {
+        "dim": [dict(spec) for spec in dim_specs],
+        "data_offset": 9,
+    }
+    encode_input = {
+        "dim": [dict(spec) for spec in dim_specs],
+        "data_offset": 9,
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "multi_array_layout_godot.bin"
+        script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func normalize_dim(item: Dictionary) -> Dictionary:
+                return {{"label": item["label"], "size": item["size"], "stride": item["stride"]}}
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_multi_array_layout({json.dumps(encode_input)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_multi_array_layout(binary)
+                print(JSON.stringify({{
+                    "dim": restored["dim"].map(normalize_dim),
+                    "data_offset": restored["data_offset"]
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, script)
+        python_generated = pdu_to_py_MultiArrayLayout(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "godot_decoded": json.loads(result.stdout.strip().splitlines()[-1]),
+            "python_decoded": {
+                "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in python_generated.dim],
+                "data_offset": python_generated.data_offset,
+            },
+        }
+
+
+def validate_multi_array_layout_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.std_msgs.pdu_conv_MultiArrayLayout import pdu_to_py_MultiArrayLayout
+
+    expected = {
+        "dim": [
+            {"label": "x", "size": 2, "stride": 2},
+            {"label": "y", "size": 3, "stride": 6},
+        ],
+        "data_offset": 9,
+    }
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "multi_array_layout_cpp.bin"
+        godot_bin_path = tmpdir_path / "multi_array_layout_godot.bin"
+        subprocess.run(
+            [str(tools["multi_array_layout_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func normalize_dim(item: Dictionary) -> Dictionary:
+                return {{"label": item["label"], "size": item["size"], "stride": item["stride"]}}
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_multi_array_layout(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{"dim": restored["dim"].map(normalize_dim), "data_offset": restored["data_offset"]}}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_multi_array_layout({json.dumps(expected)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+        py_generated = pdu_to_py_MultiArrayLayout(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {
+                "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in py_generated.dim],
+                "data_offset": py_generated.data_offset,
+            },
+        }
+
+
+def validate_float64_multi_array_godot_cpp_size_case(repo_root: Path, dim_specs, data_values):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.std_msgs.pdu_conv_Float64MultiArray import pdu_to_py_Float64MultiArray
+
+    def decode_float64_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+
+    expected = {
+        "layout": {"dim": [dict(spec) for spec in dim_specs], "data_offset": 9},
+        "data": list(data_values),
+    }
+    encode_input = {
+        "layout": {"dim": [dict(spec) for spec in dim_specs], "data_offset": 9},
+        "data": list(data_values),
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        godot_bin_path = tmpdir_path / "float64_multi_array_godot.bin"
+        script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func normalize_dim(item: Dictionary) -> Dictionary:
+                return {{"label": item["label"], "size": item["size"], "stride": item["stride"]}}
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_float64_multi_array({json.dumps(encode_input)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                var restored = bridge.pdu_to_godot_float64_multi_array(binary)
+                print(JSON.stringify({{
+                    "layout": {{
+                        "dim": restored["layout"]["dim"].map(normalize_dim),
+                        "data_offset": restored["layout"]["data_offset"]
+                    }},
+                    "data": Array(restored["data"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        result = run_godot_cpp_bridge_script(repo_root, script)
+        python_generated = pdu_to_py_Float64MultiArray(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "godot_decoded": json.loads(result.stdout.strip().splitlines()[-1]),
+            "python_decoded": {
+                "layout": {
+                    "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in python_generated.layout.dim],
+                    "data_offset": python_generated.layout.data_offset,
+                },
+                "data": decode_float64_varray(python_generated.data),
+            },
+        }
+
+
+def validate_float64_multi_array_godot_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    from pdu.python.std_msgs.pdu_conv_Float64MultiArray import pdu_to_py_Float64MultiArray
+
+    def decode_float64_varray(value):
+        if isinstance(value, list):
+            return list(value)
+        if len(value) == 0:
+            return []
+        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+
+    expected = {
+        "layout": {
+            "dim": [
+                {"label": "x", "size": 2, "stride": 2},
+                {"label": "y", "size": 3, "stride": 6},
+            ],
+            "data_offset": 9,
+        },
+        "data": [1.5, 2.5],
+    }
+    tools = ensure_cpp_oracle_tools(repo_root)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        cpp_bin_path = tmpdir_path / "float64_multi_array_cpp.bin"
+        godot_bin_path = tmpdir_path / "float64_multi_array_godot.bin"
+        subprocess.run(
+            [str(tools["float64_multi_array_dump"]), str(cpp_bin_path)],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        decode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func normalize_dim(item: Dictionary) -> Dictionary:
+                return {{"label": item["label"], "size": item["size"], "stride": item["stride"]}}
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var file = FileAccess.open("{cpp_bin_path}", FileAccess.READ)
+                if file == null:
+                    fail("failed to open input binary")
+                var restored = bridge.pdu_to_godot_float64_multi_array(file.get_buffer(file.get_length()))
+                print(JSON.stringify({{
+                    "layout": {{
+                        "dim": restored["layout"]["dim"].map(normalize_dim),
+                        "data_offset": restored["layout"]["data_offset"]
+                    }},
+                    "data": Array(restored["data"])
+                }}, "", false))
+                quit(0)
+            """
+        ).lstrip()
+        decoded = run_godot_cpp_bridge_script(repo_root, decode_script)
+        encode_script = textwrap.dedent(
+            f"""
+            extends SceneTree
+            func fail(message: String) -> void:
+                push_error(message)
+                quit(1)
+            func _init() -> void:
+                var extension_resource = load("res://hako_pdu_godot_smoke.gdextension")
+                if extension_resource == null:
+                    fail("failed to load gdextension")
+                var bridge = ClassDB.instantiate("HakoPduGodotSmokeBridge")
+                if bridge == null:
+                    fail("failed to instantiate bridge")
+                var binary = bridge.godot_to_pdu_float64_multi_array({json.dumps(expected)})
+                var file = FileAccess.open("{godot_bin_path}", FileAccess.WRITE)
+                if file == null:
+                    fail("failed to open output binary")
+                file.store_buffer(binary)
+                quit(0)
+            """
+        ).lstrip()
+        run_godot_cpp_bridge_script(repo_root, encode_script)
+        py_generated = pdu_to_py_Float64MultiArray(bytearray(godot_bin_path.read_bytes()))
+        return {
+            "expected": expected,
+            "cpp_to_godot": json.loads(decoded.stdout.strip().splitlines()[-1]),
+            "godot_generated": {
+                "layout": {
+                    "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in py_generated.layout.dim],
+                    "data_offset": py_generated.layout.data_offset,
+                },
+                "data": decode_float64_varray(py_generated.data),
+            },
+        }
 
 
 def validate_python_disturbance_layout(repo_root: Path):
@@ -911,6 +2856,10 @@ def ensure_cpp_oracle_tools(repo_root: Path):
             "disturbance_user_custom_cpp_dump",
             "game_controller_operation_cpp_dump",
             "joint_state_cpp_dump",
+            "laser_scan_cpp_dump",
+            "camera_info_cpp_dump",
+            "multi_array_layout_cpp_dump",
+            "float64_multi_array_cpp_dump",
             "point_cloud2_cpp_dump",
             "simple_struct_varray_cpp_dump",
         ],
@@ -926,6 +2875,10 @@ def ensure_cpp_oracle_tools(repo_root: Path):
         "disturbance_user_custom_dump": CPP_ORACLE_BUILD_DIR / "disturbance_user_custom_cpp_dump",
         "game_controller_operation_dump": CPP_ORACLE_BUILD_DIR / "game_controller_operation_cpp_dump",
         "joint_state_dump": CPP_ORACLE_BUILD_DIR / "joint_state_cpp_dump",
+        "laser_scan_dump": CPP_ORACLE_BUILD_DIR / "laser_scan_cpp_dump",
+        "camera_info_dump": CPP_ORACLE_BUILD_DIR / "camera_info_cpp_dump",
+        "multi_array_layout_dump": CPP_ORACLE_BUILD_DIR / "multi_array_layout_cpp_dump",
+        "float64_multi_array_dump": CPP_ORACLE_BUILD_DIR / "float64_multi_array_cpp_dump",
         "point_cloud2_dump": CPP_ORACLE_BUILD_DIR / "point_cloud2_cpp_dump",
         "simple_struct_varray_dump": CPP_ORACLE_BUILD_DIR / "simple_struct_varray_cpp_dump",
     }

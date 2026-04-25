@@ -2662,6 +2662,12 @@ console.log(JSON.stringify({
                 "velocity": list(velocities),
                 "effort": list(efforts),
             },
+            "python_native_types": {
+                "name": isinstance(restored.name, list),
+                "position": isinstance(restored.position, (list, tuple)),
+                "velocity": isinstance(restored.velocity, (list, tuple)),
+                "effort": isinstance(restored.effort, (list, tuple)),
+            },
             "python_decoded": {
                 "name": restored_name,
                 "position": decode_numeric(restored.position),
@@ -4305,6 +4311,9 @@ console.log(JSON.stringify({
 
         return {
             "expected": expected,
+            "python_native_types": {
+                "data": isinstance(restored.data, (list, tuple)),
+            },
             "python_decoded": {
                 "layout": {
                     "dim": [{"label": item.label, "size": item.size, "stride": item.stride} for item in restored.layout.dim],
@@ -4377,6 +4386,32 @@ def main():
         failures.append("javascript -> python joint_state interop does not preserve string varray data")
     if not joint_state_interop["binaries_equal"]:
         failures.append("python and javascript joint_state binaries do not match")
+
+    joint_state_python_case = validate_joint_state_python_encode_size_case(
+        repo_root,
+        names=["wheel_left_joint", "wheel_right_joint"],
+        positions=[1.0, 2.0],
+        velocities=[3.0, 4.0],
+        efforts=[5.0, 6.0],
+    )
+    if joint_state_python_case["python_decoded"] != joint_state_python_case["expected"]:
+        failures.append("python joint_state roundtrip does not preserve numeric varray values")
+    if not all(joint_state_python_case["python_native_types"].values()):
+        failures.append("python joint_state decoder returns non-list varray fields")
+    if joint_state_python_case["javascript_decoded"] != joint_state_python_case["expected"]:
+        failures.append("javascript decode of python joint_state binary does not preserve numeric varray values")
+
+    float64_multi_array_python_case = validate_float64_multi_array_python_encode_size_case(
+        repo_root,
+        dim_specs=[{"label": "x", "size": 2, "stride": 2}],
+        data_values=[1.0, 2.0, 3.0],
+    )
+    if float64_multi_array_python_case["python_decoded"] != float64_multi_array_python_case["expected"]:
+        failures.append("python float64_multi_array roundtrip does not preserve numeric varray values")
+    if not all(float64_multi_array_python_case["python_native_types"].values()):
+        failures.append("python float64_multi_array decoder returns non-list varray fields")
+    if float64_multi_array_python_case["javascript_decoded"] != float64_multi_array_python_case["expected"]:
+        failures.append("javascript decode of python float64_multi_array binary does not preserve numeric varray values")
 
     if failures:
         for failure in failures:

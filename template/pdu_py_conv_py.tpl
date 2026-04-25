@@ -47,7 +47,7 @@ def binary_read_recursive_{{ container.msg_type_name }}(meta: binary_io.PduMetaD
     {% if item.type_name == 'string' %}
     py_obj.{{ item.member_name }} = binary_io.binToArrayValues("{{ item.type_name }}", array_value, array_size, one_elm_size)
     {% else %}
-    py_obj.{{ item.member_name }} = array_value
+    py_obj.{{ item.member_name }} = binary_io.binToArrayValues("{{ item.type_name }}", array_value)
     {% endif %}
     {% endif -%}
 {% else -%}

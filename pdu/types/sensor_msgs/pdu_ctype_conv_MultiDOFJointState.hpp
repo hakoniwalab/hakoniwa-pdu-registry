@@ -1,0 +1,243 @@
+#ifndef _PDU_CTYPE_CONV_HAKO_sensor_msgs_MultiDOFJointState_HPP_
+#define _PDU_CTYPE_CONV_HAKO_sensor_msgs_MultiDOFJointState_HPP_
+
+#include "pdu_primitive_ctypes.h"
+#include "ros_primitive_types.hpp"
+#include "pdu_primitive_ctypes_conv.hpp"
+#include "pdu_dynamic_memory.hpp"
+/*
+ * Dependent pdu data
+ */
+#include "sensor_msgs/pdu_ctype_MultiDOFJointState.h"
+/*
+ * Dependent ros data
+ */
+#include "sensor_msgs/msg/multi_d_o_f_joint_state.hpp"
+
+/*
+ * Dependent Convertors
+ */
+#include "builtin_interfaces/pdu_ctype_conv_Time.hpp"
+#include "geometry_msgs/pdu_ctype_conv_Quaternion.hpp"
+#include "geometry_msgs/pdu_ctype_conv_Transform.hpp"
+#include "geometry_msgs/pdu_ctype_conv_Twist.hpp"
+#include "geometry_msgs/pdu_ctype_conv_Vector3.hpp"
+#include "geometry_msgs/pdu_ctype_conv_Wrench.hpp"
+#include "std_msgs/pdu_ctype_conv_Header.hpp"
+
+/***************************
+ *
+ * PDU ==> ROS2
+ *
+ ***************************/
+static inline int _pdu2ros_string_array_MultiDOFJointState_joint_names(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
+{
+    // Convert using len and off
+    int offset = src._joint_names_off;
+    int length = src._joint_names_len;
+    if (length > 0) {
+        Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
+        hako_convert_pdu2ros_array_string_varray(temp_struct_ptr, dst.joint_names, length);
+    }
+    return 0;
+}
+static inline int _pdu2ros_struct_array_MultiDOFJointState_transforms(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
+{
+    // Convert using len and off
+    int offset = src._transforms_off;
+    int length = src._transforms_len;
+    if (length > 0) {
+        dst.transforms.resize(length);
+        Hako_Transform *temp_struct_ptr = (Hako_Transform *)(heap_ptr + offset);
+        for (int i = 0; i < length; ++i) {
+            _pdu2ros_Transform(heap_ptr, *temp_struct_ptr, dst.transforms[i]);
+            temp_struct_ptr++;
+        }
+    }
+    return 0;
+}
+static inline int _pdu2ros_struct_array_MultiDOFJointState_twist(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
+{
+    // Convert using len and off
+    int offset = src._twist_off;
+    int length = src._twist_len;
+    if (length > 0) {
+        dst.twist.resize(length);
+        Hako_Twist *temp_struct_ptr = (Hako_Twist *)(heap_ptr + offset);
+        for (int i = 0; i < length; ++i) {
+            _pdu2ros_Twist(heap_ptr, *temp_struct_ptr, dst.twist[i]);
+            temp_struct_ptr++;
+        }
+    }
+    return 0;
+}
+static inline int _pdu2ros_struct_array_MultiDOFJointState_wrench(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
+{
+    // Convert using len and off
+    int offset = src._wrench_off;
+    int length = src._wrench_len;
+    if (length > 0) {
+        dst.wrench.resize(length);
+        Hako_Wrench *temp_struct_ptr = (Hako_Wrench *)(heap_ptr + offset);
+        for (int i = 0; i < length; ++i) {
+            _pdu2ros_Wrench(heap_ptr, *temp_struct_ptr, dst.wrench[i]);
+            temp_struct_ptr++;
+        }
+    }
+    return 0;
+}
+
+static inline int _pdu2ros_MultiDOFJointState(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
+{
+    // Struct convert
+    _pdu2ros_Header(heap_ptr, src.header, dst.header);
+    // string array convertor
+    _pdu2ros_string_array_MultiDOFJointState_joint_names(heap_ptr, src, dst);
+    // struct array convertor
+    _pdu2ros_struct_array_MultiDOFJointState_transforms(heap_ptr, src, dst);
+    // struct array convertor
+    _pdu2ros_struct_array_MultiDOFJointState_twist(heap_ptr, src, dst);
+    // struct array convertor
+    _pdu2ros_struct_array_MultiDOFJointState_wrench(heap_ptr, src, dst);
+    (void)heap_ptr;
+    return 0;
+}
+
+static inline int hako_convert_pdu2ros_MultiDOFJointState(Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
+{
+    void* base_ptr = (void*)&src;
+    void* heap_ptr = hako_get_heap_ptr_pdu(base_ptr);
+    // Validate magic number and version
+    if (heap_ptr == nullptr) {
+        return -1; // Invalid PDU metadata
+    }
+    else {
+        return _pdu2ros_MultiDOFJointState((char*)heap_ptr, src, dst);
+    }
+}
+
+/***************************
+ *
+ * ROS2 ==> PDU
+ *
+ ***************************/
+static inline bool _ros2pdu_string_array_MultiDOFJointState_joint_names(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
+{
+    //Copy varray string
+    dst._joint_names_len = src.joint_names.size();
+    if (dst._joint_names_len > 0) {
+        Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._joint_names_len, sizeof(Hako_cstring));
+        (void)hako_convert_ros2pdu_array_string_varray(src.joint_names, temp_ptr);
+        dst._joint_names_off = dynamic_memory.get_offset(temp_ptr);
+    }
+    else {
+        dst._joint_names_off = dynamic_memory.get_total_size();
+    }
+    return true;
+}
+static inline bool _ros2pdu_struct_array_MultiDOFJointState_transforms(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
+{
+    // array struct
+    dst._transforms_len = src.transforms.size();
+    if (dst._transforms_len > 0) {
+        Hako_Transform* temp_struct_ptr = (Hako_Transform*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_Transform));
+        dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);
+        for (int i = 0; i < dst._transforms_len; ++i) {
+            _ros2pdu_Transform(src.transforms[i], *temp_struct_ptr, dynamic_memory);
+            temp_struct_ptr++;
+        }
+    }
+    else {
+        dst._transforms_off = dynamic_memory.get_total_size();
+    }
+    return true;
+}
+static inline bool _ros2pdu_struct_array_MultiDOFJointState_twist(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
+{
+    // array struct
+    dst._twist_len = src.twist.size();
+    if (dst._twist_len > 0) {
+        Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._twist_len, sizeof(Hako_Twist));
+        dst._twist_off = dynamic_memory.get_offset(temp_struct_ptr);
+        for (int i = 0; i < dst._twist_len; ++i) {
+            _ros2pdu_Twist(src.twist[i], *temp_struct_ptr, dynamic_memory);
+            temp_struct_ptr++;
+        }
+    }
+    else {
+        dst._twist_off = dynamic_memory.get_total_size();
+    }
+    return true;
+}
+static inline bool _ros2pdu_struct_array_MultiDOFJointState_wrench(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
+{
+    // array struct
+    dst._wrench_len = src.wrench.size();
+    if (dst._wrench_len > 0) {
+        Hako_Wrench* temp_struct_ptr = (Hako_Wrench*)dynamic_memory.allocate(dst._wrench_len, sizeof(Hako_Wrench));
+        dst._wrench_off = dynamic_memory.get_offset(temp_struct_ptr);
+        for (int i = 0; i < dst._wrench_len; ++i) {
+            _ros2pdu_Wrench(src.wrench[i], *temp_struct_ptr, dynamic_memory);
+            temp_struct_ptr++;
+        }
+    }
+    else {
+        dst._wrench_off = dynamic_memory.get_total_size();
+    }
+    return true;
+}
+
+static inline bool _ros2pdu_MultiDOFJointState(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
+{
+    try {
+        // struct convert
+        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        // string array convert
+        _ros2pdu_string_array_MultiDOFJointState_joint_names(src, dst, dynamic_memory);
+        //struct array convert
+        _ros2pdu_struct_array_MultiDOFJointState_transforms(src, dst, dynamic_memory);
+        //struct array convert
+        _ros2pdu_struct_array_MultiDOFJointState_twist(src, dst, dynamic_memory);
+        //struct array convert
+        _ros2pdu_struct_array_MultiDOFJointState_wrench(src, dst, dynamic_memory);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "convertor error: " << e.what() << std::endl;
+        return false;
+    }
+    (void)dynamic_memory;
+    return true;
+}
+
+static inline int hako_convert_ros2pdu_MultiDOFJointState(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState** dst)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MultiDOFJointState out;
+    if (!_ros2pdu_MultiDOFJointState(src, out, dynamic_memory)) {
+        return -1;
+    }
+    int heap_size = dynamic_memory.get_total_size();
+    void* base_ptr = hako_create_empty_pdu(sizeof(Hako_MultiDOFJointState), heap_size);
+    if (base_ptr == nullptr) {
+        return -1;
+    }
+    // Copy out on base data
+    memcpy(base_ptr, (void*)&out, sizeof(Hako_MultiDOFJointState));
+
+    // Copy dynamic part and set offsets
+    void* heap_ptr = hako_get_heap_ptr_pdu(base_ptr);
+    dynamic_memory.copy_to_pdu((char*)heap_ptr);
+
+    *dst = (Hako_MultiDOFJointState*)base_ptr;
+    return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+static inline Hako_MultiDOFJointState* hako_create_empty_pdu_MultiDOFJointState(int heap_size)
+{
+    // Allocate PDU memory
+    char* base_ptr = (char*)hako_create_empty_pdu(sizeof(Hako_MultiDOFJointState), heap_size);
+    if (base_ptr == nullptr) {
+        return nullptr;
+    }
+    return (Hako_MultiDOFJointState*)base_ptr;
+}
+#endif /* _PDU_CTYPE_CONV_HAKO_sensor_msgs_MultiDOFJointState_HPP_ */

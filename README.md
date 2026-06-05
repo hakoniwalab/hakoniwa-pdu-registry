@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hakoniwalab/hakoniwa-pdu-registry)
+
 # hakoniwa-pdu-registry
 
 `hakoniwa-pdu-registry` defines the binary contract of Hakoniwa.

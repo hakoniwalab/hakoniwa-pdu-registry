@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/MagnetGrabResponse",
+  "package_message": "drone_srv_msgs/MagnetGrabResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/MagnetGrabResponse.msg",
+  "hash_string": "RIHS01_5ab7131e6ec96eb8790163b0ff3c95718b5ef076258bb1e55de40a09016e2a5f",
+  "hash_value": "5ab7131e6ec96eb8790163b0ff3c95718b5ef076258bb1e55de40a09016e2a5f",
+  "dependencies": []
+}

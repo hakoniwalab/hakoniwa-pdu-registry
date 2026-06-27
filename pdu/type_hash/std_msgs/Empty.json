@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/Empty",
+  "package_message": "std_msgs/Empty",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/Empty.msg",
+  "hash_string": "RIHS01_20b625256f32d5dbc0d04fee44f43c41e51c70d3502f84b4a08e7a9c26a96312",
+  "hash_value": "20b625256f32d5dbc0d04fee44f43c41e51c70d3502f84b4a08e7a9c26a96312",
+  "dependencies": []
+}

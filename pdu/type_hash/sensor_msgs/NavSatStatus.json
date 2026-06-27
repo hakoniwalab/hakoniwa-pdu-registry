@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/NavSatStatus",
+  "package_message": "sensor_msgs/NavSatStatus",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/NavSatStatus.msg",
+  "hash_string": "RIHS01_d1ed3befa628e09571bd273b888ba1c1fd187c9a5e0006b385d7e5e9095a3204",
+  "hash_value": "d1ed3befa628e09571bd273b888ba1c1fd187c9a5e0006b385d7e5e9095a3204",
+  "dependencies": []
+}

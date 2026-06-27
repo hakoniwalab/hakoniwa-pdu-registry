@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/DroneStatus",
+  "package_message": "hako_msgs/DroneStatus",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/DroneStatus.msg",
+  "hash_string": "RIHS01_af3e87b6ed601238102f21450cfe0332fc616ab68cc44c8bd0ce1724a34781f8",
+  "hash_value": "af3e87b6ed601238102f21450cfe0332fc616ab68cc44c8bd0ce1724a34781f8",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/AckEventResponsePacket",
+  "package_message": "hako_srv_msgs/AckEventResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/AckEventResponsePacket.msg",
+  "hash_string": "RIHS01_4eedb2bed199eba8ece51e64726e095d0a765700ded2f2dfc9063ce8be32d737",
+  "hash_value": "4eedb2bed199eba8ece51e64726e095d0a765700ded2f2dfc9063ce8be32d737",
+  "dependencies": [
+    {
+      "type_name": "hako_srv_msgs/msg/AckEventResponse",
+      "package_message": "hako_srv_msgs/AckEventResponse",
+      "hash_string": "RIHS01_aa5cb9f930b16b150000380766e17eaedbe79b322cc2db5834350e1a5ee98ffe"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    }
+  ]
+}

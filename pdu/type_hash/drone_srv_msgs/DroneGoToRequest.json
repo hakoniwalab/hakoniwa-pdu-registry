@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/DroneGoToRequest",
+  "package_message": "drone_srv_msgs/DroneGoToRequest",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/DroneGoToRequest.msg",
+  "hash_string": "RIHS01_fab173e383c452a699ba13e263df8928253e85c0210b04d707aad72228acd464",
+  "hash_value": "fab173e383c452a699ba13e263df8928253e85c0210b04d707aad72228acd464",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

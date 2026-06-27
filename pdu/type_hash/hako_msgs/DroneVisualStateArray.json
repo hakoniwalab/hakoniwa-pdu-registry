@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/DroneVisualStateArray",
+  "package_message": "hako_msgs/DroneVisualStateArray",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/DroneVisualStateArray.msg",
+  "hash_string": "RIHS01_a8f0488dab7767818995e7ebf3cacb3e68a4ddd81afbbd4db5702f859aabee52",
+  "hash_value": "a8f0488dab7767818995e7ebf3cacb3e68a4ddd81afbbd4db5702f859aabee52",
+  "dependencies": [
+    {
+      "type_name": "hako_msgs/msg/DroneVisualState",
+      "package_message": "hako_msgs/DroneVisualState",
+      "hash_string": "RIHS01_99023569452a169a6bd222c66d974d9af7c5013e080491cab375c1228a8b2b6b"
+    }
+  ]
+}

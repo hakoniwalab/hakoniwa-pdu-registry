@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Pose",
+  "package_message": "geometry_msgs/Pose",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Pose.msg",
+  "hash_string": "RIHS01_d501954e9476cea2996984e812054b68026ae0bfae789d9a10b23daf35cc90fa",
+  "hash_value": "d501954e9476cea2996984e812054b68026ae0bfae789d9a10b23daf35cc90fa",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Point",
+      "package_message": "geometry_msgs/Point",
+      "hash_string": "RIHS01_6963084842a9b04494d6b2941d11444708d892da2f4b09843b9c43f42a7f6881"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Quaternion",
+      "package_message": "geometry_msgs/Quaternion",
+      "hash_string": "RIHS01_8a765f66778c8ff7c8ab94afcc590a2ed5325a1d9a076ffff38fbce36f458684"
+    }
+  ]
+}

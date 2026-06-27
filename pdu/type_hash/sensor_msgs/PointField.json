@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/PointField",
+  "package_message": "sensor_msgs/PointField",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/PointField.msg",
+  "hash_string": "RIHS01_5c6a4750728c2bcfbbf7037225b20b02d4429634732146b742dee1726637ef01",
+  "hash_value": "5c6a4750728c2bcfbbf7037225b20b02d4429634732146b742dee1726637ef01",
+  "dependencies": []
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/ShareObjectOwner",
+  "package_message": "hako_msgs/ShareObjectOwner",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/ShareObjectOwner.msg",
+  "hash_string": "RIHS01_985e0c3c7ddd36ef4f6a3761d01d8149ad84bfe28552fdfe25a05973c76181d0",
+  "hash_value": "985e0c3c7ddd36ef4f6a3761d01d8149ad84bfe28552fdfe25a05973c76181d0",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Twist",
+      "package_message": "geometry_msgs/Twist",
+      "hash_string": "RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

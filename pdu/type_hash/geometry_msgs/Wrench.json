@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Wrench",
+  "package_message": "geometry_msgs/Wrench",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Wrench.msg",
+  "hash_string": "RIHS01_018e8519d57c16adbe97c9fe1460ef21fec7e31bc541de3d653a35895677ce52",
+  "hash_value": "018e8519d57c16adbe97c9fe1460ef21fec7e31bc541de3d653a35895677ce52",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

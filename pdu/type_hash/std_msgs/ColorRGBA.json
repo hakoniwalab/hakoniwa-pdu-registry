@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/ColorRGBA",
+  "package_message": "std_msgs/ColorRGBA",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/ColorRGBA.msg",
+  "hash_string": "RIHS01_77a7a5b9ae477306097665106e0413ba74440245b1f3d0c6d6405fe5c7813fe8",
+  "hash_value": "77a7a5b9ae477306097665106e0413ba74440245b1f3d0c6d6405fe5c7813fe8",
+  "dependencies": []
+}

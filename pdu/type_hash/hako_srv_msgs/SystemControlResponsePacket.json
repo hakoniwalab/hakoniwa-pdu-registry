@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/SystemControlResponsePacket",
+  "package_message": "hako_srv_msgs/SystemControlResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/SystemControlResponsePacket.msg",
+  "hash_string": "RIHS01_d161237a66f9b8dfd0636a215445ead8acc40b0379bffd87052023e7ef37b33b",
+  "hash_value": "d161237a66f9b8dfd0636a215445ead8acc40b0379bffd87052023e7ef37b33b",
+  "dependencies": [
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/SystemControlResponse",
+      "package_message": "hako_srv_msgs/SystemControlResponse",
+      "hash_string": "RIHS01_6c2e4fc90e954451da8f272707cce44bd2bd9f415a36bed1991ff9027266977a"
+    }
+  ]
+}

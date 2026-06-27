@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/DisturbanceUserCustom",
+  "package_message": "hako_msgs/DisturbanceUserCustom",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/DisturbanceUserCustom.msg",
+  "hash_string": "RIHS01_57ad7049778bbb45a50ef5c2bc6c17cabf103ded1493d4b9a47c4cda641b5489",
+  "hash_value": "57ad7049778bbb45a50ef5c2bc6c17cabf103ded1493d4b9a47c4cda641b5489",
+  "dependencies": []
+}

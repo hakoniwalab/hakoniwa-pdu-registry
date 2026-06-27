@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/UInt8MultiArray",
+  "package_message": "std_msgs/UInt8MultiArray",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/UInt8MultiArray.msg",
+  "hash_string": "RIHS01_5687e861b8d307a5e48b7515467ae7a5fc2daf805bd0ce6d8e9e604bade9f385",
+  "hash_value": "5687e861b8d307a5e48b7515467ae7a5fc2daf805bd0ce6d8e9e604bade9f385",
+  "dependencies": [
+    {
+      "type_name": "std_msgs/msg/MultiArrayDimension",
+      "package_message": "std_msgs/MultiArrayDimension",
+      "hash_string": "RIHS01_5e773a60a4c7fc8a54985f307c7837aa2994252a126c301957a24e31282c9cbe"
+    },
+    {
+      "type_name": "std_msgs/msg/MultiArrayLayout",
+      "package_message": "std_msgs/MultiArrayLayout",
+      "hash_string": "RIHS01_4c66e6f78e740ac103a94cf63259f968e48c617e7699e829b63c21a5cb50dac6"
+    }
+  ]
+}

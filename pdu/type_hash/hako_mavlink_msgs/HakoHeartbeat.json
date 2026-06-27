@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoHeartbeat",
+  "package_message": "hako_mavlink_msgs/HakoHeartbeat",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoHeartbeat.msg",
+  "hash_string": "RIHS01_fff4557c1cd99c6be5a73deff7c6da1e4998b48b80c11740861cd3aa754eafbe",
+  "hash_value": "fff4557c1cd99c6be5a73deff7c6da1e4998b48b80c11740861cd3aa754eafbe",
+  "dependencies": []
+}

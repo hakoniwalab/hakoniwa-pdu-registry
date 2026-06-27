@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/LiDARScanRequest",
+  "package_message": "drone_srv_msgs/LiDARScanRequest",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/LiDARScanRequest.msg",
+  "hash_string": "RIHS01_be750341c3307914ea01f65999719656c72929236c25e226199e3ee00f3af627",
+  "hash_value": "be750341c3307914ea01f65999719656c72929236c25e226199e3ee00f3af627",
+  "dependencies": []
+}

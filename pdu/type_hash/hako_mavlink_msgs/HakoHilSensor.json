@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoHilSensor",
+  "package_message": "hako_mavlink_msgs/HakoHilSensor",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoHilSensor.msg",
+  "hash_string": "RIHS01_f8af3de2b11c107997cc6c3e0b53f256cba7a75342106cb1ae69ad4a78a96128",
+  "hash_value": "f8af3de2b11c107997cc6c3e0b53f256cba7a75342106cb1ae69ad4a78a96128",
+  "dependencies": []
+}

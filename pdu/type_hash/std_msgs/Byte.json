@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/Byte",
+  "package_message": "std_msgs/Byte",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/Byte.msg",
+  "hash_string": "RIHS01_41e1a3345f73fe93ede006da826a6ee274af23dd4653976ff249b0f44e3e798f",
+  "hash_value": "41e1a3345f73fe93ede006da826a6ee274af23dd4653976ff249b0f44e3e798f",
+  "dependencies": []
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoCmdCameraMove",
+  "package_message": "hako_msgs/HakoCmdCameraMove",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoCmdCameraMove.msg",
+  "hash_string": "RIHS01_440c3f9387ee47c9f09b947925eee5ad24a402da5f13d23c9b35b0b514a2ef7a",
+  "hash_value": "440c3f9387ee47c9f09b947925eee5ad24a402da5f13d23c9b35b0b514a2ef7a",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    },
+    {
+      "type_name": "hako_msgs/msg/HakoCmdHeader",
+      "package_message": "hako_msgs/HakoCmdHeader",
+      "hash_string": "RIHS01_130e6fec680b4e2691131774cd3a74d2a25daee19a4f2afc6812f6d8b9e282dc"
+    }
+  ]
+}

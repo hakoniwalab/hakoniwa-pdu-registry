@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoSystemTime",
+  "package_message": "hako_mavlink_msgs/HakoSystemTime",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoSystemTime.msg",
+  "hash_string": "RIHS01_57447adc10249369f78681767cf6273f2e3d2a087377a4fc6648702a71ef9b12",
+  "hash_value": "57447adc10249369f78681767cf6273f2e3d2a087377a4fc6648702a71ef9b12",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/SimTime",
+  "package_message": "hako_msgs/SimTime",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/SimTime.msg",
+  "hash_string": "RIHS01_0e2676a2a4ca4b0e67ff008917b82f329766ac1c078bb5edcffbabd9d393d84c",
+  "hash_value": "0e2676a2a4ca4b0e67ff008917b82f329766ac1c078bb5edcffbabd9d393d84c",
+  "dependencies": []
+}

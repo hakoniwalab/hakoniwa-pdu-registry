@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/NavSatFix",
+  "package_message": "sensor_msgs/NavSatFix",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/NavSatFix.msg",
+  "hash_string": "RIHS01_62223ab3fe210a15976021da7afddc9e200dc9ec75231c1b6a557fc598a65404",
+  "hash_value": "62223ab3fe210a15976021da7afddc9e200dc9ec75231c1b6a557fc598a65404",
+  "dependencies": [
+    {
+      "type_name": "builtin_interfaces/msg/Time",
+      "package_message": "builtin_interfaces/Time",
+      "hash_string": "RIHS01_b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197"
+    },
+    {
+      "type_name": "sensor_msgs/msg/NavSatStatus",
+      "package_message": "sensor_msgs/NavSatStatus",
+      "hash_string": "RIHS01_d1ed3befa628e09571bd273b888ba1c1fd187c9a5e0006b385d7e5e9095a3204"
+    },
+    {
+      "type_name": "std_msgs/msg/Header",
+      "package_message": "std_msgs/Header",
+      "hash_string": "RIHS01_f49fb3ae2cf070f793645ff749683ac6b06203e41c891e17701b1cb597ce6a01"
+    }
+  ]
+}

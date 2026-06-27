@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/CameraSetTiltResponsePacket",
+  "package_message": "drone_srv_msgs/CameraSetTiltResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/CameraSetTiltResponsePacket.msg",
+  "hash_string": "RIHS01_6771e3b22d066a3e14c06dfedcbc512608c78725f9b93358a3ac06c85807bbd7",
+  "hash_value": "6771e3b22d066a3e14c06dfedcbc512608c78725f9b93358a3ac06c85807bbd7",
+  "dependencies": [
+    {
+      "type_name": "drone_srv_msgs/msg/CameraSetTiltResponse",
+      "package_message": "drone_srv_msgs/CameraSetTiltResponse",
+      "hash_string": "RIHS01_5412bfd51190006282f5422e2c8d4986b16280ee9c9032d318c495a3f63b4c66"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/LaserEcho",
+  "package_message": "sensor_msgs/LaserEcho",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/LaserEcho.msg",
+  "hash_string": "RIHS01_0fbc05a0db7d37fe52c0f0375356db55da0046f7ef5bd27ca6b34bd0582bc952",
+  "hash_value": "0fbc05a0db7d37fe52c0f0375356db55da0046f7ef5bd27ca6b34bd0582bc952",
+  "dependencies": []
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/SimpleStructVarray",
+  "package_message": "hako_msgs/SimpleStructVarray",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/SimpleStructVarray.msg",
+  "hash_string": "RIHS01_b307a8cd713369f1819f41f826bd80998dd9616ba142ea9b9d17b949c07b4aa7",
+  "hash_value": "b307a8cd713369f1819f41f826bd80998dd9616ba142ea9b9d17b949c07b4aa7",
+  "dependencies": [
+    {
+      "type_name": "hako_msgs/msg/SimpleVarray",
+      "package_message": "hako_msgs/SimpleVarray",
+      "hash_string": "RIHS01_535e079c836b61317f4de4b78a910fc5d451601a9fd618ec57b67359be265bc4"
+    }
+  ]
+}

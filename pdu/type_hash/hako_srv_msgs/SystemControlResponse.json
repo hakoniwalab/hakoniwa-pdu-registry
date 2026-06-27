@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/SystemControlResponse",
+  "package_message": "hako_srv_msgs/SystemControlResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/SystemControlResponse.msg",
+  "hash_string": "RIHS01_6c2e4fc90e954451da8f272707cce44bd2bd9f415a36bed1991ff9027266977a",
+  "hash_value": "6c2e4fc90e954451da8f272707cce44bd2bd9f415a36bed1991ff9027266977a",
+  "dependencies": []
+}

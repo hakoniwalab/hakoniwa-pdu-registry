@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/DroneGetStateResponsePacket",
+  "package_message": "drone_srv_msgs/DroneGetStateResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/DroneGetStateResponsePacket.msg",
+  "hash_string": "RIHS01_c1e22d5ad8b21ea8a9a80ad68eb2509e7d4347d72ed2c2de225f35671f5060b5",
+  "hash_value": "c1e22d5ad8b21ea8a9a80ad68eb2509e7d4347d72ed2c2de225f35671f5060b5",
+  "dependencies": [
+    {
+      "type_name": "drone_srv_msgs/msg/DroneGetStateResponse",
+      "package_message": "drone_srv_msgs/DroneGetStateResponse",
+      "hash_string": "RIHS01_175c707267951f5df8c764ca813392905660b305ff22ffcafadee42490bc2218"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Point",
+      "package_message": "geometry_msgs/Point",
+      "hash_string": "RIHS01_6963084842a9b04494d6b2941d11444708d892da2f4b09843b9c43f42a7f6881"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Pose",
+      "package_message": "geometry_msgs/Pose",
+      "hash_string": "RIHS01_d501954e9476cea2996984e812054b68026ae0bfae789d9a10b23daf35cc90fa"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Quaternion",
+      "package_message": "geometry_msgs/Quaternion",
+      "hash_string": "RIHS01_8a765f66778c8ff7c8ab94afcc590a2ed5325a1d9a076ffff38fbce36f458684"
+    },
+    {
+      "type_name": "hako_msgs/msg/HakoBatteryStatus",
+      "package_message": "hako_msgs/HakoBatteryStatus",
+      "hash_string": "RIHS01_257d3836589afdc7b0765805542923d2cfbbc5ae8f56a138e81722f0515e4890"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    }
+  ]
+}

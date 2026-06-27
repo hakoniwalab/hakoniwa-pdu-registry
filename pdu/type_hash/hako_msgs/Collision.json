@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/Collision",
+  "package_message": "hako_msgs/Collision",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/Collision.msg",
+  "hash_string": "RIHS01_cbe1a09ed8bbf4a8e7b94d7d59b5b1711070b395d3cf510c4d3f7cfa96afcac6",
+  "hash_value": "cbe1a09ed8bbf4a8e7b94d7d59b5b1711070b395d3cf510c4d3f7cfa96afcac6",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Point",
+      "package_message": "geometry_msgs/Point",
+      "hash_string": "RIHS01_6963084842a9b04494d6b2941d11444708d892da2f4b09843b9c43f42a7f6881"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

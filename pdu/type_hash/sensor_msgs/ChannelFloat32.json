@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/ChannelFloat32",
+  "package_message": "sensor_msgs/ChannelFloat32",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/ChannelFloat32.msg",
+  "hash_string": "RIHS01_92665437ddf39346f4ba39ee32e648390605b633cc077d40f4bd4d7b58af6cd4",
+  "hash_value": "92665437ddf39346f4ba39ee32e648390605b633cc077d40f4bd4d7b58af6cd4",
+  "dependencies": []
+}

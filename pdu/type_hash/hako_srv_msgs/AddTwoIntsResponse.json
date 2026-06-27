@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/AddTwoIntsResponse",
+  "package_message": "hako_srv_msgs/AddTwoIntsResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/AddTwoIntsResponse.msg",
+  "hash_string": "RIHS01_60d3aff55b4ac8e97224d48f885ee0e8757472612d256204feaa9cf41a5b38ae",
+  "hash_value": "60d3aff55b4ac8e97224d48f885ee0e8757472612d256204feaa9cf41a5b38ae",
+  "dependencies": []
+}

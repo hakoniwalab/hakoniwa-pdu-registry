@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/AddTwoIntsResponsePacket",
+  "package_message": "hako_srv_msgs/AddTwoIntsResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/AddTwoIntsResponsePacket.msg",
+  "hash_string": "RIHS01_5846ecdfa071c2a3245ac1470b33aaa12b5df2e3c3443d438d27fc7145d7aa42",
+  "hash_value": "5846ecdfa071c2a3245ac1470b33aaa12b5df2e3c3443d438d27fc7145d7aa42",
+  "dependencies": [
+    {
+      "type_name": "hako_srv_msgs/msg/AddTwoIntsResponse",
+      "package_message": "hako_srv_msgs/AddTwoIntsResponse",
+      "hash_string": "RIHS01_60d3aff55b4ac8e97224d48f885ee0e8757472612d256204feaa9cf41a5b38ae"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    }
+  ]
+}

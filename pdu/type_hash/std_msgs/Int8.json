@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/Int8",
+  "package_message": "std_msgs/Int8",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/Int8.msg",
+  "hash_string": "RIHS01_26525065a403d972cb672f0777e333f0c799ad444ae5fcd79e43d1e73bd0f440",
+  "hash_value": "26525065a403d972cb672f0777e333f0c799ad444ae5fcd79e43d1e73bd0f440",
+  "dependencies": []
+}

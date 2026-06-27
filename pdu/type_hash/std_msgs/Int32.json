@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/Int32",
+  "package_message": "std_msgs/Int32",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/Int32.msg",
+  "hash_string": "RIHS01_b6578ded3c58c626cfe8d1a6fb6e04f706f97e9f03d2727c9ff4e74b1cef0deb",
+  "hash_value": "b6578ded3c58c626cfe8d1a6fb6e04f706f97e9f03d2727c9ff4e74b1cef0deb",
+  "dependencies": []
+}

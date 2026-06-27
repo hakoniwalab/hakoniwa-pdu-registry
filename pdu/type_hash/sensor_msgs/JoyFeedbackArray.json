@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/JoyFeedbackArray",
+  "package_message": "sensor_msgs/JoyFeedbackArray",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/JoyFeedbackArray.msg",
+  "hash_string": "RIHS01_3287c32e1b688cae04555e465443df3cca7dae76ee4ebf85c4658d585037bcaa",
+  "hash_value": "3287c32e1b688cae04555e465443df3cca7dae76ee4ebf85c4658d585037bcaa",
+  "dependencies": [
+    {
+      "type_name": "sensor_msgs/msg/JoyFeedback",
+      "package_message": "sensor_msgs/JoyFeedback",
+      "hash_string": "RIHS01_231dd362f71d6fc08272770d07120ad5fe5874ce2dbac70109b28986834290cd"
+    }
+  ]
+}

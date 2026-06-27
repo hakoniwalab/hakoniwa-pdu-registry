@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/Float64",
+  "package_message": "std_msgs/Float64",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/Float64.msg",
+  "hash_string": "RIHS01_705ba9c3d1a09df43737eb67095534de36fd426c0587779bda2bc51fe790182a",
+  "hash_value": "705ba9c3d1a09df43737eb67095534de36fd426c0587779bda2bc51fe790182a",
+  "dependencies": []
+}

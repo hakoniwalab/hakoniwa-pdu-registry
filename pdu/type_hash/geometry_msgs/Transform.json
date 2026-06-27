@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Transform",
+  "package_message": "geometry_msgs/Transform",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Transform.msg",
+  "hash_string": "RIHS01_beb83fbe698636351461f6f35d1abb20010c43d55374d81bd041f1ba2581fddc",
+  "hash_value": "beb83fbe698636351461f6f35d1abb20010c43d55374d81bd041f1ba2581fddc",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Quaternion",
+      "package_message": "geometry_msgs/Quaternion",
+      "hash_string": "RIHS01_8a765f66778c8ff7c8ab94afcc590a2ed5325a1d9a076ffff38fbce36f458684"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

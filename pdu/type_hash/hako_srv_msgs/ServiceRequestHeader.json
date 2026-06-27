@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/ServiceRequestHeader",
+  "package_message": "hako_srv_msgs/ServiceRequestHeader",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/ServiceRequestHeader.msg",
+  "hash_string": "RIHS01_12f30e0340bd8fadcc6c26a30859470e7c40396d04c5a2770fe12199cb998fe2",
+  "hash_value": "12f30e0340bd8fadcc6c26a30859470e7c40396d04c5a2770fe12199cb998fe2",
+  "dependencies": []
+}

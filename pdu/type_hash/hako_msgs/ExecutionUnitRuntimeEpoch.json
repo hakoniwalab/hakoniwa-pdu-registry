@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/ExecutionUnitRuntimeEpoch",
+  "package_message": "hako_msgs/ExecutionUnitRuntimeEpoch",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/ExecutionUnitRuntimeEpoch.msg",
+  "hash_string": "RIHS01_64b25ca5386c1f83937cc0453bb6f02c1293c5b0cab6debc08f0dea99b2d1317",
+  "hash_value": "64b25ca5386c1f83937cc0453bb6f02c1293c5b0cab6debc08f0dea99b2d1317",
+  "dependencies": []
+}

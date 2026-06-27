@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoHilGps",
+  "package_message": "hako_mavlink_msgs/HakoHilGps",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoHilGps.msg",
+  "hash_string": "RIHS01_b45a08ea1085d854aef54ead3cd9ba5be8c1c9cedf863080097082f9a68be6e1",
+  "hash_value": "b45a08ea1085d854aef54ead3cd9ba5be8c1c9cedf863080097082f9a68be6e1",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoStatusMagnetHolder",
+  "package_message": "hako_msgs/HakoStatusMagnetHolder",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoStatusMagnetHolder.msg",
+  "hash_string": "RIHS01_2f5c6c520e2471b3ea76b6a09e4a134ce9e1f093d52a62b79fa9578ef2cbddbd",
+  "hash_value": "2f5c6c520e2471b3ea76b6a09e4a134ce9e1f093d52a62b79fa9578ef2cbddbd",
+  "dependencies": []
+}

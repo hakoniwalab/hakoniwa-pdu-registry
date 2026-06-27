@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/DisturbanceAtm",
+  "package_message": "hako_msgs/DisturbanceAtm",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/DisturbanceAtm.msg",
+  "hash_string": "RIHS01_7b51a5b6fe3fcbef9d1a7471dd13f3cc7c61826290f93eb88c4f6e9757cb9687",
+  "hash_value": "7b51a5b6fe3fcbef9d1a7471dd13f3cc7c61826290f93eb88c4f6e9757cb9687",
+  "dependencies": []
+}

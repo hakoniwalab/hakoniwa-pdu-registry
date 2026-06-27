@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/DroneGetStateRequest",
+  "package_message": "drone_srv_msgs/DroneGetStateRequest",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/DroneGetStateRequest.msg",
+  "hash_string": "RIHS01_55576b13c9a634e03516bd44f5c08f3532e5feb8d6e08357c26822d05d8c8f0c",
+  "hash_value": "55576b13c9a634e03516bd44f5c08f3532e5feb8d6e08357c26822d05d8c8f0c",
+  "dependencies": []
+}

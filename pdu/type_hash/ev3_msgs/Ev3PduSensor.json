@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "ev3_msgs/msg/Ev3PduSensor",
+  "package_message": "ev3_msgs/Ev3PduSensor",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/ev3_msgs/msg/Ev3PduSensor.msg",
+  "hash_string": "RIHS01_e57f87986fd97eaf37aef4e80cf569c0dc5f5c23afc2e447018aa1db45e891de",
+  "hash_value": "e57f87986fd97eaf37aef4e80cf569c0dc5f5c23afc2e447018aa1db45e891de",
+  "dependencies": [
+    {
+      "type_name": "ev3_msgs/msg/Ev3PduColorSensor",
+      "package_message": "ev3_msgs/Ev3PduColorSensor",
+      "hash_string": "RIHS01_947e8362b62e56036420931dd89561e6555356ca9deda29464f5133c6b06173c"
+    },
+    {
+      "type_name": "ev3_msgs/msg/Ev3PduSensorHeader",
+      "package_message": "ev3_msgs/Ev3PduSensorHeader",
+      "hash_string": "RIHS01_03c36d381626336ad5c7bfdcf079dc41eb8301c54a41a5558187aa88b6212c9c"
+    },
+    {
+      "type_name": "ev3_msgs/msg/Ev3PduTouchSensor",
+      "package_message": "ev3_msgs/Ev3PduTouchSensor",
+      "hash_string": "RIHS01_9eb2cfbb8501dad5ba040caf66d960132ee144c70ab03462069bb0b7a61b1f51"
+    }
+  ]
+}

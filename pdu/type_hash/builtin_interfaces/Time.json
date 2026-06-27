@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "builtin_interfaces/msg/Time",
+  "package_message": "builtin_interfaces/Time",
+  "source_msg": "/opt/ros/jazzy/share/builtin_interfaces/msg/Time.msg",
+  "hash_string": "RIHS01_b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197",
+  "hash_value": "b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197",
+  "dependencies": []
+}

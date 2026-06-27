@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/ShareObjectOwnerRequest",
+  "package_message": "hako_msgs/ShareObjectOwnerRequest",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/ShareObjectOwnerRequest.msg",
+  "hash_string": "RIHS01_ce4c71f43979c6cb087f648a8ae2ea723f95e81da663c20db8bf6822a27e4938",
+  "hash_value": "ce4c71f43979c6cb087f648a8ae2ea723f95e81da663c20db8bf6822a27e4938",
+  "dependencies": []
+}

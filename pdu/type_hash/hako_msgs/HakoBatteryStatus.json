@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoBatteryStatus",
+  "package_message": "hako_msgs/HakoBatteryStatus",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoBatteryStatus.msg",
+  "hash_string": "RIHS01_257d3836589afdc7b0765805542923d2cfbbc5ae8f56a138e81722f0515e4890",
+  "hash_value": "257d3836589afdc7b0765805542923d2cfbbc5ae8f56a138e81722f0515e4890",
+  "dependencies": []
+}

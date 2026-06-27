@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Accel",
+  "package_message": "geometry_msgs/Accel",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Accel.msg",
+  "hash_string": "RIHS01_dc448243ded9b1fcbcca24aba0c22f013dae06c354ba2d849571c0a2a3f57ca0",
+  "hash_value": "dc448243ded9b1fcbcca24aba0c22f013dae06c354ba2d849571c0a2a3f57ca0",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

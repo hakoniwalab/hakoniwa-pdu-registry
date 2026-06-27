@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoHilActuatorControls",
+  "package_message": "hako_mavlink_msgs/HakoHilActuatorControls",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoHilActuatorControls.msg",
+  "hash_string": "RIHS01_4f78605d5d826626f7a3c7d3e22167cd629c41ec30bbb3564db43eee32d9c7ef",
+  "hash_value": "4f78605d5d826626f7a3c7d3e22167cd629c41ec30bbb3564db43eee32d9c7ef",
+  "dependencies": []
+}

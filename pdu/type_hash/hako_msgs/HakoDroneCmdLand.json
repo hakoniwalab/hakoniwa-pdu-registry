@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoDroneCmdLand",
+  "package_message": "hako_msgs/HakoDroneCmdLand",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoDroneCmdLand.msg",
+  "hash_string": "RIHS01_95b8a580ce62b32418dd371cef946639df7245b422c7856ae79855d2ccec85a0",
+  "hash_value": "95b8a580ce62b32418dd371cef946639df7245b422c7856ae79855d2ccec85a0",
+  "dependencies": [
+    {
+      "type_name": "hako_msgs/msg/HakoDroneCmdHeader",
+      "package_message": "hako_msgs/HakoDroneCmdHeader",
+      "hash_string": "RIHS01_9f6d6c8a737df6f42f50350d0523ac0022bed89b108ada4adb2a2525429bf6f3"
+    }
+  ]
+}

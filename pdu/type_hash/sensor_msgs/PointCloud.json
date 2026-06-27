@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/PointCloud",
+  "package_message": "sensor_msgs/PointCloud",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/PointCloud.msg",
+  "hash_string": "RIHS01_614593df71d3c2b9bd4604a71b750fd218f0d65c045ea988b713719455a65b3b",
+  "hash_value": "614593df71d3c2b9bd4604a71b750fd218f0d65c045ea988b713719455a65b3b",
+  "dependencies": [
+    {
+      "type_name": "builtin_interfaces/msg/Time",
+      "package_message": "builtin_interfaces/Time",
+      "hash_string": "RIHS01_b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Point32",
+      "package_message": "geometry_msgs/Point32",
+      "hash_string": "RIHS01_2fc4db7cae16a4582c79a56b66173a8d48d52c7dc520ddc55a0d4bcf2a4bfdbc"
+    },
+    {
+      "type_name": "sensor_msgs/msg/ChannelFloat32",
+      "package_message": "sensor_msgs/ChannelFloat32",
+      "hash_string": "RIHS01_92665437ddf39346f4ba39ee32e648390605b633cc077d40f4bd4d7b58af6cd4"
+    },
+    {
+      "type_name": "std_msgs/msg/Header",
+      "package_message": "std_msgs/Header",
+      "hash_string": "RIHS01_f49fb3ae2cf070f793645ff749683ac6b06203e41c891e17701b1cb597ce6a01"
+    }
+  ]
+}

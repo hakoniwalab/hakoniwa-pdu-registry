@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "ev3_msgs/msg/Ev3PduActuator",
+  "package_message": "ev3_msgs/Ev3PduActuator",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/ev3_msgs/msg/Ev3PduActuator.msg",
+  "hash_string": "RIHS01_6f1fe5e0cc8ab51f9c42c2b2c722cf8c17844fc0069fc4acddb06add97501abb",
+  "hash_value": "6f1fe5e0cc8ab51f9c42c2b2c722cf8c17844fc0069fc4acddb06add97501abb",
+  "dependencies": [
+    {
+      "type_name": "ev3_msgs/msg/Ev3PduActuatorHeader",
+      "package_message": "ev3_msgs/Ev3PduActuatorHeader",
+      "hash_string": "RIHS01_d0dc4f7cf6e77f9d42accc81e4fd60fe0c8ef182412efdf12738a668c663ef6d"
+    },
+    {
+      "type_name": "ev3_msgs/msg/Ev3PduMotor",
+      "package_message": "ev3_msgs/Ev3PduMotor",
+      "hash_string": "RIHS01_63c0833d37d82c797db98d6088df6922623ae553b5cf2ae00475400784738ded"
+    }
+  ]
+}

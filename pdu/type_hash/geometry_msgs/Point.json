@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Point",
+  "package_message": "geometry_msgs/Point",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Point.msg",
+  "hash_string": "RIHS01_6963084842a9b04494d6b2941d11444708d892da2f4b09843b9c43f42a7f6881",
+  "hash_value": "6963084842a9b04494d6b2941d11444708d892da2f4b09843b9c43f42a7f6881",
+  "dependencies": []
+}

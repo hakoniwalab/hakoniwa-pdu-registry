@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoCmdMagnetHolder",
+  "package_message": "hako_msgs/HakoCmdMagnetHolder",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoCmdMagnetHolder.msg",
+  "hash_string": "RIHS01_161f3f59dc0f2bdd72f23478147d1ce0e8e7fd08aa12118c48e52e48c37db356",
+  "hash_value": "161f3f59dc0f2bdd72f23478147d1ce0e8e7fd08aa12118c48e52e48c37db356",
+  "dependencies": [
+    {
+      "type_name": "hako_msgs/msg/HakoCmdHeader",
+      "package_message": "hako_msgs/HakoCmdHeader",
+      "hash_string": "RIHS01_130e6fec680b4e2691131774cd3a74d2a25daee19a4f2afc6812f6d8b9e282dc"
+    }
+  ]
+}

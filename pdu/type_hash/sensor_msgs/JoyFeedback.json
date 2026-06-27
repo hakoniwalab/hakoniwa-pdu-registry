@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/JoyFeedback",
+  "package_message": "sensor_msgs/JoyFeedback",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/JoyFeedback.msg",
+  "hash_string": "RIHS01_231dd362f71d6fc08272770d07120ad5fe5874ce2dbac70109b28986834290cd",
+  "hash_value": "231dd362f71d6fc08272770d07120ad5fe5874ce2dbac70109b28986834290cd",
+  "dependencies": []
+}

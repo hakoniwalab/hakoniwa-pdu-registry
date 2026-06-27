@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/RegisterClientResponse",
+  "package_message": "hako_srv_msgs/RegisterClientResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/RegisterClientResponse.msg",
+  "hash_string": "RIHS01_a1278c1a7d1639b9bcd983e1d85445003db949d44ab2af3654cf125641456de6",
+  "hash_value": "a1278c1a7d1639b9bcd983e1d85445003db949d44ab2af3654cf125641456de6",
+  "dependencies": []
+}

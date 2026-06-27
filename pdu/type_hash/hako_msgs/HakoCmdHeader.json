@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoCmdHeader",
+  "package_message": "hako_msgs/HakoCmdHeader",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoCmdHeader.msg",
+  "hash_string": "RIHS01_130e6fec680b4e2691131774cd3a74d2a25daee19a4f2afc6812f6d8b9e282dc",
+  "hash_value": "130e6fec680b4e2691131774cd3a74d2a25daee19a4f2afc6812f6d8b9e282dc",
+  "dependencies": []
+}

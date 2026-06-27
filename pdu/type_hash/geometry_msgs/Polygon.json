@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Polygon",
+  "package_message": "geometry_msgs/Polygon",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Polygon.msg",
+  "hash_string": "RIHS01_3782f9f0bf044964d692d6c017d705e37611afb1f0bf6a9dee248a7dda0f784a",
+  "hash_value": "3782f9f0bf044964d692d6c017d705e37611afb1f0bf6a9dee248a7dda0f784a",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Point32",
+      "package_message": "geometry_msgs/Point32",
+      "hash_string": "RIHS01_2fc4db7cae16a4582c79a56b66173a8d48d52c7dc520ddc55a0d4bcf2a4bfdbc"
+    }
+  ]
+}

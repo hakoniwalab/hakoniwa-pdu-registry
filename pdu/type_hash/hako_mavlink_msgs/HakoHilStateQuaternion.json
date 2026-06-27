@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoHilStateQuaternion",
+  "package_message": "hako_mavlink_msgs/HakoHilStateQuaternion",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoHilStateQuaternion.msg",
+  "hash_string": "RIHS01_cb5f4a093a66b7c9f6d3ff044befbc3e7a0070c3cff98251f27471b65294c831",
+  "hash_value": "cb5f4a093a66b7c9f6d3ff044befbc3e7a0070c3cff98251f27471b65294c831",
+  "dependencies": []
+}

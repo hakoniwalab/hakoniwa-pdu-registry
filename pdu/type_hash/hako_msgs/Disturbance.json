@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/Disturbance",
+  "package_message": "hako_msgs/Disturbance",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/Disturbance.msg",
+  "hash_string": "RIHS01_38ae82bf3c67c0328ae67dec2acbf467687535f08aa2fb7f58eedd0d5cedd3ec",
+  "hash_value": "38ae82bf3c67c0328ae67dec2acbf467687535f08aa2fb7f58eedd0d5cedd3ec",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Point",
+      "package_message": "geometry_msgs/Point",
+      "hash_string": "RIHS01_6963084842a9b04494d6b2941d11444708d892da2f4b09843b9c43f42a7f6881"
+    },
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    },
+    {
+      "type_name": "hako_msgs/msg/DisturbanceAtm",
+      "package_message": "hako_msgs/DisturbanceAtm",
+      "hash_string": "RIHS01_7b51a5b6fe3fcbef9d1a7471dd13f3cc7c61826290f93eb88c4f6e9757cb9687"
+    },
+    {
+      "type_name": "hako_msgs/msg/DisturbanceBoundary",
+      "package_message": "hako_msgs/DisturbanceBoundary",
+      "hash_string": "RIHS01_16ad77567c3bf547bf0c80e63dbdc7e85273dbf4bd2a6fb356fe9bcb40f86819"
+    },
+    {
+      "type_name": "hako_msgs/msg/DisturbanceTemperature",
+      "package_message": "hako_msgs/DisturbanceTemperature",
+      "hash_string": "RIHS01_c8d2089c2b3d97c291fe8ae74096b8edfee48bc8e164e245b1dcaf32d85f9060"
+    },
+    {
+      "type_name": "hako_msgs/msg/DisturbanceUserCustom",
+      "package_message": "hako_msgs/DisturbanceUserCustom",
+      "hash_string": "RIHS01_57ad7049778bbb45a50ef5c2bc6c17cabf103ded1493d4b9a47c4cda641b5489"
+    },
+    {
+      "type_name": "hako_msgs/msg/DisturbanceWind",
+      "package_message": "hako_msgs/DisturbanceWind",
+      "hash_string": "RIHS01_f04cf92433397b23e4b94ad7ff33491ac0f780aa7d60dad72718af8a0abcb19b"
+    }
+  ]
+}

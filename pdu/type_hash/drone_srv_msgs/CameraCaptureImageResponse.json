@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/CameraCaptureImageResponse",
+  "package_message": "drone_srv_msgs/CameraCaptureImageResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/CameraCaptureImageResponse.msg",
+  "hash_string": "RIHS01_354148a4053628c9d81e16c5814cac1c448d1a9297b11ef4505b7a2dd16fe8fa",
+  "hash_value": "354148a4053628c9d81e16c5814cac1c448d1a9297b11ef4505b7a2dd16fe8fa",
+  "dependencies": []
+}

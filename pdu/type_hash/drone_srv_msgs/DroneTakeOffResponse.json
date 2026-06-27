@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/DroneTakeOffResponse",
+  "package_message": "drone_srv_msgs/DroneTakeOffResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/DroneTakeOffResponse.msg",
+  "hash_string": "RIHS01_8d274e0c963c4bf9951c307223276218e3763688e27d09ec630b62e58107eb29",
+  "hash_value": "8d274e0c963c4bf9951c307223276218e3763688e27d09ec630b62e58107eb29",
+  "dependencies": []
+}

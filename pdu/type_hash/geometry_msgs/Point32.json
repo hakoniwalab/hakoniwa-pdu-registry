@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Point32",
+  "package_message": "geometry_msgs/Point32",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Point32.msg",
+  "hash_string": "RIHS01_2fc4db7cae16a4582c79a56b66173a8d48d52c7dc520ddc55a0d4bcf2a4bfdbc",
+  "hash_value": "2fc4db7cae16a4582c79a56b66173a8d48d52c7dc520ddc55a0d4bcf2a4bfdbc",
+  "dependencies": []
+}

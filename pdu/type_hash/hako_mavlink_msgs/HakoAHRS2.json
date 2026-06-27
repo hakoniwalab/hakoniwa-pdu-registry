@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoAHRS2",
+  "package_message": "hako_mavlink_msgs/HakoAHRS2",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoAHRS2.msg",
+  "hash_string": "RIHS01_6f8636cb02d01cce225cfe92ef2d8bb3fcaad88c2eb259fa6aac01bd44d306a1",
+  "hash_value": "6f8636cb02d01cce225cfe92ef2d8bb3fcaad88c2eb259fa6aac01bd44d306a1",
+  "dependencies": []
+}

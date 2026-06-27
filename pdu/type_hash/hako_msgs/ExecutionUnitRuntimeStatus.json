@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/ExecutionUnitRuntimeStatus",
+  "package_message": "hako_msgs/ExecutionUnitRuntimeStatus",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/ExecutionUnitRuntimeStatus.msg",
+  "hash_string": "RIHS01_37268b4a53723ae546cfdb205582ab8d22e9576f35421da9dc635e0100698e4b",
+  "hash_value": "37268b4a53723ae546cfdb205582ab8d22e9576f35421da9dc635e0100698e4b",
+  "dependencies": []
+}

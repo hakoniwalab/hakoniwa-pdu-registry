@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/DisturbanceWind",
+  "package_message": "hako_msgs/DisturbanceWind",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/DisturbanceWind.msg",
+  "hash_string": "RIHS01_f04cf92433397b23e4b94ad7ff33491ac0f780aa7d60dad72718af8a0abcb19b",
+  "hash_value": "f04cf92433397b23e4b94ad7ff33491ac0f780aa7d60dad72718af8a0abcb19b",
+  "dependencies": [
+    {
+      "type_name": "geometry_msgs/msg/Vector3",
+      "package_message": "geometry_msgs/Vector3",
+      "hash_string": "RIHS01_cc12fe83e4c02719f1ce8070bfd14aecd40f75a96696a67a2a1f37f7dbb0765d"
+    }
+  ]
+}

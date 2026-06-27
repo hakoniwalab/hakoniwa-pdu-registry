@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/RegionOfInterest",
+  "package_message": "sensor_msgs/RegionOfInterest",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/RegionOfInterest.msg",
+  "hash_string": "RIHS01_ad16bcba5f9131dcdba6fbded19f726f5440e3c513b4fb586dd3027eeed8abb1",
+  "hash_value": "ad16bcba5f9131dcdba6fbded19f726f5440e3c513b4fb586dd3027eeed8abb1",
+  "dependencies": []
+}

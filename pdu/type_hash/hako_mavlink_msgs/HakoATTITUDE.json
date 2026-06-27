@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_mavlink_msgs/msg/HakoATTITUDE",
+  "package_message": "hako_mavlink_msgs/HakoATTITUDE",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_mavlink_msgs/msg/HakoATTITUDE.msg",
+  "hash_string": "RIHS01_c4358fff3a40c540fcb775ef97965d336158501f8f820d9c279c692e5b0e1ec5",
+  "hash_value": "c4358fff3a40c540fcb775ef97965d336158501f8f820d9c279c692e5b0e1ec5",
+  "dependencies": []
+}

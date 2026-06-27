@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/SimpleVarray",
+  "package_message": "hako_msgs/SimpleVarray",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/SimpleVarray.msg",
+  "hash_string": "RIHS01_535e079c836b61317f4de4b78a910fc5d451601a9fd618ec57b67359be265bc4",
+  "hash_value": "535e079c836b61317f4de4b78a910fc5d451601a9fd618ec57b67359be265bc4",
+  "dependencies": []
+}

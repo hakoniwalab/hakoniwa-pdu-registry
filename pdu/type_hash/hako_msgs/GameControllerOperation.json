@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/GameControllerOperation",
+  "package_message": "hako_msgs/GameControllerOperation",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/GameControllerOperation.msg",
+  "hash_string": "RIHS01_ac1e303c18a434e1625d85283cbba9555632b8b9dc1627a1ab6472c297ff26b7",
+  "hash_value": "ac1e303c18a434e1625d85283cbba9555632b8b9dc1627a1ab6472c297ff26b7",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "drone_srv_msgs/msg/CameraSetTiltResponse",
+  "package_message": "drone_srv_msgs/CameraSetTiltResponse",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/drone_srv_msgs/msg/CameraSetTiltResponse.msg",
+  "hash_string": "RIHS01_5412bfd51190006282f5422e2c8d4986b16280ee9c9032d318c495a3f63b4c66",
+  "hash_value": "5412bfd51190006282f5422e2c8d4986b16280ee9c9032d318c495a3f63b4c66",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "geometry_msgs/msg/Pose2D",
+  "package_message": "geometry_msgs/Pose2D",
+  "source_msg": "/opt/ros/jazzy/share/geometry_msgs/msg/Pose2D.msg",
+  "hash_string": "RIHS01_d68efa5b46e70f7b16ca23085474fdac5a44b638783ec42f661da64da4724ccc",
+  "hash_value": "d68efa5b46e70f7b16ca23085474fdac5a44b638783ec42f661da64da4724ccc",
+  "dependencies": []
+}

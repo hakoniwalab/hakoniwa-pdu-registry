@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/GetSimStateResponsePacket",
+  "package_message": "hako_srv_msgs/GetSimStateResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/GetSimStateResponsePacket.msg",
+  "hash_string": "RIHS01_f180b2aaf7bc26ebde437cc0cee99a0364297bbf0d981646cf5f4df9f56cc715",
+  "hash_value": "f180b2aaf7bc26ebde437cc0cee99a0364297bbf0d981646cf5f4df9f56cc715",
+  "dependencies": [
+    {
+      "type_name": "hako_srv_msgs/msg/GetSimStateResponse",
+      "package_message": "hako_srv_msgs/GetSimStateResponse",
+      "hash_string": "RIHS01_d6e75e934dd9846f57af8256633d102d0120cd994ba5d5130d5f4e10cceaafd9"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    }
+  ]
+}

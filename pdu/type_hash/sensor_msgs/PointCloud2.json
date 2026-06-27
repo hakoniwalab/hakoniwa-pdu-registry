@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "sensor_msgs/msg/PointCloud2",
+  "package_message": "sensor_msgs/PointCloud2",
+  "source_msg": "/opt/ros/jazzy/share/sensor_msgs/msg/PointCloud2.msg",
+  "hash_string": "RIHS01_9198cabf7da3796ae6fe19c4cb3bdd3525492988c70522628af5daa124bae2b5",
+  "hash_value": "9198cabf7da3796ae6fe19c4cb3bdd3525492988c70522628af5daa124bae2b5",
+  "dependencies": [
+    {
+      "type_name": "builtin_interfaces/msg/Time",
+      "package_message": "builtin_interfaces/Time",
+      "hash_string": "RIHS01_b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197"
+    },
+    {
+      "type_name": "sensor_msgs/msg/PointField",
+      "package_message": "sensor_msgs/PointField",
+      "hash_string": "RIHS01_5c6a4750728c2bcfbbf7037225b20b02d4429634732146b742dee1726637ef01"
+    },
+    {
+      "type_name": "std_msgs/msg/Header",
+      "package_message": "std_msgs/Header",
+      "hash_string": "RIHS01_f49fb3ae2cf070f793645ff749683ac6b06203e41c891e17701b1cb597ce6a01"
+    }
+  ]
+}

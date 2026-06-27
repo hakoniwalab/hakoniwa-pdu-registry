@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "std_msgs/msg/Bool",
+  "package_message": "std_msgs/Bool",
+  "source_msg": "/opt/ros/jazzy/share/std_msgs/msg/Bool.msg",
+  "hash_string": "RIHS01_feb91e995ff9ebd09c0cb3d2aed18b11077585839fb5db80193b62d74528f6c9",
+  "hash_value": "feb91e995ff9ebd09c0cb3d2aed18b11077585839fb5db80193b62d74528f6c9",
+  "dependencies": []
+}

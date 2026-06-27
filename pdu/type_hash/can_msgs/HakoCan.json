@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "can_msgs/msg/HakoCan",
+  "package_message": "can_msgs/HakoCan",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/can_msgs/msg/HakoCan.msg",
+  "hash_string": "RIHS01_8a69c81bd3de72a31eb7856d25bd943f0f48dec96c768b9a2d5867340bf7da47",
+  "hash_value": "8a69c81bd3de72a31eb7856d25bd943f0f48dec96c768b9a2d5867340bf7da47",
+  "dependencies": [
+    {
+      "type_name": "can_msgs/msg/HakoCanBody",
+      "package_message": "can_msgs/HakoCanBody",
+      "hash_string": "RIHS01_7cd7215994a79572d2157120b5987bb0f6afce2624bdb08a4ba7e2aee5c2841d"
+    },
+    {
+      "type_name": "can_msgs/msg/HakoCanHead",
+      "package_message": "can_msgs/HakoCanHead",
+      "hash_string": "RIHS01_d7718ebd06928c64be04b4dc3f48c28b2d8c084bd8a1db07e5046bf0cfaae894"
+    }
+  ]
+}

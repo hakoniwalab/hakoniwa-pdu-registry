@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/SimControlResponsePacket",
+  "package_message": "hako_srv_msgs/SimControlResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/SimControlResponsePacket.msg",
+  "hash_string": "RIHS01_bd91c778dce0012c0daa14bce66d047fc4c49ff9ca41dfa3c03d9592e5102a0c",
+  "hash_value": "bd91c778dce0012c0daa14bce66d047fc4c49ff9ca41dfa3c03d9592e5102a0c",
+  "dependencies": [
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/SimControlResponse",
+      "package_message": "hako_srv_msgs/SimControlResponse",
+      "hash_string": "RIHS01_932f1f693231ffee2eeedbf3eb66eafba83e4bab5ddd4444a5b2b76a641ef821"
+    }
+  ]
+}

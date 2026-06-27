@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_msgs/msg/HakoDroneCmdTakeoff",
+  "package_message": "hako_msgs/HakoDroneCmdTakeoff",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_msgs/msg/HakoDroneCmdTakeoff.msg",
+  "hash_string": "RIHS01_5e0694b1422af83dba01e29846e68e00a0d856939826166230b40158f26b97b2",
+  "hash_value": "5e0694b1422af83dba01e29846e68e00a0d856939826166230b40158f26b97b2",
+  "dependencies": [
+    {
+      "type_name": "hako_msgs/msg/HakoDroneCmdHeader",
+      "package_message": "hako_msgs/HakoDroneCmdHeader",
+      "hash_string": "RIHS01_9f6d6c8a737df6f42f50350d0523ac0022bed89b108ada4adb2a2525429bf6f3"
+    }
+  ]
+}

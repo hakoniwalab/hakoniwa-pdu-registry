@@ -1,0 +1,307 @@
+#ifndef _PDU_CPPTYPE_CDR_CONV_HAKO_{{container.pkg_name}}_{{container.msg_type_name}}_HPP_
+#define _PDU_CPPTYPE_CDR_CONV_HAKO_{{container.pkg_name}}_{{container.msg_type_name}}_HPP_
+
+#include <cstring>
+#include <iostream>
+#include <vector>
+
+#include <fastcdr/Cdr.h>
+#include <fastcdr/FastBuffer.h>
+
+#include "pdu_cdr_runtime.hpp"
+#include "pdu_primitive_ctypes.h"
+
+/*
+ * Dependent cpp pdu data
+ */
+#include "{{container.pkg_name}}/pdu_cpptype_{{container.msg_type_name}}.hpp"
+
+/*
+ * Dependent CDR convertors
+ */
+{%- for item in container.conv_cpp_includes %}
+#include "{{ item | replace('pdu_cpptype_conv_', 'pdu_cpptype_cdr_conv_') }}"
+{%- endfor %}
+
+/***************************
+ *
+ * CPP PDU ==> CDR payload body
+ *
+ ***************************/
+static inline void cpp2cdr_{{container.msg_type_name}}(
+    eprosima::fastcdr::Cdr& cdr,
+    const HakoCpp_{{container.msg_type_name}}& src)
+{
+{%- for item in container.json_data["fields"] %}
+{%-     if (container.is_primitive(item["type"])) %}
+    // primitive: {{item["name"]}}
+{%-         if item["type"] == "bool" %}
+    cdr << static_cast<bool>(src.{{item["name"]}} != 0);
+{%-         else %}
+    cdr << src.{{item["name"]}};
+{%-         endif %}
+{%-     elif (container.is_string(item["type"])) %}
+    // string: {{item["name"]}}
+    cdr << src.{{item["name"]}};
+{%-     elif (container.is_primitive_array(item["type"])) %}
+{%-         set array_size = container.get_array_size(item["name"], item["type"]) %}
+{%-         set elem_type = container.get_array_type(item["type"]) %}
+{%-         if array_size is none %}
+    // primitive sequence: {{item["name"]}}
+{%-             if elem_type == "bool" %}
+    hako::pdu::cdr::serialize_bool_sequence(cdr, src.{{item["name"]}});
+{%-             else %}
+    hako::pdu::cdr::serialize_sequence(cdr, src.{{item["name"]}});
+{%-             endif %}
+{%-         else %}
+    // primitive fixed array: {{item["name"]}}[{{array_size}}]
+{%-             if elem_type == "bool" %}
+    hako::pdu::cdr::serialize_bool_fixed_array(cdr, src.{{item["name"]}}, {{array_size}});
+{%-             else %}
+    hako::pdu::cdr::serialize_fixed_array(cdr, src.{{item["name"]}}, {{array_size}});
+{%-             endif %}
+{%-         endif %}
+{%-     elif (container.is_string_array(item["type"])) %}
+{%-         set array_size = container.get_array_size(item["name"], item["type"]) %}
+{%-         if array_size is none %}
+    // string sequence: {{item["name"]}}
+    hako::pdu::cdr::serialize_sequence(cdr, src.{{item["name"]}});
+{%-         else %}
+    // string fixed array: {{item["name"]}}[{{array_size}}]
+    hako::pdu::cdr::serialize_fixed_array(cdr, src.{{item["name"]}}, {{array_size}});
+{%-         endif %}
+{%-     elif (container.is_array(item["type"])) %}
+{%-         set array_size = container.get_array_size(item["name"], item["type"]) %}
+{%-         if array_size is none %}
+    // struct sequence: {{item["name"]}}
+    {
+        hako::pdu::cdr::serialize_sequence_length(cdr, src.{{item["name"]}});
+        for (const auto& elem : src.{{item["name"]}}) {
+            cpp2cdr_{{container.get_msg_type(container.get_array_type(item["type"]))}}(cdr, elem);
+        }
+    }
+{%-         else %}
+    // struct fixed array: {{item["name"]}}[{{array_size}}]
+    for (size_t i = 0; i < {{array_size}}; ++i) {
+        cpp2cdr_{{container.get_msg_type(container.get_array_type(item["type"]))}}(cdr, src.{{item["name"]}}[i]);
+    }
+{%-         endif %}
+{%-     else %}
+    // nested struct: {{item["name"]}}
+    cpp2cdr_{{container.get_msg_type(item["type"])}}(cdr, src.{{item["name"]}});
+{%-     endif %}
+{%- endfor %}
+}
+
+/***************************
+ *
+ * CDR payload body ==> CPP PDU
+ *
+ ***************************/
+static inline void cdr2cpp_{{container.msg_type_name}}(
+    eprosima::fastcdr::Cdr& cdr,
+    HakoCpp_{{container.msg_type_name}}& dst)
+{
+{%- for item in container.json_data["fields"] %}
+{%-     if (container.is_primitive(item["type"])) %}
+    // primitive: {{item["name"]}}
+{%-         if item["type"] == "bool" %}
+    {
+        bool value = false;
+        cdr >> value;
+        dst.{{item["name"]}} = value ? 1 : 0;
+    }
+{%-         else %}
+    cdr >> dst.{{item["name"]}};
+{%-         endif %}
+{%-     elif (container.is_string(item["type"])) %}
+    // string: {{item["name"]}}
+    cdr >> dst.{{item["name"]}};
+{%-     elif (container.is_primitive_array(item["type"])) %}
+{%-         set array_size = container.get_array_size(item["name"], item["type"]) %}
+{%-         set elem_type = container.get_array_type(item["type"]) %}
+{%-         if array_size is none %}
+    // primitive sequence: {{item["name"]}}
+{%-             if elem_type == "bool" %}
+    hako::pdu::cdr::deserialize_bool_sequence(cdr, dst.{{item["name"]}});
+{%-             else %}
+    hako::pdu::cdr::deserialize_sequence(cdr, dst.{{item["name"]}});
+{%-             endif %}
+{%-         else %}
+    // primitive fixed array: {{item["name"]}}[{{array_size}}]
+{%-             if elem_type == "bool" %}
+    hako::pdu::cdr::deserialize_bool_fixed_array(cdr, dst.{{item["name"]}}, {{array_size}});
+{%-             else %}
+    hako::pdu::cdr::deserialize_fixed_array(cdr, dst.{{item["name"]}}, {{array_size}});
+{%-             endif %}
+{%-         endif %}
+{%-     elif (container.is_string_array(item["type"])) %}
+{%-         set array_size = container.get_array_size(item["name"], item["type"]) %}
+{%-         if array_size is none %}
+    // string sequence: {{item["name"]}}
+    hako::pdu::cdr::deserialize_sequence(cdr, dst.{{item["name"]}});
+{%-         else %}
+    // string fixed array: {{item["name"]}}[{{array_size}}]
+    hako::pdu::cdr::deserialize_fixed_array(cdr, dst.{{item["name"]}}, {{array_size}});
+{%-         endif %}
+{%-     elif (container.is_array(item["type"])) %}
+{%-         set array_size = container.get_array_size(item["name"], item["type"]) %}
+{%-         if array_size is none %}
+    // struct sequence: {{item["name"]}}
+    {
+        uint32_t length = 0;
+        cdr >> length;
+        dst.{{item["name"]}}.resize(length);
+        for (uint32_t i = 0; i < length; ++i) {
+            cdr2cpp_{{container.get_msg_type(container.get_array_type(item["type"]))}}(cdr, dst.{{item["name"]}}[i]);
+        }
+    }
+{%-         else %}
+    // struct fixed array: {{item["name"]}}[{{array_size}}]
+    hako::pdu::cdr::resize_if_possible(dst.{{item["name"]}}, {{array_size}});
+    for (size_t i = 0; i < {{array_size}}; ++i) {
+        cdr2cpp_{{container.get_msg_type(container.get_array_type(item["type"]))}}(cdr, dst.{{item["name"]}}[i]);
+    }
+{%-         endif %}
+{%-     else %}
+    // nested struct: {{item["name"]}}
+    cdr2cpp_{{container.get_msg_type(item["type"])}}(cdr, dst.{{item["name"]}});
+{%-     endif %}
+{%- endfor %}
+}
+
+/***************************
+ *
+ * CPP PDU ==> full CDR payload
+ *   full payload = CDR encapsulation + CDR payload body
+ *
+ ***************************/
+static inline int hako_convert_cpp2cdr_{{container.msg_type_name}}(
+    const HakoCpp_{{container.msg_type_name}}& src,
+    char* cdr_buffer,
+    int buffer_len)
+{
+    if (cdr_buffer == nullptr || buffer_len <= 0) {
+        return -1;
+    }
+
+    try {
+        eprosima::fastcdr::FastBuffer fastbuffer(cdr_buffer, static_cast<size_t>(buffer_len));
+        auto cdr = hako::pdu::cdr::create_dds_cdr(fastbuffer);
+        cdr.serialize_encapsulation();
+        cpp2cdr_{{container.msg_type_name}}(cdr, src);
+        return hako::pdu::cdr::get_serialized_data_length(cdr);
+    } catch (const std::exception& e) {
+        std::cerr << "[CdrConvertorError][{{container.msg_type_name}}] cpp2cdr: " << e.what() << std::endl;
+        return -1;
+    }
+}
+
+static inline int hako_convert_cpp2cdr_{{container.msg_type_name}}(
+    const HakoCpp_{{container.msg_type_name}}& src,
+    std::vector<uint8_t>& cdr_payload,
+    size_t initial_capacity = 4096)
+{
+    size_t capacity = initial_capacity;
+    if (capacity == 0) {
+        capacity = 4096;
+    }
+
+    for (int retry = 0; retry < 8; ++retry) {
+        cdr_payload.resize(capacity);
+        int len = hako_convert_cpp2cdr_{{container.msg_type_name}}(
+            src,
+            reinterpret_cast<char*>(cdr_payload.data()),
+            static_cast<int>(cdr_payload.size()));
+        if (len >= 0) {
+            cdr_payload.resize(static_cast<size_t>(len));
+            return len;
+        }
+        capacity *= 2;
+    }
+
+    cdr_payload.clear();
+    return -1;
+}
+
+/***************************
+ *
+ * full CDR payload ==> CPP PDU
+ *   full payload = CDR encapsulation + CDR payload body
+ *
+ ***************************/
+static inline bool hako_convert_cdr2cpp_{{container.msg_type_name}}(
+    const char* cdr_buffer,
+    int buffer_len,
+    HakoCpp_{{container.msg_type_name}}& dst)
+{
+    if (cdr_buffer == nullptr || buffer_len <= 0) {
+        return false;
+    }
+
+    try {
+        eprosima::fastcdr::FastBuffer fastbuffer(const_cast<char*>(cdr_buffer), static_cast<size_t>(buffer_len));
+        auto cdr = hako::pdu::cdr::create_dds_cdr(fastbuffer);
+        cdr.read_encapsulation();
+        cdr2cpp_{{container.msg_type_name}}(cdr, dst);
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[CdrConvertorError][{{container.msg_type_name}}] cdr2cpp: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+static inline bool hako_convert_cdr2cpp_{{container.msg_type_name}}(
+    const std::vector<uint8_t>& cdr_payload,
+    HakoCpp_{{container.msg_type_name}}& dst)
+{
+    return hako_convert_cdr2cpp_{{container.msg_type_name}}(
+        reinterpret_cast<const char*>(cdr_payload.data()),
+        static_cast<int>(cdr_payload.size()),
+        dst);
+}
+
+namespace hako::pdu::msgs::{{container.pkg_name}}
+{
+
+class {{container.msg_type_name}}Cdr
+{
+public:
+    {{container.msg_type_name}}Cdr() = default;
+    ~{{container.msg_type_name}}Cdr() = default;
+
+    int cpp2cdr(
+        const HakoCpp_{{container.msg_type_name}}& cppData,
+        char* cdr_buffer,
+        int buffer_len)
+    {
+        return hako_convert_cpp2cdr_{{container.msg_type_name}}(cppData, cdr_buffer, buffer_len);
+    }
+
+    int cpp2cdr(
+        const HakoCpp_{{container.msg_type_name}}& cppData,
+        std::vector<uint8_t>& cdr_payload,
+        size_t initial_capacity = 4096)
+    {
+        return hako_convert_cpp2cdr_{{container.msg_type_name}}(cppData, cdr_payload, initial_capacity);
+    }
+
+    bool cdr2cpp(
+        const char* cdr_buffer,
+        int buffer_len,
+        HakoCpp_{{container.msg_type_name}}& cppData)
+    {
+        return hako_convert_cdr2cpp_{{container.msg_type_name}}(cdr_buffer, buffer_len, cppData);
+    }
+
+    bool cdr2cpp(
+        const std::vector<uint8_t>& cdr_payload,
+        HakoCpp_{{container.msg_type_name}}& cppData)
+    {
+        return hako_convert_cdr2cpp_{{container.msg_type_name}}(cdr_payload, cppData);
+    }
+};
+
+} // namespace hako::pdu::msgs::{{container.pkg_name}}
+
+#endif /* _PDU_CPPTYPE_CDR_CONV_HAKO_{{container.pkg_name}}_{{container.msg_type_name}}_HPP_ */

@@ -35,6 +35,7 @@ from generators.generate_hako_pdu_msgs.validate_generated_artifacts import (
     validate_multi_array_layout_godot_cpp_oracle_interop,
     validate_camera_info_godot_cpp_size_case,
     validate_camera_info_python_encode_size_case,
+    validate_cdr_cpp_oracle_interop,
     validate_float64_multi_array_godot_cpp_oracle_interop,
     validate_multi_array_layout_godot_cpp_size_case,
     validate_multi_array_layout_python_encode_size_case,
@@ -74,6 +75,18 @@ class GeneratedArtifactsTest(unittest.TestCase):
         result = validate_javascript_bool_array_roundtrip(self.repo_root)
         self.assertEqual(result["button_bytes"], result["expected_bytes"])
         self.assertEqual(result["restored_buttons"], result["expected_buttons"])
+
+    def test_cdr_cpp_oracle_encode_decode_representative_cases(self):
+        results = validate_cdr_cpp_oracle_interop(self.repo_root)
+        self.assertEqual(
+            sorted(results),
+            ["game_controller_operation", "joint_state", "point_cloud2", "simple_struct_varray"],
+        )
+        for case_name, result in results.items():
+            with self.subTest(case_name=case_name):
+                self.assertGreater(result["payload_size"], 4)
+                self.assertEqual(len(result["encapsulation"]), 4)
+                self.assertEqual(result["decoded"], result["expected"])
 
     def test_javascript_from_dict_handles_primitive_and_struct_arrays(self):
         result = validate_javascript_from_dict_roundtrip(self.repo_root)

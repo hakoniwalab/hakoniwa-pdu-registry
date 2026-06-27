@@ -13,6 +13,7 @@ from pathlib import Path
 from .code_generator import CodeGenerator
 
 CPP_ORACLE_BUILD_DIR = Path(tempfile.gettempdir()) / "hako-pdu-cpp-tests"
+CPP_CDR_ORACLE_BUILD_DIR = Path(tempfile.gettempdir()) / "hako-pdu-cpp-cdr-tests"
 
 
 def parse_offset_entry_size(parts):
@@ -2888,6 +2889,117 @@ def ensure_cpp_oracle_tools(repo_root: Path):
         "point_cloud2_dump": CPP_ORACLE_BUILD_DIR / "point_cloud2_cpp_dump",
         "simple_struct_varray_dump": CPP_ORACLE_BUILD_DIR / "simple_struct_varray_cpp_dump",
     }
+
+
+def ensure_cpp_cdr_oracle_tools(repo_root: Path):
+    subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(repo_root / "tests" / "cpp"),
+            "-B",
+            str(CPP_CDR_ORACLE_BUILD_DIR),
+            "-DHAKO_PDU_FETCH_FASTCDR=ON",
+        ],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(CPP_CDR_ORACLE_BUILD_DIR),
+            "-j4",
+            "--target",
+            "hakoniwa_pdu_cpp_cdr_tests",
+            "hakoniwa_pdu_cpp_cdr_oracle_tool",
+        ],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return {
+        "test_bin": CPP_CDR_ORACLE_BUILD_DIR / "hakoniwa_pdu_cpp_cdr_tests",
+        "oracle_tool": CPP_CDR_ORACLE_BUILD_DIR / "hakoniwa_pdu_cpp_cdr_oracle_tool",
+    }
+
+
+def validate_cdr_cpp_oracle_interop(repo_root: Path):
+    tools = ensure_cpp_cdr_oracle_tools(repo_root)
+    expected_by_case = {
+        "game_controller_operation": {
+            "axis": [0.5, -1.0, 2.0, -3.0, 4.0, -5.0],
+            "button": [True, False, True, True, False, True, False, True, True, False, True, False, True, True, False],
+        },
+        "joint_state": {
+            "header": {"stamp": {"sec": 12, "nanosec": 345}, "frame_id": "joint_frame"},
+            "name": ["joint_a", "joint_b"],
+            "position": [1.0, 2.0],
+            "velocity": [3.0],
+            "effort": [4.0, 5.0, 6.0],
+        },
+        "point_cloud2": {
+            "header": {"stamp": {"sec": 1, "nanosec": 200}, "frame_id": "pc"},
+            "height": 2,
+            "width": 3,
+            "fields": [
+                {"name": "x", "offset": 0, "datatype": 7, "count": 1},
+                {"name": "intensity", "offset": 4, "datatype": 7, "count": 1},
+            ],
+            "is_bigendian": False,
+            "point_step": 8,
+            "row_step": 24,
+            "data": [1, 2, 3, 4, 5, 6],
+            "is_dense": True,
+        },
+        "simple_struct_varray": {
+            "aaa": 7,
+            "fixed_str": ["alpha", "beta"],
+            "varray_str": ["gamma", "delta"],
+            "fixed_array": [
+                {"data": [1, 2], "fixed_array": [3, 4] + [0] * 8, "p_mem1": 5},
+                {"data": [6], "fixed_array": [7, 8] + [0] * 8, "p_mem1": 9},
+                {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+                {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+                {"data": [], "fixed_array": [0] * 10, "p_mem1": 0},
+            ],
+            "data": [
+                {"data": [10, 11], "fixed_array": [12, 13] + [0] * 8, "p_mem1": 14},
+                {"data": [15], "fixed_array": [16, 17] + [0] * 8, "p_mem1": 18},
+            ],
+        },
+    }
+
+    results = {}
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        for case_name, expected in expected_by_case.items():
+            payload_path = tmpdir_path / f"{case_name}.cdr"
+            subprocess.run(
+                [str(tools["oracle_tool"]), "encode", case_name, str(payload_path)],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            decoded = subprocess.run(
+                [str(tools["oracle_tool"]), "decode", case_name, str(payload_path)],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            payload = payload_path.read_bytes()
+            results[case_name] = {
+                "expected": expected,
+                "decoded": json.loads(decoded.stdout),
+                "payload_size": len(payload),
+                "encapsulation": list(payload[:4]),
+            }
+    return results
 
 
 def validate_game_controller_operation_cpp_oracle_interop(repo_root: Path):

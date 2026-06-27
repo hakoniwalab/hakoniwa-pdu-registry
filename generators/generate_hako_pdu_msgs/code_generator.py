@@ -522,6 +522,7 @@ class CodeGenerator:
         shared_context = {'container': {}}
         self._generate_shared_file(shared_context, 'pdu_csharp_v2_runtime_cs.tpl', csharp_v2_dir / "PduRuntime.cs", "C# v2 runtime")
         self._generate_shared_file(shared_context, 'pdu_godot_runtime_hpp.tpl', godot_cpp_runtime_dir / "PduRuntime.hpp", "Godot C++ runtime")
+        self._generate_shared_file(shared_context, 'pdu_cdr_runtime_hpp.tpl', types_dir / "pdu_cdr_runtime.hpp", "CDR runtime")
 
         for package_msg in message_cache.keys():
             context = self._prepare_context(package_msg, message_cache, varray_size_def)
@@ -532,6 +533,7 @@ class CodeGenerator:
             self._generate_file(context, 'pdu_cpptypes_hpp.tpl', types_dir, "pdu_cpptype_{msg_name}.hpp", "C++ type header")
             self._generate_file(context, 'pdu_ctypes_conv_cpp.tpl', types_dir, "pdu_ctype_conv_{msg_name}.hpp", "C->C++ conv header")
             self._generate_file(context, 'pdu_cpptypes_conv_cpp.tpl', types_dir, "pdu_cpptype_conv_{msg_name}.hpp", "C++->C conv header")
+            self._generate_file(context, 'pdu_cpptype_cdr_conv_hako_template.hpp.j2', types_dir, "pdu_cpptype_cdr_conv_{msg_name}.hpp", "C++<->CDR conv header")
             # Python
             self._generate_file(context, 'pdu_pytypes_py.tpl', python_dir, "pdu_pytype_{msg_name}.py", "Python type definition")
             # JavaScript

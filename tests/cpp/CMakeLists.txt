@@ -8,6 +8,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 enable_testing()
 
 find_package(GTest REQUIRED)
+find_package(fastcdr CONFIG QUIET)
+
+option(HAKO_PDU_FETCH_FASTCDR "Fetch Fast-CDR when it is not installed" ON)
+
+if(NOT fastcdr_FOUND AND HAKO_PDU_FETCH_FASTCDR)
+  include(FetchContent)
+  FetchContent_Declare(
+    fastcdr
+    GIT_REPOSITORY https://github.com/eProsima/Fast-CDR.git
+    GIT_TAG        v2.3.6
+  )
+  FetchContent_MakeAvailable(fastcdr)
+  set(fastcdr_FOUND TRUE)
+endif()
 
 add_executable(hakoniwa_pdu_cpp_tests
   drone_visual_state_cpp_interop_test.cpp
@@ -117,3 +131,34 @@ target_include_directories(float64_multi_array_cpp_dump PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(hakoniwa_pdu_cpp_tests)
+
+if(fastcdr_FOUND)
+  add_executable(hakoniwa_pdu_cpp_cdr_tests
+    cdr_conversion_test.cpp
+  )
+
+  add_executable(hakoniwa_pdu_cpp_cdr_oracle_tool
+    cdr_oracle_tool.cpp
+  )
+
+  target_include_directories(hakoniwa_pdu_cpp_cdr_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/../../pdu/types
+  )
+
+  target_include_directories(hakoniwa_pdu_cpp_cdr_oracle_tool PRIVATE
+    ${PROJECT_SOURCE_DIR}/../../pdu/types
+  )
+
+  target_link_libraries(hakoniwa_pdu_cpp_cdr_tests PRIVATE
+    GTest::gtest_main
+    fastcdr
+  )
+
+  target_link_libraries(hakoniwa_pdu_cpp_cdr_oracle_tool PRIVATE
+    fastcdr
+  )
+
+  gtest_discover_tests(hakoniwa_pdu_cpp_cdr_tests)
+else()
+  message(STATUS "fastcdr was not found; skipping Fast-CDR C++ tests")
+endif()

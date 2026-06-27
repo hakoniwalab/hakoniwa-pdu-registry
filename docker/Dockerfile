@@ -1,4 +1,4 @@
-ARG ROS_DISTRO=foxy
+ARG ROS_DISTRO=jazzy
 FROM ros:${ROS_DISTRO}-ros-base AS hakoniwa-pdu-registry-dev
 
 ARG ROS_DISTRO

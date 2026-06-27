@@ -15,6 +15,30 @@ from generators.generate_hako_pdu_msgs.main import get_search_paths
 from generators.generate_hako_pdu_msgs.ros_message_parser import find_ros_message_file
 
 
+def read_required_ros_distro():
+    version_file = REPO_ROOT / "ROS_VERSION.txt"
+    try:
+        return version_file.read_text(encoding="utf-8").strip()
+    except FileNotFoundError as err:
+        raise RuntimeError(f"Missing required ROS version file: {version_file}") from err
+
+
+def guard_ros_distro():
+    required = read_required_ros_distro()
+    if required != "jazzy":
+        raise RuntimeError(
+            f"ROS_VERSION.txt must be 'jazzy' for type hash generation, got '{required}'."
+        )
+
+    actual = os.environ.get("ROS_DISTRO", "")
+    if actual != required:
+        actual_label = actual or "<unset>"
+        raise RuntimeError(
+            f"ROS_DISTRO must be '{required}' for type hash generation, got '{actual_label}'. "
+            "Run this tool inside the Jazzy Docker image or source a ROS 2 Jazzy environment."
+        )
+
+
 def require_rosidl_type_description():
     try:
         import rosidl_generator_type_description as type_description
@@ -204,6 +228,7 @@ def main():
     args = parser.parse_args()
 
     try:
+        guard_ros_distro()
         type_description, definition, convert_to_idl = require_rosidl_type_description()
         search_paths, initial_messages, message_cache = resolve_messages(
             args.ros_msgs_file,

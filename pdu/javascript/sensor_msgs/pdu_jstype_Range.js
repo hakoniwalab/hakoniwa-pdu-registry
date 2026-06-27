@@ -19,6 +19,8 @@ export class Range {
     max_range;
 /** @type { number } */
     range;
+/** @type { number } */
+    variance;
 
 
     constructor() {
@@ -28,6 +30,7 @@ export class Range {
         this.min_range = 0.0;
         this.max_range = 0.0;
         this.range = 0.0;
+        this.variance = 0.0;
     }
 
     /**
@@ -101,6 +104,17 @@ export class Range {
                 d['range'] = field_val;
             }
         }
+        {
+            // handle field 'variance'
+            const field_val = this.variance;
+            if (typeof field_val?.toDict === 'function') {
+                d['variance'] = field_val.toDict();
+            } else if (Array.isArray(field_val)) {
+                d['variance'] = field_val.map(item => typeof item?.toDict === 'function' ? item.toDict() : item);
+            } else {
+                d['variance'] = field_val;
+            }
+        }
         return d;
     }
 
@@ -130,6 +144,9 @@ export class Range {
         }
         if (d.hasOwnProperty('range')) {
             obj.range = d.range;
+        }
+        if (d.hasOwnProperty('variance')) {
+            obj.variance = d.variance;
         }
         return obj;
     }

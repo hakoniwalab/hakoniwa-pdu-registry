@@ -59,5 +59,10 @@ namespace hakoniwa.pdu.msgs.sensor_msgs
             get => _pdu.GetData<float>("range");
             set => _pdu.SetData("range", value);
         }
+        public float variance
+        {
+            get => _pdu.GetData<float>("variance");
+            set => _pdu.SetData("variance", value);
+        }
     }
 }

@@ -12,6 +12,7 @@ typedef struct {
         Hako_float32 min_range;
         Hako_float32 max_range;
         Hako_float32 range;
+        Hako_float32 variance;
 } Hako_Range;
 
 #endif /* _pdu_ctype_sensor_msgs_Range_H_ */

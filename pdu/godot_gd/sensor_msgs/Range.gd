@@ -14,6 +14,7 @@ var field_of_view: float = 0.0
 var min_range: float = 0.0
 var max_range: float = 0.0
 var range: float = 0.0
+var variance: float = 0.0
 
 static func from_dict(d: Dictionary) -> HakoPdu_sensor_msgs_Range:
     var obj := HakoPdu_sensor_msgs_Range.new()
@@ -29,6 +30,8 @@ static func from_dict(d: Dictionary) -> HakoPdu_sensor_msgs_Range:
         obj.max_range = d["max_range"]
     if d.has("range"):
         obj.range = d["range"]
+    if d.has("variance"):
+        obj.variance = d["variance"]
     return obj
 
 func to_dict() -> Dictionary:
@@ -39,4 +42,5 @@ func to_dict() -> Dictionary:
     d["min_range"] = min_range
     d["max_range"] = max_range
     d["range"] = range
+    d["variance"] = variance
     return d

@@ -37,6 +37,8 @@ inline void binary_read_recursive_Range(
         binary_data, base_off + 148);
     obj["range"] = hako::godot_runtime::read_float32(
         binary_data, base_off + 152);
+    obj["variance"] = hako::godot_runtime::read_float32(
+        binary_data, base_off + 156);
 }
 
 inline godot::Dictionary pdu_to_godot_Range(const godot::PackedByteArray &binary_data)
@@ -56,7 +58,7 @@ inline void binary_write_recursive_Range(
     hako::godot_runtime::DynamicAllocator &allocator,
     const godot::Dictionary &obj)
 {
-    allocator.ensure_size(parent_off + 156);
+    allocator.ensure_size(parent_off + 160);
     if (obj.has("header")) {
         hako::godot_pdu::std_msgs::binary_write_recursive_Header(
             parent_off + 0,
@@ -93,6 +95,12 @@ inline void binary_write_recursive_Range(
             hako::godot_runtime::get_binary_for_float32(
                 hako::godot_runtime::variant_to_float32(obj["range"])),
             parent_off + 152);
+    }
+    if (obj.has("variance")) {
+        allocator.add(
+            hako::godot_runtime::get_binary_for_float32(
+                hako::godot_runtime::variant_to_float32(obj["variance"])),
+            parent_off + 156);
     }
 }
 

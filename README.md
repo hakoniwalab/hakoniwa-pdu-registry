@@ -82,6 +82,17 @@ bash docker/pull-image.bash
 # bash docker/create-image.bash
 ```
 
+The Dockerfile defaults to the pinned ROS distro used by the current committed
+PDU contract. To test another ROS distro explicitly:
+
+```bash
+bash docker/create-image.bash jazzy
+```
+
+Changing `ROS_DISTRO` can change upstream ROS `.msg` definitions and therefore
+can change generated PDU layouts. Treat non-default distro builds as compatibility
+tests unless the generated artifact diff is intentionally accepted.
+
 2. Configure the target message list and search paths.
 
 Edit `config/ros_msgs.txt` to list the ROS messages to convert.

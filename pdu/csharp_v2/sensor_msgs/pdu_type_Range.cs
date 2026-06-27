@@ -15,6 +15,7 @@ namespace Hakoniwa.Pdu.CSharpV2.sensor_msgs
         public float min_range { get; set; } = 0.0F;
         public float max_range { get; set; } = 0.0F;
         public float range { get; set; } = 0.0F;
+        public float variance { get; set; } = 0.0F;
 
         public Dictionary<string, object?> ToDictionary()
         {
@@ -25,6 +26,7 @@ namespace Hakoniwa.Pdu.CSharpV2.sensor_msgs
             dict["min_range"] = ToSerializableValue(min_range);
             dict["max_range"] = ToSerializableValue(max_range);
             dict["range"] = ToSerializableValue(range);
+            dict["variance"] = ToSerializableValue(variance);
             return dict;
         }
 
@@ -54,6 +56,10 @@ namespace Hakoniwa.Pdu.CSharpV2.sensor_msgs
             if (dict.TryGetValue("range", out var rangeValue))
             {
                 obj.range = PduRuntime.ConvertValue<float>(rangeValue);
+            }
+            if (dict.TryGetValue("variance", out var varianceValue))
+            {
+                obj.variance = PduRuntime.ConvertValue<float>(varianceValue);
             }
             return obj;
         }

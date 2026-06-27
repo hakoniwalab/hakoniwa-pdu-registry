@@ -4,3 +4,4 @@ single:primitive:field_of_view:float32:140:4
 single:primitive:min_range:float32:144:4
 single:primitive:max_range:float32:148:4
 single:primitive:range:float32:152:4
+single:primitive:variance:float32:156:4

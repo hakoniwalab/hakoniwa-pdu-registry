@@ -40,6 +40,8 @@ static inline int _pdu2ros_Range(const char* heap_ptr, Hako_Range &src, sensor_m
     hako_convert_pdu2ros(src.max_range, dst.max_range);
     // primitive convert
     hako_convert_pdu2ros(src.range, dst.range);
+    // primitive convert
+    hako_convert_pdu2ros(src.variance, dst.variance);
     (void)heap_ptr;
     return 0;
 }
@@ -78,6 +80,8 @@ static inline bool _ros2pdu_Range(sensor_msgs::msg::Range &src, Hako_Range &dst,
         hako_convert_ros2pdu(src.max_range, dst.max_range);
         // primitive convert
         hako_convert_ros2pdu(src.range, dst.range);
+        // primitive convert
+        hako_convert_ros2pdu(src.variance, dst.variance);
     } catch (const std::runtime_error& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;

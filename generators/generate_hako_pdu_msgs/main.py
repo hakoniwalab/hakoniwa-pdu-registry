@@ -2,6 +2,7 @@ import argparse
 import sys
 import json
 import shutil
+import os
 from pathlib import Path
 
 # 同じパッケージ内のモジュールをインポート
@@ -21,10 +22,15 @@ def get_search_paths(search_path_file, project_root, ros_root=None):
     
     adjusted_paths = []
     for p in paths:
+        p = os.path.expandvars(p)
         if p.startswith('/root/workspace/hakoniwa-pdu-registry'):
             adjusted_paths.append(str(project_root / Path(p).relative_to('/root/workspace/hakoniwa-pdu-registry')))
-        elif ros_root and p.startswith('/opt/ros/foxy'):
-            adjusted_paths.append(str(Path(ros_root) / Path(p).relative_to('/opt/ros/foxy')))
+        elif ros_root and p.startswith('/opt/ros/'):
+            parts = Path(p).parts
+            if len(parts) >= 5:
+                adjusted_paths.append(str(Path(ros_root).joinpath(*parts[4:])))
+            else:
+                adjusted_paths.append(str(Path(ros_root)))
         else:
             adjusted_paths.append(p)
             
@@ -66,7 +72,7 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             common_ros_pkgs = ['std_msgs', 'geometry_msgs', 'sensor_msgs', 'nav_msgs']
             if any(pkg in msg for msg in unresolved_msgs for pkg in common_ros_pkgs):
                 print("\nHint: If you are running outside Docker, try using the --ros-root option.", file=sys.stderr)
-                print("      Example: --ros-root /path/to/your/ros2_foxy/install", file=sys.stderr)
+                print("      Example: --ros-root /path/to/your/ros2/install", file=sys.stderr)
         
         print(f"-> Found {len(message_cache)} total messages to process.")
 

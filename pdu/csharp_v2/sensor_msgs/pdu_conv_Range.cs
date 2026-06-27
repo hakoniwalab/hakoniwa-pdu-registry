@@ -34,6 +34,7 @@ namespace Hakoniwa.Pdu.CSharpV2.sensor_msgs
             obj.min_range = PduRuntime.ReadFloat32(binaryData, baseOff + 144);
             obj.max_range = PduRuntime.ReadFloat32(binaryData, baseOff + 148);
             obj.range = PduRuntime.ReadFloat32(binaryData, baseOff + 152);
+            obj.variance = PduRuntime.ReadFloat32(binaryData, baseOff + 156);
         }
 
         public static void BinaryWriteRecursive(int parentOff, BinaryWriterContainer writer, DynamicAllocator allocator, Range obj)
@@ -44,6 +45,7 @@ namespace Hakoniwa.Pdu.CSharpV2.sensor_msgs
             allocator.Add(PduRuntime.GetBinaryForFloat32(obj.min_range), parentOff + 144);
             allocator.Add(PduRuntime.GetBinaryForFloat32(obj.max_range), parentOff + 148);
             allocator.Add(PduRuntime.GetBinaryForFloat32(obj.range), parentOff + 152);
+            allocator.Add(PduRuntime.GetBinaryForFloat32(obj.variance), parentOff + 156);
         }
     }
 }

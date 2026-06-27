@@ -71,6 +71,14 @@ export function binary_read_recursive_Range(meta, binary_data, js_obj, base_off)
         js_obj.range = PduUtils.binToValue("float32", bin);
     }
     
+    // member: variance, type: float32 (primitive)
+
+    
+    {
+        const bin = PduUtils.readBinary(binary_data, base_off + 156, 4);
+        js_obj.variance = PduUtils.binToValue("float32", bin);
+    }
+    
     return js_obj;
 }
 
@@ -147,6 +155,14 @@ export function binary_write_recursive_Range(parent_off, bw_container, allocator
     {
         const bin = PduUtils.typeToBin("float32", js_obj.range, 4);
         allocator.add(bin, parent_off + 152);
+    }
+    
+    // member: variance, type: float32 (primitive)
+
+    
+    {
+        const bin = PduUtils.typeToBin("float32", js_obj.variance, 4);
+        allocator.add(bin, parent_off + 156);
     }
     
 }

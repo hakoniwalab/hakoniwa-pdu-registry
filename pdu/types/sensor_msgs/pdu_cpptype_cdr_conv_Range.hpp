@@ -43,6 +43,8 @@ static inline void cpp2cdr_Range(
     cdr << src.max_range;
     // primitive: range
     cdr << src.range;
+    // primitive: variance
+    cdr << src.variance;
 }
 
 /***************************
@@ -66,6 +68,8 @@ static inline void cdr2cpp_Range(
     cdr >> dst.max_range;
     // primitive: range
     cdr >> dst.range;
+    // primitive: variance
+    cdr >> dst.variance;
 }
 
 /***************************

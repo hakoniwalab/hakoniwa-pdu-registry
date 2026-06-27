@@ -39,6 +39,8 @@ static inline int cpp_pdu2cpp_Range(const char* heap_ptr, Hako_Range &src, HakoC
     hako_convert_pdu2cpp(src.max_range, dst.max_range);
     // primitive convert
     hako_convert_pdu2cpp(src.range, dst.range);
+    // primitive convert
+    hako_convert_pdu2cpp(src.variance, dst.variance);
     (void)heap_ptr;
     return 0;
 }
@@ -77,6 +79,8 @@ static inline bool cpp_cpp2pdu_Range(HakoCpp_Range &src, Hako_Range &dst, PduDyn
         hako_convert_cpp2pdu(src.max_range, dst.max_range);
         // primitive convert
         hako_convert_cpp2pdu(src.range, dst.range);
+        // primitive convert
+        hako_convert_cpp2pdu(src.variance, dst.variance);
     } catch (const std::runtime_error& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;

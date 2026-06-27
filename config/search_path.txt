@@ -1,2 +1,2 @@
-/opt/ros/foxy/share
+/opt/ros/${ROS_DISTRO}/share
 /root/workspace/hakoniwa-pdu-registry/idl

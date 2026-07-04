@@ -1,3 +1,4 @@
+import importlib
 import importlib.util
 import json
 import os
@@ -2927,9 +2928,8 @@ def ensure_cpp_cdr_oracle_tools(repo_root: Path):
     }
 
 
-def validate_cdr_cpp_oracle_interop(repo_root: Path):
-    tools = ensure_cpp_cdr_oracle_tools(repo_root)
-    expected_by_case = {
+def cdr_oracle_expected_cases():
+    return {
         "game_controller_operation": {
             "axis": [0.5, -1.0, 2.0, -3.0, 4.0, -5.0],
             "button": [True, False, True, True, False, True, False, True, True, False, True, False, True, True, False],
@@ -2973,6 +2973,11 @@ def validate_cdr_cpp_oracle_interop(repo_root: Path):
         },
     }
 
+
+def validate_cdr_cpp_oracle_interop(repo_root: Path):
+    tools = ensure_cpp_cdr_oracle_tools(repo_root)
+    expected_by_case = cdr_oracle_expected_cases()
+
     results = {}
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
@@ -2998,6 +3003,66 @@ def validate_cdr_cpp_oracle_interop(repo_root: Path):
                 "decoded": json.loads(decoded.stdout),
                 "payload_size": len(payload),
                 "encapsulation": list(payload[:4]),
+            }
+    return results
+
+
+def validate_python_cdr_cpp_oracle_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    tools = ensure_cpp_cdr_oracle_tools(repo_root)
+    expected_by_case = cdr_oracle_expected_cases()
+    type_by_case = {
+        "game_controller_operation": ("hako_msgs", "GameControllerOperation"),
+        "joint_state": ("sensor_msgs", "JointState"),
+        "point_cloud2": ("sensor_msgs", "PointCloud2"),
+        "simple_struct_varray": ("hako_msgs", "SimpleStructVarray"),
+    }
+
+    results = {}
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        for case_name, expected in expected_by_case.items():
+            pkg_name, msg_name = type_by_case[case_name]
+            type_module = importlib.import_module(f"pdu.python.{pkg_name}.pdu_pytype_{msg_name}")
+            cdr_module = importlib.import_module(f"pdu.python.{pkg_name}.pdu_cdr_conv_{msg_name}")
+            cls = getattr(type_module, msg_name)
+            py_to_cdr = getattr(cdr_module, f"py_to_cdr_{msg_name}")
+            cdr_to_py = getattr(cdr_module, f"cdr_to_py_{msg_name}")
+
+            cpp_payload_path = tmpdir_path / f"{case_name}_cpp.cdr"
+            py_payload_path = tmpdir_path / f"{case_name}_py.cdr"
+            subprocess.run(
+                [str(tools["oracle_tool"]), "encode", case_name, str(cpp_payload_path)],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            cpp_payload = cpp_payload_path.read_bytes()
+            py_decoded = cdr_to_py(cpp_payload).to_dict()
+
+            py_obj = cls.from_dict(expected)
+            py_payload = py_to_cdr(py_obj)
+            py_payload_path.write_bytes(py_payload)
+
+            cpp_decoded = subprocess.run(
+                [str(tools["oracle_tool"]), "decode", case_name, str(py_payload_path)],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            results[case_name] = {
+                "expected": expected,
+                "python_decoded_cpp_payload": py_decoded,
+                "cpp_decoded_python_payload": json.loads(cpp_decoded.stdout),
+                "payloads_equal": py_payload == cpp_payload,
+                "python_payload_size": len(py_payload),
+                "cpp_payload_size": len(cpp_payload),
             }
     return results
 

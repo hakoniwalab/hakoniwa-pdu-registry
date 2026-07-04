@@ -52,6 +52,7 @@ Typical outputs include:
 
 - C/C++ headers for PDU layouts and conversions under `pdu/types/`
 - Python types and converters under `pdu/python/`
+- C++ and Python CDR payload converters for ROS-compatible serialized messages
 - JavaScript types and converters under `pdu/javascript/`
 - C# types under `pdu/csharp/`
 - Godot GDScript type definitions under `pdu/godot_gd/`
@@ -193,7 +194,7 @@ ROS 2 IDL (.msg)
   -> Dependency resolution
   -> Code generation (C/C++/C#/Python/JS)
   -> Offset calculation (C compile)
-  -> Converter generation (Python/JS)
+  -> Converter generation (Python/JS/CDR)
   -> Size registry generation
   -> Committed PDU artifacts
 ```
@@ -233,7 +234,8 @@ Key rules (details in `docs/specs/pdu-binary-format.md`):
 2. Generate multi-language type definitions into `pdu/`.
 3. Calculate BaseData offsets by compiling a small C program.
 4. Generate Python and JavaScript converters from the offset files.
-5. Generate the PDU size registry under `pdu/pdu_size/`.
+5. Generate CDR payload converters for C++ and Python.
+6. Generate the PDU size registry under `pdu/pdu_size/`.
 
 ## Language support
 
@@ -259,6 +261,26 @@ p.z = 7.89
 pdu_bytes = py_to_pdu_Point(p)
 restored = pdu_to_py_Point(pdu_bytes)
 ```
+
+Python also has generated CDR payload converters. These produce ROS-compatible
+serialized message payloads with CDR encapsulation, independent of the Hakoniwa
+PDU `[MetaData][BaseData][HeapData]` format:
+
+```python
+from pdu.python.geometry_msgs.pdu_pytype_Point import Point
+from pdu.python.geometry_msgs.pdu_cdr_conv_Point import py_to_cdr_Point, cdr_to_py_Point
+
+p = Point()
+p.x = 1.23
+p.y = 4.56
+p.z = 7.89
+
+cdr_payload = py_to_cdr_Point(p)
+restored = cdr_to_py_Point(cdr_payload)
+```
+
+The Python CDR backend uses the generated Python message classes directly and
+does not require CycloneDDS, pycdr2, Fast-CDR, or a ROS 2 Python runtime.
 
 ### JavaScript
 
@@ -368,6 +390,7 @@ Expected inputs from that directory are:
 Run the Godot-related tests in this order:
 
 ```bash
+python3 -m unittest tests.test_cdr_generator
 python3 -m unittest tests.test_godot_generator
 python3 -m unittest tests.test_godot_runtime
 python3 -m unittest tests.test_godot_cpp_bridge
@@ -383,6 +406,7 @@ python3 -m unittest tests.test_generated_artifacts
 This test suite will:
 
 - build C++ oracle dump tools under `tests/cpp/`
+- compare generated C++ and Python CDR payloads for representative messages
 - build the minimal Godot GDExtension bridge under `tests/godot_cpp_smoke/`
 - run headless Godot
 - compare Godot conversion results against canonical expectations

@@ -178,6 +178,24 @@ def get_godot_io_suffix(name):
     }
     return suffix_map[get_array_type(name)]
 
+def get_python_cdr_suffix(name):
+    suffix_map = {
+        "bool": "Bool",
+        "byte": "UInt8",
+        "char": "UInt8",
+        "int8": "Int8",
+        "uint8": "UInt8",
+        "int16": "Int16",
+        "uint16": "UInt16",
+        "int32": "Int32",
+        "uint32": "UInt32",
+        "int64": "Int64",
+        "uint64": "UInt64",
+        "float32": "Float32",
+        "float64": "Float64",
+    }
+    return suffix_map[get_array_type(name)]
+
 # --- Python用ヘルパー関数 ---
 def get_python_class_name(name):
     return get_msg_type(name)
@@ -468,6 +486,7 @@ class CodeGenerator:
             'get_python_type_hint': get_python_type_hint,
             'get_python_default_value': get_python_default_value,
             'get_python_class_name': get_python_class_name,
+            'get_python_cdr_suffix': get_python_cdr_suffix,
             'get_js_type_hint': get_js_type_hint,
             'get_js_default_value': get_js_default_value,
             'get_js_class_name': get_js_class_name,
@@ -523,6 +542,7 @@ class CodeGenerator:
         self._generate_shared_file(shared_context, 'pdu_csharp_v2_runtime_cs.tpl', csharp_v2_dir / "PduRuntime.cs", "C# v2 runtime")
         self._generate_shared_file(shared_context, 'pdu_godot_runtime_hpp.tpl', godot_cpp_runtime_dir / "PduRuntime.hpp", "Godot C++ runtime")
         self._generate_shared_file(shared_context, 'pdu_cdr_runtime_hpp.tpl', types_dir / "pdu_cdr_runtime.hpp", "CDR runtime")
+        self._generate_shared_file(shared_context, 'pdu_cdr_runtime_py.tpl', python_dir / "pdu_cdr_runtime.py", "Python CDR runtime")
 
         for package_msg in message_cache.keys():
             context = self._prepare_context(package_msg, message_cache, varray_size_def)
@@ -536,6 +556,7 @@ class CodeGenerator:
             self._generate_file(context, 'pdu_cpptype_cdr_conv_hako_template.hpp.j2', types_dir, "pdu_cpptype_cdr_conv_{msg_name}.hpp", "C++<->CDR conv header")
             # Python
             self._generate_file(context, 'pdu_pytypes_py.tpl', python_dir, "pdu_pytype_{msg_name}.py", "Python type definition")
+            self._generate_file(context, 'pdu_pytype_cdr_conv_hako_template.py.j2', python_dir, "pdu_cdr_conv_{msg_name}.py", "Python<->CDR conv module")
             # JavaScript
             self._generate_file(context, 'pdu_jstypes_js.tpl', javascript_dir, "pdu_jstype_{msg_name}.js", "JavaScript type definition")
             # Godot GDScript

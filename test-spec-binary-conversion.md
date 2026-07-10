@@ -121,6 +121,55 @@ PDU バイナリ変換について、少なくとも以下を継続的に保証�
 - `82 tests`
 - `OK`
 
+### CDR payload interop
+
+通常の Hakoniwa PDU バイナリとは別に、ROS 2 互換 serialized message payload としての CDR 変換も検証する。
+
+CDR では以下を前提にする。
+
+- C++ Fast-CDR backend を CDR oracle とする
+- payload 先頭に CDR encapsulation bytes `[0, 1, 0, 0]` がある
+- `bool` は CDR boolean として 1 byte で表現する
+- 可変長配列は CDR sequence として扱う
+- 固定長配列は IDL fixed array として要素を順に serialize する
+- 通常 PDU の `heap_off`, `total_size`, `{len, off}` heap 参照は CDR には存在しない
+
+現在の CDR テスト:
+
+- `test_cdr_cpp_oracle_encode_decode_representative_cases`
+  - C++ CDR oracle が representative cases を encode/decode できること
+  - CDR encapsulation が存在すること
+- `test_python_cdr_cpp_oracle_interop_representative_cases`
+  - C++ oracle payload を Python CDR が decode できること
+  - Python CDR payload を C++ oracle が decode できること
+  - Python と C++ の CDR payload が byte 完全一致すること
+- `test_python_javascript_cdr_binary_interop_representative_cases`
+  - Python CDR payload を JavaScript CDR が decode できること
+  - JavaScript CDR payload を Python CDR が decode できること
+  - JavaScript 自身の encode/decode roundtrip が成立すること
+  - Python と JavaScript の CDR payload が byte 完全一致すること
+
+現在の CDR representative cases:
+
+- `hako_msgs/GameControllerOperation`
+  - primitive fixed array
+  - `bool[]`
+- `sensor_msgs/JointState`
+  - `string[]`
+  - primitive sequence
+  - `size=0 / 1 / multiple`
+- `sensor_msgs/PointCloud2`
+  - struct sequence
+  - primitive byte sequence
+  - `size=0 / 1 / multiple`
+- `hako_msgs/SimpleStructVarray`
+  - fixed `string[]`
+  - `string[]` sequence
+  - fixed struct array
+  - struct sequence
+  - nested primitive sequence
+  - `size=0 / 1 / multiple`
+
 ### C# v2 実行 smoke
 
 - `hako_msgs/GameControllerOperation`
@@ -631,6 +680,21 @@ python3 -m unittest tests.test_generated_artifacts
 - `C++ -> Python / JavaScript` decode
 - `Python / JavaScript` encode semantic match
 - `varray size=0 / 1 / 2` ケース
+
+CDR だけを個別に確認する場合:
+
+```bash
+python3 -m unittest \
+  tests.test_generated_artifacts.GeneratedArtifactsTest.test_cdr_cpp_oracle_encode_decode_representative_cases \
+  tests.test_generated_artifacts.GeneratedArtifactsTest.test_python_cdr_cpp_oracle_interop_representative_cases \
+  tests.test_generated_artifacts.GeneratedArtifactsTest.test_python_javascript_cdr_binary_interop_representative_cases
+```
+
+役割:
+
+- C++ CDR oracle の encode/decode
+- C++ CDR と Python CDR の byte-level interop
+- Python CDR と JavaScript CDR の byte-level interop
 
 ### 2. C++ オラクルテスト
 

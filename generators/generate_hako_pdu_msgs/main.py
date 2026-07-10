@@ -36,7 +36,17 @@ def get_search_paths(search_path_file, project_root, ros_root=None):
             
     return adjusted_paths
 
-def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ros_root, offset_include_path_file):
+def create_python_init_files(output_root_dir):
+    python_dir = Path(output_root_dir) / 'python'
+    if not python_dir.exists():
+        return
+    (Path(output_root_dir) / '__init__.py').touch()
+    (python_dir / '__init__.py').touch()
+    for package_dir in python_dir.iterdir():
+        if package_dir.is_dir():
+            (package_dir / '__init__.py').touch()
+
+def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ros_root, offset_include_path_file, cdr_only=False):
     output_root_dir = Path(output_dir)
     template_dir = Path(template_dir)
     project_root = Path.cwd()
@@ -76,8 +86,16 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
         
         print(f"-> Found {len(message_cache)} total messages to process.")
 
-        print("\n2. Generating code for all languages...")
         code_gen = CodeGenerator(template_dir)
+        if cdr_only:
+            print("\n2. Generating CDR code only...")
+            code_gen.generate_cdr(message_cache, varray_size_def, output_root_dir)
+            print("\n3. Creating __init__.py for Python packages...")
+            create_python_init_files(output_root_dir)
+            print("\n--- CDR Generation Complete! ---")
+            return
+
+        print("\n2. Generating code for all languages...")
         code_gen.generate_all(message_cache, varray_size_def, output_root_dir)
         
         print("\n3. Calculating offsets...")
@@ -96,10 +114,7 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             offset_calculator.calculate_offsets(context, offset_output_dir)
 
         print("\n4. Creating __init__.py for Python packages...")
-        python_dir = output_root_dir / 'python'
-        for package_dir in python_dir.iterdir():
-            if package_dir.is_dir():
-                (package_dir / '__init__.py').touch()
+        create_python_init_files(output_root_dir)
 
         print("\n5. Generating Python converters from offset files...")
         for package_msg, msg_def in message_cache.items():
@@ -163,8 +178,17 @@ def main():
     parser.add_argument('--template-dir', type=str, default='template', help="Directory of the template files")
     parser.add_argument('--ros-root', type=str, help="(Optional) Root path of your local ROS 2 installation for testing.")
     parser.add_argument('--offset-include-path-file', type=str, help="Path to a file listing additional include paths for offset calculation.")
+    parser.add_argument('--cdr', action='store_true', help="Generate only CDR type/runtime/converter files and skip offset-based generation.")
     
     args = parser.parse_args()
-    run_generation(args.ros_msgs_file, args.search_path_file, args.output_dir, args.template_dir, args.ros_root, args.offset_include_path_file)
+    run_generation(
+        args.ros_msgs_file,
+        args.search_path_file,
+        args.output_dir,
+        args.template_dir,
+        args.ros_root,
+        args.offset_include_path_file,
+        cdr_only=args.cdr,
+    )
 if __name__ == '__main__':
     main()

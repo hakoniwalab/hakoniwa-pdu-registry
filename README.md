@@ -52,7 +52,7 @@ Typical outputs include:
 
 - C/C++ headers for PDU layouts and conversions under `pdu/types/`
 - Python types and converters under `pdu/python/`
-- C++ and Python CDR payload converters for ROS-compatible serialized messages
+- C++, Python, and JavaScript CDR payload converters for ROS-compatible serialized messages
 - JavaScript types and converters under `pdu/javascript/`
 - C# types under `pdu/csharp/`
 - Godot GDScript type definitions under `pdu/godot_gd/`
@@ -187,6 +187,13 @@ python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt \
   --ros-root /path/to/your/ros2/install
 ```
 
+To regenerate only CDR-related artifacts and skip the slower offset-based PDU
+converter generation, pass `--cdr`:
+
+```bash
+python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt --cdr
+```
+
 ## How it works (high-level)
 
 ```
@@ -234,7 +241,7 @@ Key rules (details in `docs/specs/pdu-binary-format.md`):
 2. Generate multi-language type definitions into `pdu/`.
 3. Calculate BaseData offsets by compiling a small C program.
 4. Generate Python and JavaScript converters from the offset files.
-5. Generate CDR payload converters for C++ and Python.
+5. Generate CDR payload converters for C++, Python, and JavaScript.
 6. Generate the PDU size registry under `pdu/pdu_size/`.
 
 ## Language support
@@ -286,6 +293,24 @@ does not require CycloneDDS, pycdr2, Fast-CDR, or a ROS 2 Python runtime.
 
 Generated JS files live under `pdu/javascript/<pkg>/`.
 Converters follow the `pdu_conv_<Msg>.js` naming convention.
+
+JavaScript also has generated CDR payload converters:
+
+```javascript
+import { Point } from './pdu/javascript/geometry_msgs/pdu_jstype_Point.js';
+import { PduPointConverter } from './pdu/javascript/geometry_msgs/pdu_cdr_conv_Point.js';
+
+const p = new Point();
+p.x = 1.23;
+p.y = 4.56;
+p.z = 7.89;
+
+const cdrPayload = PduPointConverter.to_cdr(p);
+const restored = PduPointConverter.from_cdr(cdrPayload);
+```
+
+The shared JavaScript CDR runtime is generated at
+`pdu/javascript/pdu_cdr_runtime.js`.
 
 ### Godot
 
@@ -403,10 +428,19 @@ If you only want the Godot-heavy binary interop checks:
 python3 -m unittest tests.test_generated_artifacts
 ```
 
+If you only want the CDR interop checks:
+
+```bash
+python3 -m unittest \
+  tests.test_generated_artifacts.GeneratedArtifactsTest.test_cdr_cpp_oracle_encode_decode_representative_cases \
+  tests.test_generated_artifacts.GeneratedArtifactsTest.test_python_cdr_cpp_oracle_interop_representative_cases \
+  tests.test_generated_artifacts.GeneratedArtifactsTest.test_python_javascript_cdr_binary_interop_representative_cases
+```
+
 This test suite will:
 
 - build C++ oracle dump tools under `tests/cpp/`
-- compare generated C++ and Python CDR payloads for representative messages
+- compare generated C++, Python, and JavaScript CDR payloads for representative messages
 - build the minimal Godot GDExtension bridge under `tests/godot_cpp_smoke/`
 - run headless Godot
 - compare Godot conversion results against canonical expectations

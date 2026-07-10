@@ -407,7 +407,6 @@ def get_base_data_size(offset_data):
     # そのエントリの末尾がBaseDataのサイズとなる
     return last_entry['offset'] + last_entry['size']
 
-
 # --- CodeGenerator クラス ---
 
 class CodeGenerator:
@@ -543,6 +542,7 @@ class CodeGenerator:
         self._generate_shared_file(shared_context, 'pdu_godot_runtime_hpp.tpl', godot_cpp_runtime_dir / "PduRuntime.hpp", "Godot C++ runtime")
         self._generate_shared_file(shared_context, 'pdu_cdr_runtime_hpp.tpl', types_dir / "pdu_cdr_runtime.hpp", "CDR runtime")
         self._generate_shared_file(shared_context, 'pdu_cdr_runtime_py.tpl', python_dir / "pdu_cdr_runtime.py", "Python CDR runtime")
+        self._generate_shared_file(shared_context, 'pdu_cdr_runtime_js.tpl', javascript_dir / "pdu_cdr_runtime.js", "JavaScript CDR runtime")
 
         for package_msg in message_cache.keys():
             context = self._prepare_context(package_msg, message_cache, varray_size_def)
@@ -559,8 +559,31 @@ class CodeGenerator:
             self._generate_file(context, 'pdu_pytype_cdr_conv_hako_template.py.j2', python_dir, "pdu_cdr_conv_{msg_name}.py", "Python<->CDR conv module")
             # JavaScript
             self._generate_file(context, 'pdu_jstypes_js.tpl', javascript_dir, "pdu_jstype_{msg_name}.js", "JavaScript type definition")
+            self._generate_file(context, 'pdu_jstype_cdr_conv_hako_template.js.j2', javascript_dir, "pdu_cdr_conv_{msg_name}.js", "JavaScript<->CDR conv module")
             # Godot GDScript
             self._generate_file(context, 'pdu_godot_types_gd.tpl', godot_gd_dir, "{msg_name}.gd", "Godot GDScript type definition")
+
+    def generate_cdr(self, message_cache, varray_size_def, output_root_dir):
+        types_dir = Path(output_root_dir) / 'types'
+        python_dir = Path(output_root_dir) / 'python'
+        javascript_dir = Path(output_root_dir) / 'javascript'
+
+        shared_context = {'container': {}}
+        self._generate_shared_file(shared_context, 'pdu_cdr_runtime_hpp.tpl', types_dir / "pdu_cdr_runtime.hpp", "CDR runtime")
+        self._generate_shared_file(shared_context, 'pdu_cdr_runtime_py.tpl', python_dir / "pdu_cdr_runtime.py", "Python CDR runtime")
+        self._generate_shared_file(shared_context, 'pdu_cdr_runtime_js.tpl', javascript_dir / "pdu_cdr_runtime.js", "JavaScript CDR runtime")
+
+        for package_msg in message_cache.keys():
+            context = self._prepare_context(package_msg, message_cache, varray_size_def)
+            # C++ CDR needs the C++ type definition.
+            self._generate_file(context, 'pdu_cpptypes_hpp.tpl', types_dir, "pdu_cpptype_{msg_name}.hpp", "C++ type header")
+            self._generate_file(context, 'pdu_cpptype_cdr_conv_hako_template.hpp.j2', types_dir, "pdu_cpptype_cdr_conv_{msg_name}.hpp", "C++<->CDR conv header")
+            # Python CDR needs the Python type definition.
+            self._generate_file(context, 'pdu_pytypes_py.tpl', python_dir, "pdu_pytype_{msg_name}.py", "Python type definition")
+            self._generate_file(context, 'pdu_pytype_cdr_conv_hako_template.py.j2', python_dir, "pdu_cdr_conv_{msg_name}.py", "Python<->CDR conv module")
+            # JavaScript CDR needs the JavaScript type definition.
+            self._generate_file(context, 'pdu_jstypes_js.tpl', javascript_dir, "pdu_jstype_{msg_name}.js", "JavaScript type definition")
+            self._generate_file(context, 'pdu_jstype_cdr_conv_hako_template.js.j2', javascript_dir, "pdu_cdr_conv_{msg_name}.js", "JavaScript<->CDR conv module")
 
     def generate_javascript_converter(self, msg_def, offset_data, output_root_dir):
         javascript_dir = Path(output_root_dir) / 'javascript'

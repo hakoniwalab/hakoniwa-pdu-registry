@@ -2974,6 +2974,91 @@ def cdr_oracle_expected_cases():
     }
 
 
+def cdr_python_javascript_cases():
+    def simple_varray(data=None, fixed_array=None, p_mem1=0):
+        return {
+            "data": list(data or []),
+            "fixed_array": list(fixed_array or ([0] * 10)),
+            "p_mem1": p_mem1,
+        }
+
+    cases = dict(cdr_oracle_expected_cases())
+    cases.update({
+        "joint_state_empty": {
+            "header": {"stamp": {"sec": 0, "nanosec": 0}, "frame_id": ""},
+            "name": [],
+            "position": [],
+            "velocity": [],
+            "effort": [],
+        },
+        "joint_state_single": {
+            "header": {"stamp": {"sec": 1, "nanosec": 2}, "frame_id": "one"},
+            "name": ["joint_0"],
+            "position": [-1.25],
+            "velocity": [0.0],
+            "effort": [9.5],
+        },
+        "point_cloud2_empty": {
+            "header": {"stamp": {"sec": 0, "nanosec": 0}, "frame_id": ""},
+            "height": 0,
+            "width": 0,
+            "fields": [],
+            "is_bigendian": False,
+            "point_step": 0,
+            "row_step": 0,
+            "data": [],
+            "is_dense": False,
+        },
+        "point_cloud2_single_field": {
+            "header": {"stamp": {"sec": 3, "nanosec": 4}, "frame_id": "pc_one"},
+            "height": 1,
+            "width": 1,
+            "fields": [{"name": "z", "offset": 0, "datatype": 7, "count": 1}],
+            "is_bigendian": False,
+            "point_step": 4,
+            "row_step": 4,
+            "data": [10, 20, 30, 40],
+            "is_dense": True,
+        },
+        "simple_struct_varray_empty": {
+            "aaa": 0,
+            "fixed_str": ["", ""],
+            "varray_str": [],
+            "fixed_array": [simple_varray() for _ in range(5)],
+            "data": [],
+        },
+        "simple_struct_varray_single": {
+            "aaa": -3,
+            "fixed_str": ["a", "bb"],
+            "varray_str": ["v"],
+            "fixed_array": [
+                simple_varray([1], [2, 3] + [0] * 8, 4),
+                simple_varray(),
+                simple_varray(),
+                simple_varray(),
+                simple_varray(),
+            ],
+            "data": [simple_varray([5], [6, 7] + [0] * 8, 8)],
+        },
+    })
+    return cases
+
+
+def cdr_python_javascript_case_types():
+    return {
+        "game_controller_operation": ("hako_msgs", "GameControllerOperation"),
+        "joint_state": ("sensor_msgs", "JointState"),
+        "joint_state_empty": ("sensor_msgs", "JointState"),
+        "joint_state_single": ("sensor_msgs", "JointState"),
+        "point_cloud2": ("sensor_msgs", "PointCloud2"),
+        "point_cloud2_empty": ("sensor_msgs", "PointCloud2"),
+        "point_cloud2_single_field": ("sensor_msgs", "PointCloud2"),
+        "simple_struct_varray": ("hako_msgs", "SimpleStructVarray"),
+        "simple_struct_varray_empty": ("hako_msgs", "SimpleStructVarray"),
+        "simple_struct_varray_single": ("hako_msgs", "SimpleStructVarray"),
+    }
+
+
 def validate_cdr_cpp_oracle_interop(repo_root: Path):
     tools = ensure_cpp_cdr_oracle_tools(repo_root)
     expected_by_case = cdr_oracle_expected_cases()
@@ -3003,6 +3088,85 @@ def validate_cdr_cpp_oracle_interop(repo_root: Path):
                 "decoded": json.loads(decoded.stdout),
                 "payload_size": len(payload),
                 "encapsulation": list(payload[:4]),
+            }
+    return results
+
+
+def validate_python_javascript_cdr_binary_interop(repo_root: Path):
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    expected_by_case = cdr_python_javascript_cases()
+    type_by_case = cdr_python_javascript_case_types()
+
+    results = {}
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        for case_name, expected in expected_by_case.items():
+            pkg_name, msg_name = type_by_case[case_name]
+            type_module = importlib.import_module(f"pdu.python.{pkg_name}.pdu_pytype_{msg_name}")
+            cdr_module = importlib.import_module(f"pdu.python.{pkg_name}.pdu_cdr_conv_{msg_name}")
+            cls = getattr(type_module, msg_name)
+            py_to_cdr = getattr(cdr_module, f"py_to_cdr_{msg_name}")
+            cdr_to_py = getattr(cdr_module, f"cdr_to_py_{msg_name}")
+
+            py_obj = cls.from_dict(expected)
+            py_payload = py_to_cdr(py_obj)
+
+            expected_json_path = tmpdir_path / f"{case_name}_expected.json"
+            py_payload_path = tmpdir_path / f"{case_name}_py.cdr"
+            js_payload_path = tmpdir_path / f"{case_name}_js.cdr"
+            js_script_path = tmpdir_path / f"{case_name}.mjs"
+
+            expected_json_path.write_text(json.dumps(expected), encoding="utf-8")
+            py_payload_path.write_bytes(py_payload)
+
+            js_type_module_uri = (repo_root / "pdu" / "javascript" / pkg_name / f"pdu_jstype_{msg_name}.js").resolve().as_uri()
+            js_cdr_module_uri = (repo_root / "pdu" / "javascript" / pkg_name / f"pdu_cdr_conv_{msg_name}.js").resolve().as_uri()
+            js_script = f"""
+import fs from 'node:fs';
+import {{ {msg_name} }} from {json.dumps(js_type_module_uri)};
+import {{ Pdu{msg_name}Converter }} from {json.dumps(js_cdr_module_uri)};
+
+const expected = JSON.parse(fs.readFileSync({json.dumps(str(expected_json_path))}, 'utf-8'));
+const pyPayload = fs.readFileSync({json.dumps(str(py_payload_path))});
+const pyArrayBuffer = pyPayload.buffer.slice(pyPayload.byteOffset, pyPayload.byteOffset + pyPayload.byteLength);
+const javascriptDecodedPythonPayload = Pdu{msg_name}Converter.from_cdr(pyArrayBuffer).toDict();
+
+const jsObj = {msg_name}.fromDict(expected);
+const jsPayload = Buffer.from(Pdu{msg_name}Converter.to_cdr(jsObj));
+fs.writeFileSync({json.dumps(str(js_payload_path))}, jsPayload);
+
+const jsArrayBuffer = jsPayload.buffer.slice(jsPayload.byteOffset, jsPayload.byteOffset + jsPayload.byteLength);
+const javascriptDecodedOwnPayload = Pdu{msg_name}Converter.from_cdr(jsArrayBuffer).toDict();
+
+console.log(JSON.stringify({{
+  javascriptDecodedPythonPayload,
+  javascriptDecodedOwnPayload,
+  javascriptPayloadSize: jsPayload.length
+}}));
+"""
+            js_script_path.write_text(js_script, encoding="utf-8")
+
+            js_result = subprocess.run(
+                ["node", str(js_script_path)],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            js_payload = js_payload_path.read_bytes()
+            js_decoded = json.loads(js_result.stdout)
+
+            results[case_name] = {
+                "expected": expected,
+                "javascript_decoded_python_payload": js_decoded["javascriptDecodedPythonPayload"],
+                "javascript_decoded_javascript_payload": js_decoded["javascriptDecodedOwnPayload"],
+                "python_decoded_javascript_payload": cdr_to_py(js_payload).to_dict(),
+                "payloads_equal": py_payload == js_payload,
+                "python_payload_size": len(py_payload),
+                "javascript_payload_size": js_decoded["javascriptPayloadSize"],
+                "encapsulation": list(py_payload[:4]),
             }
     return results
 

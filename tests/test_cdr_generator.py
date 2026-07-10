@@ -128,6 +128,44 @@ class CdrGeneratorTest(unittest.TestCase):
                 for name in [name for name in sys.modules if name == "pdu" or name.startswith("pdu.")]:
                     del sys.modules[name]
 
+    def test_generates_javascript_cdr_converter_and_runtime(self):
+        resolver = DependencyResolver(["idl"])
+        message_cache = resolver.get_all_dependencies(["hako_msgs/GameControllerOperation"])
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "pdu"
+            with redirect_stdout(StringIO()):
+                CodeGenerator("template").generate_all(message_cache, {}, output_dir)
+
+            runtime = output_dir / "javascript" / "pdu_cdr_runtime.js"
+            converter = output_dir / "javascript" / "hako_msgs" / "pdu_cdr_conv_GameControllerOperation.js"
+            self.assertTrue(runtime.exists())
+            self.assertTrue(converter.exists())
+
+            text = converter.read_text(encoding="utf-8")
+            self.assertIn("class PduGameControllerOperationConverter", text)
+            self.assertIn("to_cdr", text)
+            self.assertIn("from_cdr", text)
+
+    def test_generate_cdr_emits_only_cdr_related_artifacts(self):
+        resolver = DependencyResolver(["idl"])
+        message_cache = resolver.get_all_dependencies(["hako_msgs/GameControllerOperation"])
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "pdu"
+            with redirect_stdout(StringIO()):
+                CodeGenerator("template").generate_cdr(message_cache, {}, output_dir)
+
+            self.assertTrue((output_dir / "types" / "pdu_cdr_runtime.hpp").exists())
+            self.assertTrue((output_dir / "types" / "hako_msgs" / "pdu_cpptype_GameControllerOperation.hpp").exists())
+            self.assertTrue((output_dir / "types" / "hako_msgs" / "pdu_cpptype_cdr_conv_GameControllerOperation.hpp").exists())
+            self.assertTrue((output_dir / "python" / "pdu_cdr_runtime.py").exists())
+            self.assertTrue((output_dir / "python" / "hako_msgs" / "pdu_cdr_conv_GameControllerOperation.py").exists())
+            self.assertTrue((output_dir / "javascript" / "pdu_cdr_runtime.js").exists())
+            self.assertTrue((output_dir / "javascript" / "hako_msgs" / "pdu_cdr_conv_GameControllerOperation.js").exists())
+            self.assertFalse((output_dir / "offset").exists())
+            self.assertFalse((output_dir / "javascript" / "hako_msgs" / "pdu_conv_GameControllerOperation.js").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

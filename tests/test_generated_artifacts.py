@@ -45,6 +45,7 @@ from generators.generate_hako_pdu_msgs.validate_generated_artifacts import (
     validate_python_joint_state_layout,
     validate_python_bool_array_roundtrip,
     validate_python_cdr_cpp_oracle_interop,
+    validate_python_javascript_cdr_binary_interop,
     validate_simple_struct_varray_godot_cpp_oracle_interop,
     validate_simple_struct_varray_godot_cpp_size_case,
     validate_simple_struct_varray_cpp_oracle_interop,
@@ -101,6 +102,32 @@ class GeneratedArtifactsTest(unittest.TestCase):
                 self.assertEqual(result["cpp_decoded_python_payload"], result["expected"])
                 self.assertTrue(result["payloads_equal"])
                 self.assertEqual(result["python_payload_size"], result["cpp_payload_size"])
+
+    def test_python_javascript_cdr_binary_interop_representative_cases(self):
+        results = validate_python_javascript_cdr_binary_interop(self.repo_root)
+        self.assertEqual(
+            sorted(results),
+            [
+                "game_controller_operation",
+                "joint_state",
+                "joint_state_empty",
+                "joint_state_single",
+                "point_cloud2",
+                "point_cloud2_empty",
+                "point_cloud2_single_field",
+                "simple_struct_varray",
+                "simple_struct_varray_empty",
+                "simple_struct_varray_single",
+            ],
+        )
+        for case_name, result in results.items():
+            with self.subTest(case_name=case_name):
+                self.assertEqual(result["encapsulation"], [0, 1, 0, 0])
+                self.assertEqual(result["javascript_decoded_python_payload"], result["expected"])
+                self.assertEqual(result["javascript_decoded_javascript_payload"], result["expected"])
+                self.assertEqual(result["python_decoded_javascript_payload"], result["expected"])
+                self.assertTrue(result["payloads_equal"])
+                self.assertEqual(result["javascript_payload_size"], result["python_payload_size"])
 
     def test_javascript_from_dict_handles_primitive_and_struct_arrays(self):
         result = validate_javascript_from_dict_roundtrip(self.repo_root)

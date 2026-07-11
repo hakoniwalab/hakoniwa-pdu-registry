@@ -30,7 +30,17 @@ export class {{ container.class_name }} {
             if (typeof field_val?.toDict === 'function') {
                 d['{{ field.name }}'] = field_val.toDict();
             } else if (Array.isArray(field_val)) {
-                d['{{ field.name }}'] = field_val.map(item => typeof item?.toDict === 'function' ? item.toDict() : item);
+                d['{{ field.name }}'] = field_val.map(item => {
+                    if (typeof item?.toDict === 'function') {
+                        return item.toDict();
+                    }
+                    if (typeof item === 'bigint') {
+                        return item.toString();
+                    }
+                    return item;
+                });
+            } else if (typeof field_val === 'bigint') {
+                d['{{ field.name }}'] = field_val.toString();
             } else {
                 d['{{ field.name }}'] = field_val;
             }
@@ -54,6 +64,8 @@ export class {{ container.class_name }} {
             if (Array.isArray(d.{{ field.name }})) {
                 obj.{{ field.name }} = d.{{ field.name }}.map(item => item_class.fromDict(item));
             }
+        {%- elif array_type in ['int64', 'uint64'] %}
+            obj.{{ field.name }} = Array.isArray(d.{{ field.name }}) ? d.{{ field.name }}.map(item => BigInt(item)) : [];
         {%- else %}
             obj.{{ field.name }} = d.{{ field.name }};
         {%- endif %}
@@ -62,6 +74,8 @@ export class {{ container.class_name }} {
             if (d.{{ field.name }}) {
                 obj.{{ field.name }} = field_class.fromDict(d.{{ field.name }});
             }
+    {%- elif field.type in ['int64', 'uint64'] %}
+            obj.{{ field.name }} = BigInt(d.{{ field.name }});
     {%- else %}
             obj.{{ field.name }} = d.{{ field.name }};
     {%- endif %}

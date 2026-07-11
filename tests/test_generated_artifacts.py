@@ -19,6 +19,7 @@ from generators.generate_hako_pdu_msgs.validate_generated_artifacts import (
     validate_godot_from_dict_roundtrip,
     validate_javascript_from_dict_roundtrip,
     validate_javascript_bool_array_roundtrip,
+    validate_javascript_bigint_json_roundtrip,
     validate_joint_state_cpp_oracle_interop,
     validate_joint_state_godot_cpp_oracle_interop,
     validate_joint_state_godot_cpp_size_case,
@@ -108,13 +109,17 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(
             sorted(results),
             [
+                "add_two_ints_request_packet",
                 "game_controller_operation",
+                "image",
                 "joint_state",
                 "joint_state_empty",
                 "joint_state_single",
                 "point_cloud2",
                 "point_cloud2_empty",
                 "point_cloud2_single_field",
+                "pose",
+                "sim_time_uint64",
                 "simple_struct_varray",
                 "simple_struct_varray_empty",
                 "simple_struct_varray_single",
@@ -125,7 +130,7 @@ class GeneratedArtifactsTest(unittest.TestCase):
                 self.assertEqual(result["encapsulation"], [0, 1, 0, 0])
                 self.assertEqual(result["javascript_decoded_python_payload"], result["expected"])
                 self.assertEqual(result["javascript_decoded_javascript_payload"], result["expected"])
-                self.assertEqual(result["python_decoded_javascript_payload"], result["expected"])
+                self.assertEqual(result["python_decoded_javascript_payload"], result["python_expected"])
                 self.assertTrue(result["payloads_equal"])
                 self.assertEqual(result["javascript_payload_size"], result["python_payload_size"])
 
@@ -143,6 +148,20 @@ class GeneratedArtifactsTest(unittest.TestCase):
         self.assertEqual(result["varray_str_json"], result["expected_varray_str"])
         self.assertEqual(result["fixed_array_data0_json"], result["expected_fixed_array_data0"])
         self.assertEqual(result["data_array0_json"], result["expected_data_array0"])
+
+    def test_javascript_bigint_fields_are_json_safe_strings(self):
+        result = validate_javascript_bigint_json_roundtrip(self.repo_root)
+        self.assertEqual(result["requestDict"], {
+            "a": "-9223372036854775808",
+            "b": "9223372036854775807",
+        })
+        self.assertEqual(result["requestJson"], result["requestDict"])
+        self.assertEqual(result["requestRestoredTypes"], {"a": "bigint", "b": "bigint"})
+        self.assertEqual(result["requestRestoredValues"], result["requestDict"])
+        self.assertEqual(result["simTimeDict"], {"time_usec": "18446744073709551615"})
+        self.assertEqual(result["simTimeJson"], result["simTimeDict"])
+        self.assertEqual(result["simTimeRestoredType"], "bigint")
+        self.assertEqual(result["simTimeRestoredValue"], "18446744073709551615")
 
     def test_godot_from_dict_handles_nested_struct_and_arrays(self):
         result = validate_godot_from_dict_roundtrip(self.repo_root)

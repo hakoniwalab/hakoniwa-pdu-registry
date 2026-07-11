@@ -244,6 +244,53 @@ console.log(JSON.stringify({
     }
 
 
+def validate_javascript_bigint_json_roundtrip(repo_root: Path):
+    script = """
+import { AddTwoIntsRequest } from './pdu/javascript/hako_srv_msgs/pdu_jstype_AddTwoIntsRequest.js';
+import { SimTime } from './pdu/javascript/hako_msgs/pdu_jstype_SimTime.js';
+
+const request = AddTwoIntsRequest.fromDict({
+  a: '-9223372036854775808',
+  b: '9223372036854775807'
+});
+const requestDict = request.toDict();
+const requestJsonText = request.toJSON();
+const requestJson = JSON.parse(requestJsonText);
+const requestRestored = AddTwoIntsRequest.fromJSON(requestJsonText);
+
+const simTime = SimTime.fromDict({ time_usec: '18446744073709551615' });
+const simTimeDict = simTime.toDict();
+const simTimeJsonText = simTime.toJSON();
+const simTimeJson = JSON.parse(simTimeJsonText);
+const simTimeRestored = SimTime.fromJSON(simTimeJsonText);
+
+console.log(JSON.stringify({
+  requestDict,
+  requestJson,
+  requestRestoredTypes: {
+    a: typeof requestRestored.a,
+    b: typeof requestRestored.b
+  },
+  requestRestoredValues: {
+    a: requestRestored.a.toString(),
+    b: requestRestored.b.toString()
+  },
+  simTimeDict,
+  simTimeJson,
+  simTimeRestoredType: typeof simTimeRestored.time_usec,
+  simTimeRestoredValue: simTimeRestored.time_usec.toString()
+}));
+"""
+    result = subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
 def ensure_godot_cpp_bridge(repo_root: Path):
     godot_cpp_root = Path(
         os.environ.get(
@@ -2984,6 +3031,13 @@ def cdr_python_javascript_cases():
 
     cases = dict(cdr_oracle_expected_cases())
     cases.update({
+        "sim_time_uint64": {
+            "time_usec": "18446744073709551615",
+        },
+        "pose": {
+            "position": {"x": 1.25, "y": -2.5, "z": 3.75},
+            "orientation": {"x": 0.0, "y": 0.0, "z": 0.70710678, "w": 0.70710678},
+        },
         "joint_state_empty": {
             "header": {"stamp": {"sec": 0, "nanosec": 0}, "frame_id": ""},
             "name": [],
@@ -3020,6 +3074,15 @@ def cdr_python_javascript_cases():
             "data": [10, 20, 30, 40],
             "is_dense": True,
         },
+        "image": {
+            "header": {"stamp": {"sec": 5, "nanosec": 6}, "frame_id": "camera"},
+            "height": 2,
+            "width": 2,
+            "encoding": "rgba8",
+            "is_bigendian": 0,
+            "step": 8,
+            "data": [0, 1, 2, 3, 252, 253, 254, 255],
+        },
         "simple_struct_varray_empty": {
             "aaa": 0,
             "fixed_str": ["", ""],
@@ -3040,19 +3103,44 @@ def cdr_python_javascript_cases():
             ],
             "data": [simple_varray([5], [6, 7] + [0] * 8, 8)],
         },
+        "add_two_ints_request_packet": {
+            "header": {
+                "request_id": 42,
+                "service_name": "add_two_ints",
+                "client_name": "client_a",
+                "opcode": 1,
+                "status_poll_interval_msec": 100,
+            },
+            "body": {
+                "a": "-9223372036854775808",
+                "b": "9223372036854775807",
+            },
+        },
     })
+    return cases
+
+
+def cdr_python_javascript_python_cases():
+    cases = json.loads(json.dumps(cdr_python_javascript_cases()))
+    cases["sim_time_uint64"]["time_usec"] = 18446744073709551615
+    cases["add_two_ints_request_packet"]["body"]["a"] = -9223372036854775808
+    cases["add_two_ints_request_packet"]["body"]["b"] = 9223372036854775807
     return cases
 
 
 def cdr_python_javascript_case_types():
     return {
+        "add_two_ints_request_packet": ("hako_srv_msgs", "AddTwoIntsRequestPacket"),
         "game_controller_operation": ("hako_msgs", "GameControllerOperation"),
+        "image": ("sensor_msgs", "Image"),
         "joint_state": ("sensor_msgs", "JointState"),
         "joint_state_empty": ("sensor_msgs", "JointState"),
         "joint_state_single": ("sensor_msgs", "JointState"),
+        "pose": ("geometry_msgs", "Pose"),
         "point_cloud2": ("sensor_msgs", "PointCloud2"),
         "point_cloud2_empty": ("sensor_msgs", "PointCloud2"),
         "point_cloud2_single_field": ("sensor_msgs", "PointCloud2"),
+        "sim_time_uint64": ("hako_msgs", "SimTime"),
         "simple_struct_varray": ("hako_msgs", "SimpleStructVarray"),
         "simple_struct_varray_empty": ("hako_msgs", "SimpleStructVarray"),
         "simple_struct_varray_single": ("hako_msgs", "SimpleStructVarray"),
@@ -3097,12 +3185,14 @@ def validate_python_javascript_cdr_binary_interop(repo_root: Path):
         sys.path.insert(0, str(repo_root))
 
     expected_by_case = cdr_python_javascript_cases()
+    python_expected_by_case = cdr_python_javascript_python_cases()
     type_by_case = cdr_python_javascript_case_types()
 
     results = {}
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
         for case_name, expected in expected_by_case.items():
+            python_expected = python_expected_by_case[case_name]
             pkg_name, msg_name = type_by_case[case_name]
             type_module = importlib.import_module(f"pdu.python.{pkg_name}.pdu_pytype_{msg_name}")
             cdr_module = importlib.import_module(f"pdu.python.{pkg_name}.pdu_cdr_conv_{msg_name}")
@@ -3110,7 +3200,7 @@ def validate_python_javascript_cdr_binary_interop(repo_root: Path):
             py_to_cdr = getattr(cdr_module, f"py_to_cdr_{msg_name}")
             cdr_to_py = getattr(cdr_module, f"cdr_to_py_{msg_name}")
 
-            py_obj = cls.from_dict(expected)
+            py_obj = cls.from_dict(python_expected)
             py_payload = py_to_cdr(py_obj)
 
             expected_json_path = tmpdir_path / f"{case_name}_expected.json"
@@ -3128,17 +3218,30 @@ import fs from 'node:fs';
 import {{ {msg_name} }} from {json.dumps(js_type_module_uri)};
 import {{ Pdu{msg_name}Converter }} from {json.dumps(js_cdr_module_uri)};
 
+function jsonSafe(value) {{
+  if (typeof value === 'bigint') {{
+    return value.toString();
+  }}
+  if (Array.isArray(value)) {{
+    return value.map(jsonSafe);
+  }}
+  if (value && typeof value === 'object') {{
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, jsonSafe(item)]));
+  }}
+  return value;
+}}
+
 const expected = JSON.parse(fs.readFileSync({json.dumps(str(expected_json_path))}, 'utf-8'));
 const pyPayload = fs.readFileSync({json.dumps(str(py_payload_path))});
 const pyArrayBuffer = pyPayload.buffer.slice(pyPayload.byteOffset, pyPayload.byteOffset + pyPayload.byteLength);
-const javascriptDecodedPythonPayload = Pdu{msg_name}Converter.from_cdr(pyArrayBuffer).toDict();
+const javascriptDecodedPythonPayload = jsonSafe(Pdu{msg_name}Converter.from_cdr(pyArrayBuffer).toDict());
 
 const jsObj = {msg_name}.fromDict(expected);
 const jsPayload = Buffer.from(Pdu{msg_name}Converter.to_cdr(jsObj));
 fs.writeFileSync({json.dumps(str(js_payload_path))}, jsPayload);
 
 const jsArrayBuffer = jsPayload.buffer.slice(jsPayload.byteOffset, jsPayload.byteOffset + jsPayload.byteLength);
-const javascriptDecodedOwnPayload = Pdu{msg_name}Converter.from_cdr(jsArrayBuffer).toDict();
+const javascriptDecodedOwnPayload = jsonSafe(Pdu{msg_name}Converter.from_cdr(jsArrayBuffer).toDict());
 
 console.log(JSON.stringify({{
   javascriptDecodedPythonPayload,
@@ -3160,6 +3263,7 @@ console.log(JSON.stringify({{
 
             results[case_name] = {
                 "expected": expected,
+                "python_expected": python_expected,
                 "javascript_decoded_python_payload": js_decoded["javascriptDecodedPythonPayload"],
                 "javascript_decoded_javascript_payload": js_decoded["javascriptDecodedOwnPayload"],
                 "python_decoded_javascript_payload": cdr_to_py(js_payload).to_dict(),

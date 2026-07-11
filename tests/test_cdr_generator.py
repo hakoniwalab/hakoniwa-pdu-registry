@@ -8,6 +8,7 @@ from pathlib import Path
 
 from generators.generate_hako_pdu_msgs.code_generator import CodeGenerator
 from generators.generate_hako_pdu_msgs.dependency_resolver import DependencyResolver
+from generators.generate_hako_pdu_msgs.size_registry_generator import CdrSizeRegistryGenerator
 
 
 class CdrGeneratorTest(unittest.TestCase):
@@ -165,6 +166,32 @@ class CdrGeneratorTest(unittest.TestCase):
             self.assertTrue((output_dir / "javascript" / "hako_msgs" / "pdu_cdr_conv_GameControllerOperation.js").exists())
             self.assertFalse((output_dir / "offset").exists())
             self.assertFalse((output_dir / "javascript" / "hako_msgs" / "pdu_conv_GameControllerOperation.js").exists())
+
+    def test_generates_cdr_minimum_size_registries(self):
+        resolver = DependencyResolver(["idl"])
+        message_cache = resolver.get_all_dependencies(["hako_msgs/GameControllerOperation"])
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "pdu"
+            CdrSizeRegistryGenerator().generate(output_dir, message_cache)
+
+            c_header = output_dir / "types" / "pdu_cdr_size_registry.h"
+            c_source = output_dir / "types" / "pdu_cdr_size_registry.c"
+            py_registry = output_dir / "python" / "pdu_cdr_size.py"
+            js_registry = output_dir / "javascript" / "pdu_cdr_size.js"
+            self.assertTrue(c_header.exists())
+            self.assertTrue(c_source.exists())
+            self.assertTrue(py_registry.exists())
+            self.assertTrue(js_registry.exists())
+
+            c_header_text = c_header.read_text(encoding="utf-8")
+            c_source_text = c_source.read_text(encoding="utf-8")
+            py_text = py_registry.read_text(encoding="utf-8")
+            js_text = js_registry.read_text(encoding="utf-8")
+            self.assertIn("hako_pdu_cdr_get_size", c_header_text)
+            self.assertIn('{ "hako_msgs/GameControllerOperation", 67 }', c_source_text)
+            self.assertIn('"hako_msgs/GameControllerOperation": 67', py_text)
+            self.assertIn('"hako_msgs/GameControllerOperation": 67', js_text)
 
 
 if __name__ == "__main__":

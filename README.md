@@ -60,6 +60,7 @@ Typical outputs include:
 - Godot C++ runtime helpers under `pdu/godot_cpp_runtime/`
 - Offset files under `pdu/offset/` and `pdu/offset_text/`
 - Aligned size registry under `pdu/pdu_size/`
+- CDR minimum payload size registries under `pdu/types/pdu_cdr_size_registry.{h,c}`, `pdu/python/pdu_cdr_size.py`, and `pdu/javascript/pdu_cdr_size.js`
 - ROS 2 type hash metadata under `pdu/type_hash/`
 
 ## Where to start
@@ -243,6 +244,7 @@ Key rules (details in `docs/specs/pdu-binary-format.md`):
 4. Generate Python and JavaScript converters from the offset files.
 5. Generate CDR payload converters for C++, Python, and JavaScript.
 6. Generate the PDU size registry under `pdu/pdu_size/`.
+7. Generate CDR minimum payload size registries for Python and JavaScript.
 
 ## Language support
 
@@ -289,6 +291,10 @@ restored = cdr_to_py_Point(cdr_payload)
 The Python CDR backend uses the generated Python message classes directly and
 does not require CycloneDDS, pycdr2, Fast-CDR, or a ROS 2 Python runtime.
 
+For CDR size estimates, `pdu/python/pdu_cdr_size.py` provides minimum payload
+sizes. These sizes include the 4-byte CDR encapsulation header, count
+variable-length sequences as length 0, and count strings as empty strings.
+
 ### JavaScript
 
 Generated JS files live under `pdu/javascript/<pkg>/`.
@@ -311,6 +317,9 @@ const restored = PduPointConverter.from_cdr(cdrPayload);
 
 The shared JavaScript CDR runtime is generated at
 `pdu/javascript/pdu_cdr_runtime.js`.
+
+For CDR size estimates, `pdu/javascript/pdu_cdr_size.js` exports the same
+minimum payload size registry for JavaScript.
 
 ### Godot
 

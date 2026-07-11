@@ -170,6 +170,22 @@ CDR では以下を前提にする。
   - nested primitive sequence
   - `size=0 / 1 / multiple`
 
+CDR minimum size registry:
+
+- `pdu/types/pdu_cdr_size_registry.h`
+- `pdu/types/pdu_cdr_size_registry.c`
+- `pdu/python/pdu_cdr_size.py`
+- `pdu/javascript/pdu_cdr_size.js`
+
+この registry は schema から計算する最小 CDR payload size を保持する。
+
+- CDR encapsulation 4 bytes を含む
+- 可変長 sequence は length 0 として計算する
+- string は empty string として計算する
+- sequence length の `uint32` と empty string の null terminator はサイズに含む
+- CDR alignment / padding は field order に従って計算する
+- 通常 PDU の `pdu_size` とは別物であり、`MetaData`, `BaseData`, `HeapData`, `{len, off}` は含まない
+
 ### C# v2 実行 smoke
 
 - `hako_msgs/GameControllerOperation`

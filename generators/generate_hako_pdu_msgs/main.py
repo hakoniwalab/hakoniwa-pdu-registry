@@ -11,7 +11,7 @@ from .dependency_resolver import DependencyResolver
 from .code_generator import CodeGenerator
 from .offset_calculator import OffsetCalculator
 from .offset_parser import parse_offset_file
-from .size_registry_generator import SizeRegistryGenerator
+from .size_registry_generator import CdrSizeRegistryGenerator, SizeRegistryGenerator
 
 def get_search_paths(search_path_file, project_root, ros_root=None):
     """
@@ -92,6 +92,8 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             code_gen.generate_cdr(message_cache, varray_size_def, output_root_dir)
             print("\n3. Creating __init__.py for Python packages...")
             create_python_init_files(output_root_dir)
+            print("\n4. Generating CDR minimum size registry...")
+            CdrSizeRegistryGenerator().generate(output_root_dir, message_cache)
             print("\n--- CDR Generation Complete! ---")
             return
 
@@ -158,6 +160,9 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
 
         print("\n9. Generating PDU size registry...")
         SizeRegistryGenerator().generate(output_root_dir)
+
+        print("\n10. Generating CDR minimum size registry...")
+        CdrSizeRegistryGenerator().generate(output_root_dir, message_cache)
 
         print("\n--- Generation Complete! ---")
 

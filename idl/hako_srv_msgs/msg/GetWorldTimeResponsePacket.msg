@@ -1,0 +1,2 @@
+ServiceResponseHeader header
+GetWorldTimeResponse body

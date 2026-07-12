@@ -1,0 +1,2 @@
+uint64 session_id
+LogicalTime asset_time

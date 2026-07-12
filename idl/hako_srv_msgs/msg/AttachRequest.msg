@@ -1,0 +1,2 @@
+string asset_name
+uint64 delta_asset_tick

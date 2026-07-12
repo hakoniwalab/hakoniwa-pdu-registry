@@ -1,0 +1,2 @@
+LogicalTime world_time
+uint32 status_code

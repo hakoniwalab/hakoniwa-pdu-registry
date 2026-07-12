@@ -1,0 +1,4 @@
+uint32 result_code
+uint64 session_id
+LogicalTime world_time
+uint64 delta_asset_tick

@@ -1,0 +1,2 @@
+ServiceRequestHeader header
+GetWorldTimeRequest body

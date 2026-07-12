@@ -1,0 +1,2 @@
+single:primitive:session_id:uint64:0:8
+single:struct:asset_time:LogicalTime:8:16

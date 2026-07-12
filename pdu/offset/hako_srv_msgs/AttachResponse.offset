@@ -1,0 +1,4 @@
+single:primitive:result_code:uint32:0:4
+single:primitive:session_id:uint64:8:8
+single:struct:world_time:LogicalTime:16:16
+single:primitive:delta_asset_tick:uint64:32:8

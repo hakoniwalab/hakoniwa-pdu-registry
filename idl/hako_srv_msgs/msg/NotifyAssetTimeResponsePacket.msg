@@ -1,0 +1,2 @@
+ServiceResponseHeader header
+NotifyAssetTimeResponse body

@@ -1,0 +1,4 @@
+uint64 session_id
+LogicalTime asset_time
+---
+uint32 result_code

@@ -1,0 +1,2 @@
+single:primitive:result_code:uint32:0:4
+single:struct:world_time:LogicalTime:8:16

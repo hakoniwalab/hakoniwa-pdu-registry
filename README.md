@@ -54,6 +54,8 @@ Typical outputs include:
 - Python types and converters under `pdu/python/`
 - C++, Python, and JavaScript CDR payload converters for ROS-compatible serialized messages
 - JavaScript types and converters under `pdu/javascript/`
+- Ruby types and fixed-offset binary converters under `pdu/ruby/`
+- Elixir types and fixed-offset binary converters under `pdu/elixir/`
 - C# types under `pdu/csharp/`
 - Godot GDScript type definitions under `pdu/godot_gd/`
 - Godot C++ converters under `pdu/godot_cpp/`
@@ -120,6 +122,8 @@ python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt
 pdu/types/
 pdu/python/
 pdu/javascript/
+pdu/ruby/
+pdu/elixir/
 pdu/csharp/
 pdu/godot_gd/
 pdu/godot_cpp/
@@ -200,9 +204,10 @@ python3 -m generators.generate_hako_pdu_msgs.main config/ros_msgs.txt --cdr
 ```
 ROS 2 IDL (.msg)
   -> Dependency resolution
-  -> Code generation (C/C++/C#/Python/JS)
+  -> Code generation (C/C++/C#/Python/JS/Ruby/Elixir/Godot)
   -> Offset calculation (C compile)
-  -> Converter generation (Python/JS/CDR)
+  -> Fixed-offset converter generation (Python/JS/Ruby/Elixir/C# v2/Godot C++)
+  -> CDR converter generation (C++/Python/JS)
   -> Size registry generation
   -> Committed PDU artifacts
 ```
@@ -241,10 +246,10 @@ Key rules (details in `docs/specs/pdu-binary-format.md`):
 1. Resolve dependencies from `config/ros_msgs.txt` using `config/search_path.txt`.
 2. Generate multi-language type definitions into `pdu/`.
 3. Calculate BaseData offsets by compiling a small C program.
-4. Generate Python and JavaScript converters from the offset files.
+4. Generate Python, JavaScript, Ruby, Elixir, C# v2, and Godot C++ fixed-offset converters from the offset files.
 5. Generate CDR payload converters for C++, Python, and JavaScript.
 6. Generate the PDU size registry under `pdu/pdu_size/`.
-7. Generate CDR minimum payload size registries for Python and JavaScript.
+7. Generate CDR minimum payload size registries for C++, Python, and JavaScript.
 
 ## Language support
 
@@ -320,6 +325,64 @@ The shared JavaScript CDR runtime is generated at
 
 For CDR size estimates, `pdu/javascript/pdu_cdr_size.js` exports the same
 minimum payload size registry for JavaScript.
+
+### Ruby
+
+Generated Ruby files live under `pdu/ruby/<pkg>/`.
+
+Ruby currently has:
+
+- generated type classes named `Pdu::<Pkg>::<Msg>`;
+- generated fixed-offset Hakoniwa PDU binary converters named
+  `Pdu::<Pkg>::Conv<Msg>`;
+- support for fixed fields, fixed arrays, variable arrays, nested structs, and
+  nested variable arrays in the Hakoniwa `[MetaData][BaseData][HeapData]`
+  binary format.
+
+Example:
+
+```ruby
+require_relative "pdu/ruby/geometry_msgs/pdu_type_Point"
+require_relative "pdu/ruby/geometry_msgs/pdu_conv_Point"
+
+p = Pdu::GeometryMsgs::Point.new
+p.x = 1.23
+p.y = 4.56
+p.z = 7.89
+
+pdu_bytes = Pdu::GeometryMsgs::ConvPoint.to_pdu(p)
+restored = Pdu::GeometryMsgs::ConvPoint.from_pdu(pdu_bytes)
+```
+
+Ruby CDR converters are not currently generated. Do not treat Ruby fixed-offset
+PDU support as Ruby CDR support.
+
+### Elixir
+
+Generated Elixir files live under `pdu/elixir/<pkg>/`.
+
+Elixir currently has:
+
+- generated structs named `Pdu.<Pkg>.<Msg>`;
+- generated fixed-offset Hakoniwa PDU binary converters named
+  `Pdu.<Pkg>.Conv<Msg>`;
+- support for fixed fields, fixed arrays, variable arrays, nested structs, and
+  nested variable arrays in the Hakoniwa `[MetaData][BaseData][HeapData]`
+  binary format.
+
+Example:
+
+```elixir
+Code.require_file("pdu/elixir/geometry_msgs/pdu_type_Point.ex")
+Code.require_file("pdu/elixir/geometry_msgs/pdu_conv_Point.ex")
+
+p = %Pdu.GeometryMsgs.Point{x: 1.23, y: 4.56, z: 7.89}
+pdu_bytes = Pdu.GeometryMsgs.ConvPoint.to_pdu(p)
+restored = Pdu.GeometryMsgs.ConvPoint.from_pdu(pdu_bytes)
+```
+
+Elixir CDR converters are not currently generated. Do not treat Elixir
+fixed-offset PDU support as Elixir CDR support.
 
 ### Godot
 
@@ -437,6 +500,14 @@ If you only want the Godot-heavy binary interop checks:
 python3 -m unittest tests.test_generated_artifacts
 ```
 
+If you only want the Ruby/Elixir fixed-offset generation and interop checks:
+
+```bash
+python3 -m unittest \
+  tests.test_ruby_elixir_generator \
+  tests.test_ruby_elixir_generated_artifacts
+```
+
 If you only want the CDR interop checks:
 
 ```bash
@@ -450,6 +521,8 @@ This test suite will:
 
 - build C++ oracle dump tools under `tests/cpp/`
 - compare generated C++, Python, and JavaScript CDR payloads for representative messages
+- syntax-check generated Ruby and compile generated Elixir for representative messages
+- compare Ruby and Elixir fixed-offset PDU conversion against C++ and Python oracle data
 - build the minimal Godot GDExtension bridge under `tests/godot_cpp_smoke/`
 - run headless Godot
 - compare Godot conversion results against canonical expectations

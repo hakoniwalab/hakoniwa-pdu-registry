@@ -138,7 +138,27 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             if offset_data:
                 code_gen.generate_javascript_converter(msg_def, offset_data, output_root_dir)
 
-        print("\n7. Generating C# v2 converters from offset files...")
+        print("\n7. Generating Ruby converters from offset files...")
+        for package_msg, msg_def in message_cache.items():
+            pkg_name = msg_def['package']
+            msg_name = msg_def['message']
+            offset_file = offset_output_dir / pkg_name / f"{msg_name}.offset"
+
+            offset_data = parse_offset_file(offset_file)
+            if offset_data:
+                code_gen.generate_ruby_converter(msg_def, offset_data, output_root_dir)
+
+        print("\n8. Generating Elixir converters from offset files...")
+        for package_msg, msg_def in message_cache.items():
+            pkg_name = msg_def['package']
+            msg_name = msg_def['message']
+            offset_file = offset_output_dir / pkg_name / f"{msg_name}.offset"
+
+            offset_data = parse_offset_file(offset_file)
+            if offset_data:
+                code_gen.generate_elixir_converter(msg_def, offset_data, output_root_dir)
+
+        print("\n9. Generating C# v2 converters from offset files...")
         for package_msg, msg_def in message_cache.items():
             pkg_name = msg_def['package']
             msg_name = msg_def['message']
@@ -148,7 +168,7 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             if offset_data:
                 code_gen.generate_csharp_v2_converter(msg_def, offset_data, output_root_dir)
 
-        print("\n8. Generating Godot C++ converters from offset files...")
+        print("\n10. Generating Godot C++ converters from offset files...")
         for package_msg, msg_def in message_cache.items():
             pkg_name = msg_def['package']
             msg_name = msg_def['message']
@@ -158,10 +178,10 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             if offset_data:
                 code_gen.generate_godot_cpp_converter(msg_def, offset_data, output_root_dir)
 
-        print("\n9. Generating PDU size registry...")
+        print("\n11. Generating PDU size registry...")
         SizeRegistryGenerator().generate(output_root_dir)
 
-        print("\n10. Generating CDR minimum size registry...")
+        print("\n12. Generating CDR minimum size registry...")
         CdrSizeRegistryGenerator().generate(output_root_dir, message_cache)
 
         print("\n--- Generation Complete! ---")

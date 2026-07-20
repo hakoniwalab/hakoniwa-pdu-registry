@@ -17,6 +17,31 @@ CPP_ORACLE_BUILD_DIR = Path(tempfile.gettempdir()) / "hako-pdu-cpp-tests"
 CPP_CDR_ORACLE_BUILD_DIR = Path(tempfile.gettempdir()) / "hako-pdu-cpp-cdr-tests"
 
 
+def _is_numeric_sequence(value):
+    try:
+        return len(value) > 0 and isinstance(value[0], (int, float))
+    except (TypeError, IndexError, KeyError):
+        return False
+
+
+def decode_f32_sequence(value):
+    if isinstance(value, list) or _is_numeric_sequence(value):
+        return list(value)
+    return list(struct.unpack(f"<{len(value) // 4}f", bytes(value))) if len(value) > 0 else []
+
+
+def decode_f64_sequence(value):
+    if isinstance(value, list) or _is_numeric_sequence(value):
+        return list(value)
+    return list(struct.unpack(f"<{len(value) // 8}d", bytes(value))) if len(value) > 0 else []
+
+
+def decode_byte_sequence(value):
+    if isinstance(value, list) or _is_numeric_sequence(value):
+        return list(value)
+    return list(bytes(value))
+
+
 def parse_offset_entry_size(parts):
     entry_kind = parts[0]
     if entry_kind == "single":
@@ -680,7 +705,7 @@ def validate_disturbance_user_custom_godot_cpp_oracle_interop(repo_root: Path):
             godot_generated_data = godot_generated.data
         else:
             count = len(godot_generated.data) // 8
-            godot_generated_data = list(struct.unpack(f"<{count}d", bytes(godot_generated.data)))
+            godot_generated_data = decode_f64_sequence(godot_generated.data)
 
         return {
             "expected": expected,
@@ -822,7 +847,7 @@ def validate_disturbance_user_custom_godot_cpp_size_case(repo_root: Path, data_v
             python_decoded = py_generated.data
         else:
             count = len(py_generated.data) // 8
-            python_decoded = list(struct.unpack(f"<{count}d", bytes(py_generated.data)))
+            python_decoded = decode_f64_sequence(py_generated.data)
 
         return {
             "expected": expected,
@@ -936,9 +961,9 @@ def validate_joint_state_godot_cpp_oracle_interop(repo_root: Path):
             "godot_generated": {
                 "frame_id": godot_generated.header.frame_id,
                 "name": godot_generated_name,
-                "position": godot_generated.position if isinstance(godot_generated.position, list) else list(struct.unpack(f"<{len(godot_generated.position) // 8}d", bytes(godot_generated.position))),
-                "velocity": godot_generated.velocity if isinstance(godot_generated.velocity, list) else list(struct.unpack(f"<{len(godot_generated.velocity) // 8}d", bytes(godot_generated.velocity))),
-                "effort": godot_generated.effort if isinstance(godot_generated.effort, list) else list(struct.unpack(f"<{len(godot_generated.effort) // 8}d", bytes(godot_generated.effort))),
+                "position": godot_generated.position if isinstance(godot_generated.position, list) else decode_f64_sequence(godot_generated.position),
+                "velocity": godot_generated.velocity if isinstance(godot_generated.velocity, list) else decode_f64_sequence(godot_generated.velocity),
+                "effort": godot_generated.effort if isinstance(godot_generated.effort, list) else decode_f64_sequence(godot_generated.effort),
             },
         }
 
@@ -1014,9 +1039,9 @@ def validate_joint_state_godot_cpp_size_case(repo_root: Path, names, positions, 
             "godot_decoded": godot_decoded,
             "python_decoded": {
                 "name": python_names,
-                "position": python_generated.position if isinstance(python_generated.position, list) else list(struct.unpack(f"<{len(python_generated.position) // 8}d", bytes(python_generated.position))),
-                "velocity": python_generated.velocity if isinstance(python_generated.velocity, list) else list(struct.unpack(f"<{len(python_generated.velocity) // 8}d", bytes(python_generated.velocity))),
-                "effort": python_generated.effort if isinstance(python_generated.effort, list) else list(struct.unpack(f"<{len(python_generated.effort) // 8}d", bytes(python_generated.effort))),
+                "position": python_generated.position if isinstance(python_generated.position, list) else decode_f64_sequence(python_generated.position),
+                "velocity": python_generated.velocity if isinstance(python_generated.velocity, list) else decode_f64_sequence(python_generated.velocity),
+                "effort": python_generated.effort if isinstance(python_generated.effort, list) else decode_f64_sequence(python_generated.effort),
             },
         }
 
@@ -1326,7 +1351,7 @@ def validate_disturbance_godot_cpp_oracle_interop(repo_root: Path):
                 decoded_generated.append(item.data)
             else:
                 count = len(item.data) // 8
-                decoded_generated.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+                decoded_generated.append(decode_f64_sequence(item.data))
 
         return {
             "expected": expected,
@@ -1406,7 +1431,7 @@ def validate_disturbance_godot_cpp_size_case(repo_root: Path, data_sets):
                 decoded_generated.append(item.data)
             else:
                 count = len(item.data) // 8
-                decoded_generated.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+                decoded_generated.append(decode_f64_sequence(item.data))
 
         return {
             "expected": expected,
@@ -1637,7 +1662,7 @@ def validate_laser_scan_godot_cpp_oracle_interop(repo_root: Path):
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 4}f", bytes(value)))
+        return decode_f32_sequence(value)
 
     expected = {"ranges": [1.5, 2.5], "intensities": [10.0, 20.0]}
     tools = ensure_cpp_oracle_tools(repo_root)
@@ -1718,7 +1743,7 @@ def validate_laser_scan_godot_cpp_size_case(repo_root: Path, ranges, intensities
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 4}f", bytes(value)))
+        return decode_f32_sequence(value)
 
     expected = {
         "ranges": list(ranges),
@@ -1789,7 +1814,7 @@ def validate_camera_info_godot_cpp_size_case(repo_root: Path, d_values):
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+        return decode_f64_sequence(value)
 
     expected = {"d": list(d_values)}
     encode_input = {
@@ -1852,7 +1877,7 @@ def validate_camera_info_godot_cpp_oracle_interop(repo_root: Path):
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+        return decode_f64_sequence(value)
 
     expected = {"d": [0.1, 0.2]}
     tools = ensure_cpp_oracle_tools(repo_root)
@@ -2070,7 +2095,7 @@ def validate_float64_multi_array_godot_cpp_size_case(repo_root: Path, dim_specs,
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+        return decode_f64_sequence(value)
 
     expected = {
         "layout": {"dim": [dict(spec) for spec in dim_specs], "data_offset": 9},
@@ -2141,7 +2166,7 @@ def validate_float64_multi_array_godot_cpp_oracle_interop(repo_root: Path):
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+        return decode_f64_sequence(value)
 
     expected = {
         "layout": {
@@ -2415,7 +2440,7 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_Disturbance(obj)));
                 js_to_py_data.append(item.data)
             else:
                 count = len(item.data) // 8
-                js_to_py_data.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+                js_to_py_data.append(decode_f64_sequence(item.data))
 
         return {
             "expected": expected,
@@ -2474,7 +2499,7 @@ console.log(JSON.stringify({
                 py_decoded.append(item.data)
             else:
                 count = len(item.data) // 8
-                py_decoded.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+                py_decoded.append(decode_f64_sequence(item.data))
 
         js_decode = subprocess.run(
             ["node", "--input-type=module", "-e", py_to_js_script, str(py_bin_path)],
@@ -2523,7 +2548,7 @@ console.log(JSON.stringify({ data: obj.data }));
             py_decoded = py_restored.data
         else:
             count = len(py_restored.data) // 8
-            py_decoded = list(struct.unpack(f"<{count}d", bytes(py_restored.data)))
+            py_decoded = decode_f64_sequence(py_restored.data)
 
         js_decode = subprocess.run(
             ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
@@ -2630,9 +2655,9 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_JointState(obj)));
                 name_value.append(chunk.split(b"\0", 1)[0].decode("utf-8"))
         js_to_py_data = {
             "name": name_value,
-            "position": list(struct.unpack(f"<{len(restored.position) // 8}d", bytes(restored.position))) if not isinstance(restored.position, list) else restored.position,
-            "velocity": list(struct.unpack(f"<{len(restored.velocity) // 8}d", bytes(restored.velocity))) if not isinstance(restored.velocity, list) else restored.velocity,
-            "effort": list(struct.unpack(f"<{len(restored.effort) // 8}d", bytes(restored.effort))) if not isinstance(restored.effort, list) else restored.effort,
+            "position": decode_f64_sequence(restored.position) if not isinstance(restored.position, list) else restored.position,
+            "velocity": decode_f64_sequence(restored.velocity) if not isinstance(restored.velocity, list) else restored.velocity,
+            "effort": decode_f64_sequence(restored.effort) if not isinstance(restored.effort, list) else restored.effort,
         }
 
         return {
@@ -2694,7 +2719,7 @@ console.log(JSON.stringify({
             if isinstance(value, list):
                 return value
             count = len(value) // 8
-            return list(struct.unpack(f"<{count}d", bytes(value)))
+            return decode_f64_sequence(value)
 
         js_decode = subprocess.run(
             ["node", "--input-type=module", "-e", js_decode_script, str(py_bin_path)],
@@ -2769,7 +2794,7 @@ console.log(JSON.stringify({
     def normalize_drone(item):
         pwm_duty = item.pwm_duty
         if not isinstance(pwm_duty, list):
-            pwm_duty = list(struct.unpack(f"<{len(pwm_duty) // 4}f", bytes(pwm_duty))) if len(pwm_duty) > 0 else []
+            pwm_duty = decode_f32_sequence(pwm_duty) if len(pwm_duty) > 0 else []
         return {
             "x": f32(item.x),
             "y": f32(item.y),
@@ -3491,7 +3516,7 @@ fs.writeFileSync(process.argv[2], Buffer.from(jsToPdu_DroneVisualStateArray(obj)
     def normalize_drone(item):
         pwm_duty = item.pwm_duty
         if not isinstance(pwm_duty, list):
-            pwm_duty = list(struct.unpack(f"<{len(pwm_duty) // 4}f", bytes(pwm_duty))) if len(pwm_duty) > 0 else []
+            pwm_duty = decode_f32_sequence(pwm_duty) if len(pwm_duty) > 0 else []
         return {
             "x": f32(item.x),
             "y": f32(item.y),
@@ -3714,7 +3739,7 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_Disturbance(obj)));
                 py_decoded.append(item.data)
             else:
                 count = len(item.data) // 8
-                py_decoded.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+                py_decoded.append(decode_f64_sequence(item.data))
 
         js_decode = subprocess.run(
             ["node", "--input-type=module", "-e", py_decode_script, str(cpp_bin_path)],
@@ -3731,7 +3756,7 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_Disturbance(obj)));
                 py_generated_decoded.append(item.data)
             else:
                 count = len(item.data) // 8
-                py_generated_decoded.append(list(struct.unpack(f"<{count}d", bytes(item.data))))
+                py_generated_decoded.append(decode_f64_sequence(item.data))
 
         js_generated_decode = subprocess.run(
             ["node", "--input-type=module", "-e", py_decode_script, str(js_bin_path)],
@@ -3833,7 +3858,7 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_DisturbanceUserCustom(obj)
             if isinstance(value, list):
                 return value
             count = len(value) // 8
-            return list(struct.unpack(f"<{count}d", bytes(value)))
+            return decode_f64_sequence(value)
 
         return {
             "expected": expected,
@@ -4214,17 +4239,17 @@ fs.writeFileSync(process.argv[1], Buffer.from(jsToPdu_JointState(obj)));
             "cpp_to_python": {
                 "frame_id": restored.header.frame_id,
                 "name": restored_name,
-                "position": restored.position if isinstance(restored.position, list) else list(struct.unpack(f"<{len(restored.position) // 8}d", bytes(restored.position))),
-                "velocity": restored.velocity if isinstance(restored.velocity, list) else list(struct.unpack(f"<{len(restored.velocity) // 8}d", bytes(restored.velocity))),
-                "effort": restored.effort if isinstance(restored.effort, list) else list(struct.unpack(f"<{len(restored.effort) // 8}d", bytes(restored.effort))),
+                "position": restored.position if isinstance(restored.position, list) else decode_f64_sequence(restored.position),
+                "velocity": restored.velocity if isinstance(restored.velocity, list) else decode_f64_sequence(restored.velocity),
+                "effort": restored.effort if isinstance(restored.effort, list) else decode_f64_sequence(restored.effort),
             },
             "cpp_to_javascript": json.loads(js_decode.stdout),
             "python_generated": {
                 "frame_id": py_generated.header.frame_id,
                 "name": py_generated_name,
-                "position": py_generated.position if isinstance(py_generated.position, list) else list(struct.unpack(f"<{len(py_generated.position) // 8}d", bytes(py_generated.position))),
-                "velocity": py_generated.velocity if isinstance(py_generated.velocity, list) else list(struct.unpack(f"<{len(py_generated.velocity) // 8}d", bytes(py_generated.velocity))),
-                "effort": py_generated.effort if isinstance(py_generated.effort, list) else list(struct.unpack(f"<{len(py_generated.effort) // 8}d", bytes(py_generated.effort))),
+                "position": py_generated.position if isinstance(py_generated.position, list) else decode_f64_sequence(py_generated.position),
+                "velocity": py_generated.velocity if isinstance(py_generated.velocity, list) else decode_f64_sequence(py_generated.velocity),
+                "effort": py_generated.effort if isinstance(py_generated.effort, list) else decode_f64_sequence(py_generated.effort),
             },
             "javascript_generated": json.loads(js_generated_decode.stdout),
         }
@@ -4511,7 +4536,7 @@ console.log(JSON.stringify({
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 4}f", bytes(value)))
+        return decode_f32_sequence(value)
 
     py_obj = LaserScan()
     py_obj.header.stamp.sec = 1
@@ -4580,7 +4605,7 @@ console.log(JSON.stringify({
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+        return decode_f64_sequence(value)
 
     py_obj = CameraInfo()
     py_obj.header.stamp.sec = 1
@@ -4725,7 +4750,7 @@ console.log(JSON.stringify({
             return list(value)
         if len(value) == 0:
             return []
-        return list(struct.unpack(f"<{len(value) // 8}d", bytes(value)))
+        return decode_f64_sequence(value)
 
     py_obj = Float64MultiArray()
     py_obj.layout.dim = [make_dim(spec) for spec in dim_specs]

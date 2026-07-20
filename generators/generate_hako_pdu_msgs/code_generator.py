@@ -7,7 +7,8 @@ from collections import OrderedDict
 def _collect_dependencies(pkg_msg, message_cache, root_pkg,
                           visited,  # set[str]
                           includes, csharp_includes,
-                          cpp_includes, conv_includes, conv_cpp_includes, py_imports, js_imports):
+                          cpp_includes, conv_includes, conv_cpp_includes,
+                          py_imports, js_imports, ruby_imports, elixir_aliases):
     if pkg_msg in visited:
         return
     visited.add(pkg_msg)
@@ -42,13 +43,23 @@ def _collect_dependencies(pkg_msg, message_cache, root_pkg,
             'file': f"pdu_jstype_{dep_msg}",
             'class_name': get_js_class_name(dep_msg)
         }
+        ruby_imports[dep_pkg_msg] = {
+            'dep_pkg': dep_pkg,
+            'file': f"pdu_type_{dep_msg}",
+            'class_name': get_ruby_class_name(dep_msg),
+        }
+        elixir_aliases[dep_pkg_msg] = {
+            'dep_pkg': dep_pkg,
+            'module_name': get_elixir_module_name(dep_pkg, dep_msg),
+        }
         if dep_pkg != root_pkg:
             csharp_includes[dep_pkg] = None
 
         # ───── さらに再帰 ─────
         _collect_dependencies(dep_pkg_msg, message_cache, root_pkg,
                               visited, includes, csharp_includes,
-                              cpp_includes, conv_includes, conv_cpp_includes, py_imports, js_imports)
+                              cpp_includes, conv_includes, conv_cpp_includes,
+                              py_imports, js_imports, ruby_imports, elixir_aliases)
 # --- テンプレートヘルパー関数群 (generate.pyの挙動を完全に模倣) ---
 
 ROS_PRIMITIVE_TYPES_FOR_TEMPLATE = [
@@ -108,6 +119,9 @@ def convert_snake(name):
     s1n = name[1:]
     cs1n = re.sub("([A-Z])", lambda x: "_" + x.group(1).lower(), s1n)
     return s0 + cs1n
+
+def to_pascal_case(name):
+    return ''.join(part[:1].upper() + part[1:] for part in re.split(r'[_\W]+', name) if part)
 
 def get_csharp_type(name):
     type_map = {
@@ -270,6 +284,71 @@ def get_js_default_value(name):
     # 構造体：インスタンス化して返す（nullにしない）
     return f"new {get_js_class_name(name)}()"
 
+# --- Ruby用ヘルパー関数 ---
+def get_ruby_class_name(name):
+    return get_msg_type(name)
+
+def get_ruby_pkg_module_name(pkg_name):
+    return to_pascal_case(pkg_name)
+
+def get_ruby_module_name(pkg_name, msg_name):
+    return f"HakoPdu::{get_ruby_pkg_module_name(pkg_name)}::{get_ruby_class_name(msg_name)}"
+
+def get_ruby_type_ref(name, default_pkg):
+    base_type = get_array_type(name)
+    if is_primitive(base_type) or is_string(base_type):
+        return None
+    return get_ruby_module_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))
+
+def get_ruby_default_value(name, default_pkg=None):
+    base_type = get_array_type(name)
+    if is_array(name):
+        return "[]"
+    if is_primitive(base_type):
+        if base_type in ['float32', 'float64']:
+            return "0.0"
+        if base_type == 'bool':
+            return "false"
+        if base_type == 'char':
+            return '""'
+        return "0"
+    if is_string(base_type):
+        return '""'
+    pkg_name = default_pkg or ""
+    return f"{get_ruby_type_ref(base_type, pkg_name)}.new"
+
+# --- Elixir用ヘルパー関数 ---
+def get_elixir_class_name(name):
+    return get_msg_type(name)
+
+def get_elixir_pkg_module_name(pkg_name):
+    return to_pascal_case(pkg_name)
+
+def get_elixir_module_name(pkg_name, msg_name):
+    return f"HakoPdu.{get_elixir_pkg_module_name(pkg_name)}.{get_elixir_class_name(msg_name)}"
+
+def get_elixir_type_ref(name, default_pkg):
+    base_type = get_array_type(name)
+    if is_primitive(base_type) or is_string(base_type):
+        return None
+    return get_elixir_module_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))
+
+def get_elixir_default_value(name, default_pkg=None):
+    base_type = get_array_type(name)
+    if is_array(name):
+        return "[]"
+    if is_primitive(base_type):
+        if base_type in ['float32', 'float64']:
+            return "0.0"
+        if base_type == 'bool':
+            return "false"
+        if base_type == 'char':
+            return '""'
+        return "0"
+    if is_string(base_type):
+        return '""'
+    pkg_name = default_pkg or ""
+    return f"{get_elixir_type_ref(base_type, pkg_name)}.new()"
 
 # --- Godot / GDScript用ヘルパー関数 ---
 def get_godot_class_name(name):
@@ -433,6 +512,8 @@ class CodeGenerator:
         conv_cpp_includes = OrderedDict()
         py_imports        = OrderedDict()
         js_imports        = OrderedDict()
+        ruby_imports      = OrderedDict()
+        elixir_aliases    = OrderedDict()
         godot_imports     = OrderedDict()
 
         _collect_dependencies(package_msg, message_cache, root_pkg,
@@ -443,7 +524,9 @@ class CodeGenerator:
                           conv_includes=conv_includes,
                               conv_cpp_includes=conv_cpp_includes,
                               py_imports=py_imports,
-                              js_imports=js_imports)
+                              js_imports=js_imports,
+                              ruby_imports=ruby_imports,
+                              elixir_aliases=elixir_aliases)
 
         for dep_pkg_msg, dep in js_imports.items():
             godot_imports[dep_pkg_msg] = {
@@ -471,6 +554,8 @@ class CodeGenerator:
             'conv_cpp_includes': sorted(conv_cpp_includes),
             'py_imports': sorted(py_imports.values(), key=lambda x: x['class_name']),
             'js_imports': sorted(js_imports.values(), key=lambda x: x['class_name']),
+            'ruby_imports': sorted(ruby_imports.values(), key=lambda x: x['class_name']),
+            'elixir_aliases': sorted(elixir_aliases.values(), key=lambda x: x['module_name']),
             'godot_imports': sorted(godot_imports.values(), key=lambda x: (x['dep_pkg'], x['class_name'])),
             'is_primitive': is_primitive, 'is_string': is_string, 'is_array': is_array,
             'is_primitive_array': is_primitive_array, 'is_string_array': is_string_array,
@@ -489,6 +574,19 @@ class CodeGenerator:
             'get_js_type_hint': get_js_type_hint,
             'get_js_default_value': get_js_default_value,
             'get_js_class_name': get_js_class_name,
+            'get_ruby_class_name': get_ruby_class_name,
+            'get_ruby_pkg_module_name': get_ruby_pkg_module_name,
+            'get_ruby_module_name': lambda pkg_name, msg_name: get_ruby_module_name(pkg_name, msg_name),
+            'get_ruby_type_ref': lambda name: get_ruby_type_ref(name, root_pkg),
+            'get_ruby_default_value': lambda name: get_ruby_default_value(name, root_pkg),
+            'ruby_pkg_module_name': get_ruby_pkg_module_name(root_pkg),
+            'ruby_module_name': get_ruby_module_name(root_pkg, msg_name),
+            'get_elixir_class_name': get_elixir_class_name,
+            'get_elixir_pkg_module_name': get_elixir_pkg_module_name,
+            'get_elixir_module_name': lambda pkg_name, msg_name: get_elixir_module_name(pkg_name, msg_name),
+            'get_elixir_type_ref': lambda name: get_elixir_type_ref(name, root_pkg),
+            'get_elixir_default_value': lambda name: get_elixir_default_value(name, root_pkg),
+            'elixir_module_name': get_elixir_module_name(root_pkg, msg_name),
             'get_godot_type_hint': get_godot_type_hint,
             'get_godot_type_hint_with_pkg': lambda name: get_godot_type_hint_with_pkg(name, root_pkg),
             'get_godot_default_value': get_godot_default_value,
@@ -534,6 +632,8 @@ class CodeGenerator:
         csharp_v2_dir = Path(output_root_dir) / 'csharp_v2'
         python_dir = Path(output_root_dir) / 'python'
         javascript_dir = Path(output_root_dir) / 'javascript'
+        ruby_dir = Path(output_root_dir) / 'ruby'
+        elixir_dir = Path(output_root_dir) / 'elixir'
         godot_gd_dir = Path(output_root_dir) / 'godot_gd'
         godot_cpp_runtime_dir = Path(output_root_dir) / 'godot_cpp_runtime'
 
@@ -560,6 +660,10 @@ class CodeGenerator:
             # JavaScript
             self._generate_file(context, 'pdu_jstypes_js.tpl', javascript_dir, "pdu_jstype_{msg_name}.js", "JavaScript type definition")
             self._generate_file(context, 'pdu_jstype_cdr_conv_hako_template.js.j2', javascript_dir, "pdu_cdr_conv_{msg_name}.js", "JavaScript<->CDR conv module")
+            # Ruby
+            self._generate_file(context, 'pdu_ruby_types_rb.tpl', ruby_dir, "pdu_type_{msg_name}.rb", "Ruby type definition")
+            # Elixir
+            self._generate_file(context, 'pdu_elixir_types_ex.tpl', elixir_dir, "pdu_type_{msg_name}.ex", "Elixir type definition")
             # Godot GDScript
             self._generate_file(context, 'pdu_godot_types_gd.tpl', godot_gd_dir, "{msg_name}.gd", "Godot GDScript type definition")
 
@@ -616,6 +720,7 @@ class CodeGenerator:
                 'get_js_class_name': get_js_class_name,
                 'get_msg_type': get_msg_type,
                 'get_array_type': get_array_type,
+                'convert_snake': convert_snake,
                 'is_primitive': is_primitive,
                 'is_string': is_string,
                 'is_array': is_array,
@@ -656,6 +761,95 @@ class CodeGenerator:
             }
         }
         self._generate_file(context, 'pdu_py_conv_py.tpl', python_dir, f"pdu_conv_{msg_name}.py", "Python converter")
+
+    def generate_ruby_converter(self, msg_def, offset_data, output_root_dir):
+        ruby_dir = Path(output_root_dir) / 'ruby'
+        pkg_name = msg_def['package']
+        msg_name = msg_def['message']
+
+        ruby_conv_imports = []
+        added_imports = set()
+        for item in offset_data:
+            if item.data_type == 'struct':
+                dep_pkg = get_msg_pkg(item.type_name, pkg_name)
+                dep_msg = get_msg_type(item.type_name)
+                dep_key = f"{dep_pkg}/{dep_msg}"
+                if dep_key not in added_imports:
+                    ruby_conv_imports.append({
+                        'dep_pkg': dep_pkg,
+                        'msg_type': dep_msg,
+                        'type_file': f"pdu_type_{dep_msg}",
+                        'conv_file': f"pdu_conv_{dep_msg}",
+                        'class_name': get_ruby_class_name(dep_msg),
+                        'module_name': get_ruby_module_name(dep_pkg, dep_msg),
+                        'func_name': convert_snake(dep_msg),
+                    })
+                    added_imports.add(dep_key)
+
+        context = {
+            'container': {
+                'pkg_name': pkg_name,
+                'msg_type_name': msg_name,
+                'class_name': get_ruby_class_name(msg_name),
+                'module_name': get_ruby_module_name(pkg_name, msg_name),
+                'converter_module_name': f"{get_ruby_module_name(pkg_name, msg_name)}Converter",
+                'func_name': convert_snake(msg_name),
+                'offset_data': [o.to_dict() for o in offset_data],
+                'ruby_conv_imports': ruby_conv_imports,
+                'get_ruby_class_name': get_ruby_class_name,
+                'get_ruby_type_ref': lambda name: get_ruby_type_ref(name, pkg_name),
+                'get_msg_type': get_msg_type,
+                'get_array_type': get_array_type,
+                'convert_snake': convert_snake,
+                'is_primitive': is_primitive,
+                'is_string': is_string,
+                'is_array': is_array,
+            }
+        }
+        self._generate_file(context, 'pdu_ruby_conv_rb.tpl', ruby_dir, f"pdu_conv_{msg_name}.rb", "Ruby converter")
+
+    def generate_elixir_converter(self, msg_def, offset_data, output_root_dir):
+        elixir_dir = Path(output_root_dir) / 'elixir'
+        pkg_name = msg_def['package']
+        msg_name = msg_def['message']
+
+        elixir_conv_aliases = []
+        added_aliases = set()
+        for item in offset_data:
+            if item.data_type == 'struct':
+                dep_pkg = get_msg_pkg(item.type_name, pkg_name)
+                dep_msg = get_msg_type(item.type_name)
+                dep_key = f"{dep_pkg}/{dep_msg}"
+                if dep_key not in added_aliases:
+                    elixir_conv_aliases.append({
+                        'dep_pkg': dep_pkg,
+                        'msg_type': dep_msg,
+                        'module_name': get_elixir_module_name(dep_pkg, dep_msg),
+                        'converter_module_name': f"{get_elixir_module_name(dep_pkg, dep_msg)}Converter",
+                        'func_name': convert_snake(dep_msg),
+                    })
+                    added_aliases.add(dep_key)
+
+        context = {
+            'container': {
+                'pkg_name': pkg_name,
+                'msg_type_name': msg_name,
+                'class_name': get_elixir_class_name(msg_name),
+                'module_name': get_elixir_module_name(pkg_name, msg_name),
+                'converter_module_name': f"{get_elixir_module_name(pkg_name, msg_name)}Converter",
+                'func_name': convert_snake(msg_name),
+                'offset_data': [o.to_dict() for o in offset_data],
+                'elixir_conv_aliases': elixir_conv_aliases,
+                'get_elixir_type_ref': lambda name: get_elixir_type_ref(name, pkg_name),
+                'get_msg_type': get_msg_type,
+                'get_array_type': get_array_type,
+                'convert_snake': convert_snake,
+                'is_primitive': is_primitive,
+                'is_string': is_string,
+                'is_array': is_array,
+            }
+        }
+        self._generate_file(context, 'pdu_elixir_conv_ex.tpl', elixir_dir, f"pdu_conv_{msg_name}.ex", "Elixir converter")
 
     def generate_csharp_v2_converter(self, msg_def, offset_data, output_root_dir):
         csharp_v2_dir = Path(output_root_dir) / 'csharp_v2'

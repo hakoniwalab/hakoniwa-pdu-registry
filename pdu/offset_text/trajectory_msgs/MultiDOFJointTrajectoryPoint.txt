@@ -1,0 +1,4 @@
+varray:struct:transforms:geometry_msgs/Transform:0:56:8
+varray:struct:velocities:geometry_msgs/Twist:8:48:8
+varray:struct:accelerations:geometry_msgs/Twist:16:48:8
+single:struct:time_from_start:builtin_interfaces/Duration:24:8

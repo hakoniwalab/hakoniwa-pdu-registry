@@ -77,6 +77,10 @@ hako_msgs/Disturbance
 can_msgs/HakoCan
 ev3_msgs/Ev3PduSensor
 ev3_msgs/Ev3PduActuator
+trajectory_msgs/JointTrajectory
+trajectory_msgs/JointTrajectoryPoint
+trajectory_msgs/MultiDOFJointTrajectory
+trajectory_msgs/MultiDOFJointTrajectoryPoint
 geometry_msgs/Accel
 geometry_msgs/AccelStamped
 geometry_msgs/AccelWithCovariance

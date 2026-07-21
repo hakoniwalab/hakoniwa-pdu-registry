@@ -1,0 +1,5 @@
+varray:primitive:positions:float64:0:8:8
+varray:primitive:velocities:float64:8:8:8
+varray:primitive:accelerations:float64:16:8:8
+varray:primitive:effort:float64:24:8:8
+single:struct:time_from_start:builtin_interfaces/Duration:32:8

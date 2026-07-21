@@ -1,0 +1,3 @@
+single:struct:header:std_msgs/Header:0:136
+varray:primitive:joint_names:string:136:128:8
+varray:struct:points:JointTrajectoryPoint:144:40:8

@@ -1,5 +1,6 @@
 // Auto-generated PDU size registry
 export const PDU_SIZE = {
+  "builtin_interfaces/Duration": 8,
   "builtin_interfaces/Time": 8,
   "can_msgs/HakoCan": 32,
   "can_msgs/HakoCanBody": 8,
@@ -244,6 +245,10 @@ export const PDU_SIZE = {
   "std_msgs/UInt8MultiArray": 24,
   "tf2_msgs/TF2Error": 136,
   "tf2_msgs/TFMessage": 8,
+  "trajectory_msgs/JointTrajectory": 152,
+  "trajectory_msgs/JointTrajectoryPoint": 40,
+  "trajectory_msgs/MultiDOFJointTrajectory": 152,
+  "trajectory_msgs/MultiDOFJointTrajectoryPoint": 32,
 };
 
 export function getSize(typeName) {

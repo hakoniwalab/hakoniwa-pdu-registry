@@ -73,6 +73,18 @@ def split_canonical_type(canonical_type: str) -> tuple[str, str]:
     return parts[0], parts[2]
 
 
+def bundle_resource_name(canonical_type: str) -> str:
+    """Return the dependency name used by concatenated ros2msg schema text.
+
+    ROS 2 field definitions refer to nested messages as ``package/Type``. Foxglove
+    resolves dependency sections against those names, so dependency delimiters must
+    use the same two-part form even though the top-level schema name may use
+    ``package/msg/Type`` elsewhere in the transport metadata.
+    """
+    package, message = split_canonical_type(canonical_type)
+    return f"{package}/{message}"
+
+
 def find_message_file(search_paths: Iterable[Path], canonical_type: str) -> Path:
     package, message = split_canonical_type(canonical_type)
     checked: list[Path] = []
@@ -152,7 +164,13 @@ def resolve_bundle(
 def render_bundle(top_level_text: str, dependencies: Iterable[tuple[str, str]]) -> str:
     chunks = [top_level_text.rstrip("\n")]
     for canonical_type, source_text in dependencies:
-        chunks.extend([SEPARATOR, f"MSG: {canonical_type}", source_text.rstrip("\n")])
+        chunks.extend(
+            [
+                SEPARATOR,
+                f"MSG: {bundle_resource_name(canonical_type)}",
+                source_text.rstrip("\n"),
+            ]
+        )
     return "\n".join(chunks) + "\n"
 
 

@@ -6,8 +6,10 @@ The generated format is suitable for schema-aware consumers such as Foxglove and
 
 ```text
 ================================================================================
-MSG: package/msg/Type
+MSG: package/Type
 ```
+
+The dependency label intentionally uses the same two-part `package/Type` form that appears inside ROS 2 `.msg` field definitions. For example, a field declared as `std_msgs/Header header` is paired with `MSG: std_msgs/Header`. The internal resolver may normalize types to `package/msg/Type`, but that canonical lookup form is not written into the concatenated schema bundle.
 
 The generator is intentionally source-based:
 

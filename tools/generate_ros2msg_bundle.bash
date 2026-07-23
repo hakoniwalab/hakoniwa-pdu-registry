@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REGISTRY_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
-CALLER_DIR="$(pwd -P)"
 
 usage() {
     cat <<'EOF'
@@ -56,7 +55,7 @@ while [ "$#" -gt 0 ]; do
             shift
             break
             ;;
-        -* )
+        -*)
             echo "error: unknown option: $1" >&2
             usage >&2
             exit 2
@@ -92,9 +91,20 @@ IMAGE_TAG="$(cat "${REGISTRY_DIR}/docker/latest_version.txt")"
 DOCKER_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 ROS_DISTRO="$(cat "${REGISTRY_DIR}/ROS_VERSION.txt")"
 
+OS_TYPE="$(uname)"
+ARCH="$(uname -m)"
+USE_AMD64_PLATFORM=false
+if [ "${OS_TYPE}" = "Darwin" ] && [ "${ARCH}" = "arm64" ]; then
+    USE_AMD64_PLATFORM=true
+fi
+
 if ! docker image inspect "${DOCKER_IMAGE}" >/dev/null 2>&1; then
     echo "Docker image ${DOCKER_IMAGE} is not available locally; pulling it..."
-    docker pull "${DOCKER_IMAGE}"
+    if [ "${USE_AMD64_PLATFORM}" = true ]; then
+        docker pull --platform linux/amd64 "${DOCKER_IMAGE}"
+    else
+        docker pull "${DOCKER_IMAGE}"
+    fi
 fi
 
 OUTPUT_DIR="$(dirname "${OUTPUT_PATH}")"
@@ -110,9 +120,7 @@ DOCKER_ARGS=(
     --volume "${OUTPUT_DIR_ABS}:/hako-output"
 )
 
-OS_TYPE="$(uname)"
-ARCH="$(arch)"
-if [ "${OS_TYPE}" = "Darwin" ] && [ "${ARCH}" = "arm64" ]; then
+if [ "${USE_AMD64_PLATFORM}" = true ]; then
     DOCKER_ARGS+=(--platform linux/amd64)
 fi
 
@@ -126,17 +134,19 @@ PYTHON_ARGS=(
 )
 
 SEARCH_INDEX=0
-for SEARCH_PATH in "${SEARCH_PATHS[@]}"; do
-    if [ ! -d "${SEARCH_PATH}" ]; then
-        echo "error: search path is not a directory: ${SEARCH_PATH}" >&2
-        exit 2
-    fi
-    SEARCH_PATH_ABS="$(cd "${SEARCH_PATH}" && pwd -P)"
-    CONTAINER_SEARCH_PATH="/hako-search/${SEARCH_INDEX}"
-    DOCKER_ARGS+=(--volume "${SEARCH_PATH_ABS}:${CONTAINER_SEARCH_PATH}:ro")
-    PYTHON_ARGS+=(--search-path "${CONTAINER_SEARCH_PATH}")
-    SEARCH_INDEX=$((SEARCH_INDEX + 1))
-done
+if [ "${#SEARCH_PATHS[@]}" -gt 0 ]; then
+    for SEARCH_PATH in "${SEARCH_PATHS[@]}"; do
+        if [ ! -d "${SEARCH_PATH}" ]; then
+            echo "error: search path is not a directory: ${SEARCH_PATH}" >&2
+            exit 2
+        fi
+        SEARCH_PATH_ABS="$(cd "${SEARCH_PATH}" && pwd -P)"
+        CONTAINER_SEARCH_PATH="/hako-search/${SEARCH_INDEX}"
+        DOCKER_ARGS+=(--volume "${SEARCH_PATH_ABS}:${CONTAINER_SEARCH_PATH}:ro")
+        PYTHON_ARGS+=(--search-path "${CONTAINER_SEARCH_PATH}")
+        SEARCH_INDEX=$((SEARCH_INDEX + 1))
+    done
+fi
 
 printf 'Generating %s -> %s\n' "${MESSAGE_TYPE}" "${OUTPUT_DIR_ABS}/${OUTPUT_NAME}"
 docker "${DOCKER_ARGS[@]}" "${DOCKER_IMAGE}" "${PYTHON_ARGS[@]}"

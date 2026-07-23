@@ -55,13 +55,14 @@ class Ros2MsgBundleTest(unittest.TestCase):
             )
             self.assertTrue(rendered.startswith("std_msgs/Header header\n"))
             self.assertIn(
-                f"{bundle_tool.SEPARATOR}\nMSG: std_msgs/msg/Header\n",
+                f"{bundle_tool.SEPARATOR}\nMSG: std_msgs/Header\n",
                 rendered,
             )
             self.assertIn(
-                f"{bundle_tool.SEPARATOR}\nMSG: builtin_interfaces/msg/Time\n",
+                f"{bundle_tool.SEPARATOR}\nMSG: builtin_interfaces/Time\n",
                 rendered,
             )
+            self.assertNotIn("MSG: std_msgs/msg/Header", rendered)
 
     def test_same_package_bounded_types_and_arrays(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -75,8 +76,10 @@ class Ros2MsgBundleTest(unittest.TestCase):
             self.write_msg(root, "demo_msgs", "Inner", "float64 value\n")
 
             _, deps = bundle_tool.resolve_bundle("demo_msgs/msg/Outer", [root])
+            rendered = bundle_tool.render_bundle("Inner[<=4] items\n", deps)
 
             self.assertEqual([name for name, _ in deps], ["demo_msgs/msg/Inner"])
+            self.assertIn("MSG: demo_msgs/Inner\n", rendered)
 
     def test_missing_dependency_fails_instead_of_emitting_partial_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

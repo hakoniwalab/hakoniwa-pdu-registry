@@ -69,7 +69,7 @@ Typical outputs include:
 
 - Quickstart (Docker, reproducible): `README.md` below
 - Message schema inputs: `idl/`
-- Generator entrypoints: `generators/generate_hako_pdu_msgs/main.py`, `generators/generate_hako_service_msgs/main.py`
+- Generator entrypoints: `generators/generate_hako_pdu_msgs/main.py`, `generators/generate_hako_service_msgs/main.py`, `generators/generate_hako_action_msgs/main.py`
 - Docker scripts: `docker/pull-image.bash`, `docker/run.bash`, `docker/create-image.bash`
 - Message list and search paths: `config/ros_msgs.txt`, `config/search_path.txt`
 - PDU binary format details: `docs/specs/pdu-binary-format.md`
@@ -546,6 +546,31 @@ python3 -m generators.generate_hako_service_msgs.main /path/to/YourService.srv \
 ```
 
 Generated `.msg` files appear under `idl/<srv_pkg>_msgs/msg/`.
+
+## Action message generator (ROS .action -> Hakoniwa .msg)
+
+To convert a ROS `.action` file into Goal, Result, Feedback, and the three
+Hakoniwa Action packet `.msg` files:
+
+```bash
+python3 -m generators.generate_hako_action_msgs.main \
+  idl/action/sample/Fibonacci.action \
+  --out idl
+```
+
+Generated files appear under `idl/<action_pkg>_action_msgs/msg/`. For the
+example above, the package is `idl/sample_action_msgs/msg/`.
+
+Action packet definitions reference the shared headers with an explicit ROS
+package qualifier, for example:
+
+```text
+hako_action_msgs/ActionRequestHeader header
+FibonacciGoal body
+```
+
+The body type is unqualified because it is generated in the same
+`sample_action_msgs` package as the packet type.
 
 ## Relationship to other components
 

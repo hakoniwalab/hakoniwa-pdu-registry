@@ -13,7 +13,7 @@ class GenerateHakoActionMsgsTest(unittest.TestCase):
     def test_generates_six_messages(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            action_dir = root / "example_actions"
+            action_dir = root / "sample"
             action_dir.mkdir()
             action_file = action_dir / "Fibonacci.action"
             action_file.write_text(
@@ -38,7 +38,7 @@ class GenerateHakoActionMsgsTest(unittest.TestCase):
                 check=True,
             )
 
-            msg_dir = output / "example_actions_msgs" / "msg"
+            msg_dir = output / "sample_action_msgs" / "msg"
             expected = {
                 "FibonacciGoal.msg": "int32 order\n",
                 "FibonacciResult.msg": "int32[] sequence\n",

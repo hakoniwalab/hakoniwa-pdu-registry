@@ -10,6 +10,25 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GenerateHakoActionMsgsTest(unittest.TestCase):
+    def test_fibonacci_messages_are_normal_pdu_generation_inputs(self):
+        message_list = {
+            line.strip()
+            for line in (ROOT / "config" / "ros_msgs.txt").read_text(
+                encoding="utf-8"
+            ).splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
+        self.assertTrue(
+            {
+                "sample_action_msgs/FibonacciGoal",
+                "sample_action_msgs/FibonacciResult",
+                "sample_action_msgs/FibonacciFeedback",
+                "sample_action_msgs/FibonacciActionRequest",
+                "sample_action_msgs/FibonacciActionResponse",
+                "sample_action_msgs/FibonacciActionFeedback",
+            }.issubset(message_list)
+        )
+
     def test_generates_six_messages(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

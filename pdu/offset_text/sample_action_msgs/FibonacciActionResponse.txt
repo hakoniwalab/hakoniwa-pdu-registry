@@ -1,0 +1,2 @@
+single:struct:header:hako_action_msgs/ActionResponseHeader:0:20
+single:struct:body:FibonacciResult:20:8

@@ -2,17 +2,9 @@
 #include <string.h>
 
 static const HakoPduCdrSizeEntry g_pdu_cdr_size_table[] = {
-    { "builtin_interfaces/Duration", 12 },
-    { "builtin_interfaces/Time", 12 },
-    { "geometry_msgs/Quaternion", 36 },
-    { "geometry_msgs/Transform", 60 },
-    { "geometry_msgs/Twist", 52 },
-    { "geometry_msgs/Vector3", 28 },
-    { "std_msgs/Header", 17 },
-    { "trajectory_msgs/JointTrajectory", 28 },
-    { "trajectory_msgs/JointTrajectoryPoint", 28 },
-    { "trajectory_msgs/MultiDOFJointTrajectory", 28 },
-    { "trajectory_msgs/MultiDOFJointTrajectoryPoint", 24 },
+    { "hako_action_msgs/ActionFeedbackHeader", 28 },
+    { "hako_action_msgs/ActionRequestHeader", 24 },
+    { "hako_action_msgs/ActionResponseHeader", 24 },
 };
 
 const HakoPduCdrSizeEntry* hako_pdu_cdr_size_table(void) {

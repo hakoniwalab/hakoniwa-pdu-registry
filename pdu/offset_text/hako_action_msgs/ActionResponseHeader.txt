@@ -1,0 +1,5 @@
+single:primitive:version:uint8:0:1
+single:primitive:response_kind:uint8:1:1
+single:primitive:status:uint8:2:1
+single:primitive:reserved:uint8:3:1
+array:primitive:goal_id:uint8:4:16:16

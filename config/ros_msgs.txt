@@ -233,3 +233,6 @@ hako_srv_msgs/NotifyAssetTimeRequest
 hako_srv_msgs/NotifyAssetTimeRequestPacket
 hako_srv_msgs/NotifyAssetTimeResponse
 hako_srv_msgs/NotifyAssetTimeResponsePacket
+hako_action_msgs/ActionFeedbackHeader
+hako_action_msgs/ActionRequestHeader
+hako_action_msgs/ActionResponseHeader

@@ -4,6 +4,16 @@ This document defines the fixed common headers used by Hakoniwa Action PDU packe
 
 The Action protocol is independent from the existing Service request/response binary contract. A 128-bit `goal_id` identifies one Action execution session. The headers intentionally do not contain `client_name`, `client_id`, or a Service `request_id`.
 
+## IDL constraint
+
+Hakoniwa PDU IDL does not support ROS-style constant declarations such as:
+
+```text
+uint8 PROTOCOL_VERSION=1
+```
+
+Therefore, the `.msg` files contain fields only. Protocol numeric values are defined by this document and must be represented by runtime/library constants outside the PDU IDL.
+
 ## Protocol version
 
 All three headers currently use:

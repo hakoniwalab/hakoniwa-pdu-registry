@@ -3,6 +3,7 @@ using Hakoniwa.Pdu.CSharpV2.geometry_msgs;
 using Hakoniwa.Pdu.CSharpV2.sensor_msgs;
 using Hakoniwa.Pdu.CSharpV2.std_msgs;
 using Hakoniwa.Pdu.CSharpV2.builtin_interfaces;
+using Hakoniwa.Pdu.CSharpV2;
 
 namespace CSharpV2Smoke;
 
@@ -10,12 +11,29 @@ internal static class Program
 {
     private static void Main()
     {
+        RunPduMetaDataClassifierContract();
         RunGameControllerOperationRoundtrip();
         RunDisturbanceUserCustomRoundtrip();
         RunDisturbanceRoundtrip();
         RunSimpleStructVarrayRoundtrip();
         RunJointStateRoundtrip();
         RunPointCloud2Roundtrip();
+    }
+
+    private static void RunPduMetaDataClassifierContract()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText("tests/fixtures/pdu_metadata_classifier.json"));
+        foreach (var item in document.RootElement.GetProperty("cases").EnumerateArray()) {
+            var name = item.GetProperty("name").GetString()!;
+            var expected = Enum.Parse<PduMetaDataState>(
+                item.GetProperty("expected").GetString()!, ignoreCase: true);
+            var hex = item.GetProperty("bytes_hex");
+            byte[]? binary = hex.ValueKind == System.Text.Json.JsonValueKind.Null
+                ? null
+                : Convert.FromHexString(hex.GetString()!);
+            AssertEqual(expected, PduMetaDataClassifier.Classify(binary), $"metadata {name}");
+        }
     }
 
     private static void RunGameControllerOperationRoundtrip()

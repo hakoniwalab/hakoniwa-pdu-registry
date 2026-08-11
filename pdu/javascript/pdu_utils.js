@@ -4,6 +4,38 @@
  */
 
 export const PDU_META_DATA_SIZE = 24;
+export const PduMetaDataState = Object.freeze({
+    INVALID: 0,
+    UNINITIALIZED: 1,
+    VALID: 2,
+});
+
+/** Classify a PDU metadata header without decoding the PDU body. */
+export function classifyPduMetadata(binaryData) {
+    if (binaryData == null) {
+        return PduMetaDataState.INVALID;
+    }
+    const bytes = binaryData instanceof Uint8Array
+        ? binaryData
+        : new Uint8Array(binaryData.buffer ?? binaryData, binaryData.byteOffset ?? 0, binaryData.byteLength);
+    if (bytes.byteLength < PDU_META_DATA_SIZE) {
+        return PduMetaDataState.INVALID;
+    }
+    let allZero = true;
+    for (let index = 0; index < PDU_META_DATA_SIZE; index += 1) {
+        if (bytes[index] !== 0) {
+            allZero = false;
+            break;
+        }
+    }
+    if (allZero) {
+        return PduMetaDataState.UNINITIALIZED;
+    }
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    return view.getUint32(0, true) === 0x12345678 && view.getUint32(4, true) === 1
+        ? PduMetaDataState.VALID
+        : PduMetaDataState.INVALID;
+}
 
 /**
  * Manages a dynamically growing ArrayBuffer.

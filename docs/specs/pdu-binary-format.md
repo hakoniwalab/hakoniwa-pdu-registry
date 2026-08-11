@@ -39,6 +39,39 @@ It reflects the current implementation and notes planned extensions explicitly.
 - `flags` are currently unused by runtime code and default to 0.
 - `reserved` must be 0 and is initialized to 0 by creators.
 
+### Metadata classification
+
+Runtime consumers that must distinguish a channel before its first write from
+corrupt or unsupported data use the following three-state classifier:
+
+| Numeric value | State           | Meaning |
+| ------------: | --------------- | ------- |
+| 0             | `INVALID`       | Missing, shorter than 24 bytes, or unsupported magic/version |
+| 1             | `UNINITIALIZED` | The complete first 24 bytes are zero |
+| 2             | `VALID`         | Little-endian magic is `0x12345678` and version is `1` |
+
+The order of evaluation is normative:
+
+1. A null buffer or a buffer shorter than 24 bytes is `INVALID`.
+2. If all first 24 bytes are zero, the state is `UNINITIALIZED`.
+3. If magic and version match the supported values, the state is `VALID`.
+4. Every other value is `INVALID`.
+
+`VALID` only accepts the metadata identity. It does not guarantee that offsets,
+sizes, or the PDU body are internally consistent. Existing converter APIs keep
+their current validation and error behavior. The shared language-neutral test
+vectors are in `tests/fixtures/pdu_metadata_classifier.json`.
+
+The runtime entry points are named for their host language:
+
+- C/C++: `hako_pdu_classify_metadata`
+- Python: `classify_pdu_metadata`
+- JavaScript: `classifyPduMetadata`
+- C#: `PduMetaDataClassifier.Classify`
+- Godot C++: `classify_pdu_metadata`
+- Ruby: `HakoPdu::Runtime.classify_pdu_metadata`
+- Elixir: `HakoPdu.Runtime.classify_pdu_metadata`
+
 ## BaseData
 
 - Stored as a C struct with fixed layout and padding preserved.

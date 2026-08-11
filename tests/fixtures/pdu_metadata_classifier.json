@@ -1,0 +1,57 @@
+{
+  "contract_version": 1,
+  "metadata_size": 24,
+  "byte_order": "little-endian",
+  "states": {
+    "INVALID": 0,
+    "UNINITIALIZED": 1,
+    "VALID": 2
+  },
+  "cases": [
+    {
+      "name": "null-buffer",
+      "bytes_hex": null,
+      "expected": "INVALID"
+    },
+    {
+      "name": "empty-buffer",
+      "bytes_hex": "",
+      "expected": "INVALID"
+    },
+    {
+      "name": "short-zero-buffer",
+      "bytes_hex": "0000000000000000000000000000000000000000000000",
+      "expected": "INVALID"
+    },
+    {
+      "name": "zero-filled-metadata",
+      "bytes_hex": "000000000000000000000000000000000000000000000000",
+      "expected": "UNINITIALIZED"
+    },
+    {
+      "name": "valid-metadata",
+      "bytes_hex": "785634120100000018000000180000001800000000000000",
+      "expected": "VALID"
+    },
+    {
+      "name": "valid-metadata-with-body",
+      "bytes_hex": "785634120100000018000000180000001c0000000000000001020304",
+      "expected": "VALID"
+    },
+    {
+      "name": "wrong-magic",
+      "bytes_hex": "795634120100000018000000180000001800000000000000",
+      "expected": "INVALID"
+    },
+    {
+      "name": "unsupported-version",
+      "bytes_hex": "785634120200000018000000180000001800000000000000",
+      "expected": "INVALID"
+    },
+    {
+      "name": "zero-core-fields-nonzero-tail",
+      "bytes_hex": "000000000000000000000000000000000000000001000000",
+      "expected": "INVALID"
+    }
+  ]
+}

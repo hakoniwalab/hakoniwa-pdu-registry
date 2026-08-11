@@ -31,6 +31,7 @@ typedef struct {
 
 #define HAKO_PDU_META_DATA_MAGICNO      0x12345678
 #define HAKO_PDU_META_DATA_VERSION      0x00000001
+#define HAKO_PDU_META_DATA_WIRE_SIZE    24U
 
 typedef struct {
     uint32_t magicno;
@@ -42,6 +43,41 @@ typedef struct {
     uint8_t flags;
     uint8_t reserved[2];
 } HakoPduMetaDataType;
+
+typedef enum {
+    HAKO_PDU_METADATA_INVALID = 0,
+    HAKO_PDU_METADATA_UNINITIALIZED = 1,
+    HAKO_PDU_METADATA_VALID = 2
+} HakoPduMetadataState;
+
+/*
+ * Classify the 24-byte PDU metadata header without decoding the PDU body.
+ * VALID only guarantees that the metadata magic/version pair is supported.
+ */
+static inline HakoPduMetadataState hako_pdu_classify_metadata(const void* buffer, size_t buffer_size)
+{
+    const uint8_t* bytes = (const uint8_t*)buffer;
+    size_t index;
+
+    if ((buffer == NULL) || (buffer_size < HAKO_PDU_META_DATA_WIRE_SIZE)) {
+        return HAKO_PDU_METADATA_INVALID;
+    }
+    for (index = 0; index < HAKO_PDU_META_DATA_WIRE_SIZE; index++) {
+        if (bytes[index] != 0U) {
+            break;
+        }
+    }
+    if (index == HAKO_PDU_META_DATA_WIRE_SIZE) {
+        return HAKO_PDU_METADATA_UNINITIALIZED;
+    }
+    if ((bytes[0] == 0x78U) && (bytes[1] == 0x56U) &&
+        (bytes[2] == 0x34U) && (bytes[3] == 0x12U) &&
+        (bytes[4] == 0x01U) && (bytes[5] == 0x00U) &&
+        (bytes[6] == 0x00U) && (bytes[7] == 0x00U)) {
+        return HAKO_PDU_METADATA_VALID;
+    }
+    return HAKO_PDU_METADATA_INVALID;
+}
 
 #define HAKO_ALIGNMENT_SIZE sizeof(void*)
 #define HAKO_ALIGN_UP(addr, alignment) (((addr) + ((alignment) - 1)) & ~((alignment) - 1))

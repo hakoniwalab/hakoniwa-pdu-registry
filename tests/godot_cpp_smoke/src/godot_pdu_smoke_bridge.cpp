@@ -1,5 +1,7 @@
 #include "godot_pdu_smoke_bridge.hpp"
 
+#include "godot_cpp_runtime/PduMetaDataClassifier.hpp"
+
 #include "hako_msgs/pdu_conv_GameControllerOperation.hpp"
 #include "hako_msgs/pdu_conv_Disturbance.hpp"
 #include "hako_msgs/pdu_conv_DisturbanceUserCustom.hpp"

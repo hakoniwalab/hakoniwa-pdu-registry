@@ -1,7 +1,7 @@
-PRIMITIVES = {
-    "bool","int8","uint8","int16","uint16","int32","uint32","int64","uint64",
-    "float32","float64","string","char","byte","time","duration"
-}
+from generators.generate_hako_pdu_msgs.primitive_types import SUPPORTED_BUILTIN_TYPES
+
+
+PRIMITIVES = set(SUPPORTED_BUILTIN_TYPES) | {"time", "duration"}
 class MsgGenerator:
     def __init__(self, context):
         self.context = context

@@ -1,3 +1,9 @@
+from generators.generate_hako_pdu_msgs.primitive_types import (
+    is_constant_definition,
+    reject_unsupported_builtin_type,
+)
+
+
 class SrvParser:
     def __init__(self, context):
         self.context = context
@@ -15,7 +21,7 @@ class SrvParser:
                 if line == "---":
                     current_fields = fields_response
                     continue
-                if "=" in line:
+                if is_constant_definition(line):
                     # Constant definition, ignore
                     continue
                 current_fields.append(self._parse_field(line))
@@ -28,6 +34,7 @@ class SrvParser:
             raise ValueError(f"Invalid field line: '{line}'")
 
         field_type, field_name = tokens
+        reject_unsupported_builtin_type(field_type)
         is_array = False
         array_size = None
 

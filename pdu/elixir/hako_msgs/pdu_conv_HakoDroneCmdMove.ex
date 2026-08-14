@@ -150,7 +150,7 @@ defmodule HakoPdu.HakoMsgs.HakoDroneCmdMoveConverter do
         value
       "char" ->
         <<value::unsigned-integer-size(8)>> = bytes
-        <<value>>
+        value
       "int8" ->
         <<value::signed-integer-size(8)>> = bytes
         value
@@ -191,7 +191,7 @@ defmodule HakoPdu.HakoMsgs.HakoDroneCmdMoveConverter do
         "bool" -> <<if(value, do: 1, else: 0)::little-unsigned-integer-size(32)>>
         "byte" -> <<value::unsigned-integer-size(8)>>
         "uint8" -> <<value::unsigned-integer-size(8)>>
-        "char" -> string_first_byte(value)
+        "char" -> <<value::unsigned-integer-size(8)>>
         "int8" -> <<value::signed-integer-size(8)>>
         "int16" -> <<value::little-signed-integer-size(16)>>
         "uint16" -> <<value::little-unsigned-integer-size(16)>>
@@ -224,13 +224,6 @@ defmodule HakoPdu.HakoMsgs.HakoDroneCmdMoveConverter do
 
   defp range_indices(count) when count <= 0, do: []
   defp range_indices(count), do: 0..(count - 1)
-
-  defp string_first_byte(value) do
-    case to_string(value) do
-      <<byte::unsigned-integer-size(8), _rest::binary>> -> <<byte>>
-      _ -> <<0>>
-    end
-  end
 
   defp pad_or_trim(bytes, nil), do: bytes
   defp pad_or_trim(bytes, size) when byte_size(bytes) > size, do: binary_part(bytes, 0, size)

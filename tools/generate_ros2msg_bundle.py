@@ -110,7 +110,7 @@ def iter_field_types(message_text: str) -> Iterable[str]:
     """Yield field type tokens from a ROS 2 .msg source definition."""
     for raw_line in message_text.splitlines():
         line = raw_line.split("#", 1)[0].strip()
-        if not line or "=" in line:
+        if not line or re.search(r"(?<!<)=", line):
             continue
         parts = line.split()
         if len(parts) >= 2:

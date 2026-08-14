@@ -7,7 +7,7 @@ module HakoPdu
     class Char
       attr_accessor :data
 
-      def initialize(data: "")
+      def initialize(data: 0)
 
         @data = data
 
@@ -29,7 +29,7 @@ module HakoPdu
         hash = (hash || {}).transform_keys(&:to_s)
         new(
 
-          data: decode_data(hash.fetch('data', ""))
+          data: decode_data(hash.fetch('data', 0))
 
         )
       end

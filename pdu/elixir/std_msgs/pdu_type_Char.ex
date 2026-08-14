@@ -7,7 +7,7 @@ defmodule HakoPdu.StdMsgs.Char do
 
   defstruct [
 
-    data: ""
+    data: 0
 
   ]
 
@@ -26,7 +26,7 @@ defmodule HakoPdu.StdMsgs.Char do
   def from_map(map) when is_map(map) do
     %__MODULE__{
 
-      data: map |> get_value(:data, "data", "") |> decode_data()
+      data: map |> get_value(:data, "data", 0) |> decode_data()
 
     }
   end

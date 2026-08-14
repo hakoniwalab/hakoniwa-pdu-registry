@@ -2,6 +2,8 @@ import os
 import re
 from pathlib import Path
 
+from .primitive_types import is_constant_definition, reject_unsupported_builtin_type
+
 def find_ros_message_file(search_paths, package_name, message_name):
     for search_path in search_paths:
         path = Path(search_path) / package_name / 'msg' / f'{message_name}.msg'
@@ -21,13 +23,14 @@ def parse_ros_message_file(file_path):
                 line = line.split('#', 1)[0].strip()
 
             # '=' が含まれる行は PDU のフィールドとしては扱わない
-            if '=' in line:
+            if is_constant_definition(line):
                 continue # この行はスキップ
 
             parts = line.split()
             if len(parts) >= 2:
                 field_type = parts[0]
                 field_name = parts[1]
+                reject_unsupported_builtin_type(field_type)
                 
                 fields.append({'type': field_type, 'name': field_name})
     return fields

@@ -4,6 +4,12 @@ from pathlib import Path
 import jinja2
 from collections import OrderedDict
 
+from .primitive_types import (
+    SUPPORTED_PRIMITIVE_TYPES,
+    canonical_primitive_type,
+    reject_unsupported_builtin_type,
+)
+
 def _collect_dependencies(pkg_msg, message_cache, root_pkg,
                           visited,  # set[str]
                           includes, csharp_includes,
@@ -62,10 +68,7 @@ def _collect_dependencies(pkg_msg, message_cache, root_pkg,
                               py_imports, js_imports, ruby_imports, elixir_aliases)
 # --- テンプレートヘルパー関数群 (generate.pyの挙動を完全に模倣) ---
 
-ROS_PRIMITIVE_TYPES_FOR_TEMPLATE = [
-    'bool', 'byte', 'char', 'float32', 'float64', 'int8', 'uint8',
-    'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64'
-]
+ROS_PRIMITIVE_TYPES_FOR_TEMPLATE = list(SUPPORTED_PRIMITIVE_TYPES)
 
 def get_array_type(name):
     return name.split('[', 1)[0].strip()
@@ -125,12 +128,13 @@ def to_pascal_case(name):
 
 def get_csharp_type(name):
     type_map = {
-        "byte": "byte", "char": "byte", "int8": "sbyte", "uint8": "byte",
+        "int8": "sbyte", "uint8": "byte",
         "int16": "short", "uint16": "ushort", "int32": "int", "uint32": "uint",
         "int64": "long", "uint64": "ulong", "float32": "float",
         "float64": "double", "bool": "bool", "string": "string"
     }
-    return type_map.get(get_array_type(name), get_msg_type(name))
+    base_type = canonical_primitive_type(get_array_type(name))
+    return type_map.get(base_type, get_msg_type(name))
 
 def get_csharp_v2_type_hint(name):
     base_type = get_array_type(name)
@@ -157,8 +161,6 @@ def get_csharp_v2_default_value(name):
 def get_csharp_io_suffix(name):
     suffix_map = {
         "bool": "Bool",
-        "byte": "UInt8",
-        "char": "UInt8",
         "int8": "Int8",
         "uint8": "UInt8",
         "int16": "Int16",
@@ -171,13 +173,11 @@ def get_csharp_io_suffix(name):
         "float64": "Float64",
         "string": "String",
     }
-    return suffix_map[get_array_type(name)]
+    return suffix_map[canonical_primitive_type(get_array_type(name))]
 
 def get_godot_io_suffix(name):
     suffix_map = {
         "bool": "Bool",
-        "byte": "UInt8",
-        "char": "UInt8",
         "int8": "Int8",
         "uint8": "UInt8",
         "int16": "Int16",
@@ -190,13 +190,11 @@ def get_godot_io_suffix(name):
         "float64": "Float64",
         "string": "String",
     }
-    return suffix_map[get_array_type(name)]
+    return suffix_map[canonical_primitive_type(get_array_type(name))]
 
 def get_python_cdr_suffix(name):
     suffix_map = {
         "bool": "Bool",
-        "byte": "UInt8",
-        "char": "UInt8",
         "int8": "Int8",
         "uint8": "UInt8",
         "int16": "Int16",
@@ -208,7 +206,7 @@ def get_python_cdr_suffix(name):
         "float32": "Float32",
         "float64": "Float64",
     }
-    return suffix_map[get_array_type(name)]
+    return suffix_map[canonical_primitive_type(get_array_type(name))]
 
 # --- Python用ヘルパー関数 ---
 def get_python_class_name(name):
@@ -216,7 +214,7 @@ def get_python_class_name(name):
 
 def get_python_type_hint(name):
     type_map = {
-        "bool": "bool", "byte": "int", "char": "str",
+        "bool": "bool",
         "float32": "float", "float64": "float",
         "int8": "int", "uint8": "int",
         "int16": "int", "uint16": "int",
@@ -224,7 +222,7 @@ def get_python_type_hint(name):
         "int64": "int", "uint64": "int",
         "string": "str"
     }
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     py_type = type_map.get(base_type, get_python_class_name(base_type))
 
     if is_array(name):
@@ -252,7 +250,7 @@ def get_js_class_name(name):
 
 def get_js_type_hint(name):
     type_map = {
-        "bool": "boolean", "byte": "number", "char": "string",
+        "bool": "boolean",
         "float32": "number", "float64": "number",
         "int8": "number", "uint8": "number",
         "int16": "number", "uint16": "number",
@@ -260,7 +258,7 @@ def get_js_type_hint(name):
         "int64": "bigint", "uint64": "bigint",
         "string": "string"
     }
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     js_type = type_map.get(base_type, get_js_class_name(base_type))
 
     if is_array(name):
@@ -301,7 +299,7 @@ def get_ruby_type_ref(name, default_pkg):
     return get_ruby_module_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))
 
 def get_ruby_default_value(name, default_pkg=None):
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     if is_array(name):
         return "[]"
     if is_primitive(base_type):
@@ -309,8 +307,6 @@ def get_ruby_default_value(name, default_pkg=None):
             return "0.0"
         if base_type == 'bool':
             return "false"
-        if base_type == 'char':
-            return '""'
         return "0"
     if is_string(base_type):
         return '""'
@@ -334,7 +330,7 @@ def get_elixir_type_ref(name, default_pkg):
     return get_elixir_module_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))
 
 def get_elixir_default_value(name, default_pkg=None):
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     if is_array(name):
         return "[]"
     if is_primitive(base_type):
@@ -342,8 +338,6 @@ def get_elixir_default_value(name, default_pkg=None):
             return "0.0"
         if base_type == 'bool':
             return "false"
-        if base_type == 'char':
-            return '""'
         return "0"
     if is_string(base_type):
         return '""'
@@ -372,8 +366,6 @@ def get_godot_type_hint_with_pkg(name, default_pkg):
 def get_godot_type_hint(name):
     type_map = {
         "bool": "bool",
-        "byte": "int",
-        "char": "int",
         "float32": "float",
         "float64": "float",
         "int8": "int",
@@ -387,15 +379,13 @@ def get_godot_type_hint(name):
         "string": "String",
     }
     packed_array_map = {
-        "byte": "PackedByteArray",
-        "char": "PackedByteArray",
         "uint8": "PackedByteArray",
         "int32": "PackedInt32Array",
         "int64": "PackedInt64Array",
         "float32": "PackedFloat32Array",
         "float64": "PackedFloat64Array",
     }
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     if is_array(name):
         if is_string(base_type):
             return "Array[String]"
@@ -405,14 +395,12 @@ def get_godot_type_hint(name):
     return type_map.get(base_type, get_godot_class_name(base_type))
 
 def get_godot_default_value(name):
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     if is_array(name):
         if is_string(base_type):
             return "[]"
         if is_primitive(base_type):
             packed_defaults = {
-                "byte": "PackedByteArray()",
-                "char": "PackedByteArray()",
                 "uint8": "PackedByteArray()",
                 "int32": "PackedInt32Array()",
                 "int64": "PackedInt64Array()",
@@ -438,10 +426,8 @@ def get_godot_default_value_with_pkg(name, default_pkg):
     return f"{get_godot_global_class_name(get_msg_pkg(base_type, default_pkg), get_msg_type(base_type))}.new()"
 
 def get_godot_cpp_array_container(name):
-    base_type = get_array_type(name)
+    base_type = canonical_primitive_type(get_array_type(name))
     packed_array_map = {
-        "byte": "PackedByteArray",
-        "char": "PackedByteArray",
         "uint8": "PackedByteArray",
         "int32": "PackedInt32Array",
         "int64": "PackedInt64Array",
@@ -459,8 +445,8 @@ def get_struct_format(ros_type_name):
     """ROSのプリミティブ型名をPythonのstructモジュールのフォーマット文字に変換"""
     format_map = {
         'bool': '?',
-        'byte': 'b',
-        'char': 'c',
+        'byte': 'B',
+        'char': 'B',
         'int8': 'b',
         'uint8': 'B',
         'int16': 'h',
@@ -474,7 +460,7 @@ def get_struct_format(ros_type_name):
         # stringは特別扱い
     }
     # ROSの表現（例: "uint8[3]"）から基本型（"uint8"）を抽出
-    base_type = get_array_type(ros_type_name)
+    base_type = canonical_primitive_type(get_array_type(ros_type_name))
     return '<' + format_map.get(base_type, '') # Little-endianをデフォルトに
 
 def get_base_data_size(offset_data):
@@ -502,6 +488,8 @@ class CodeGenerator:
 
     def _prepare_context(self, package_msg, message_cache, varray_size_def):
         msg_def = message_cache[package_msg]
+        for field in msg_def.get('fields', []):
+            reject_unsupported_builtin_type(field['type'])
         root_pkg = msg_def['package']
         msg_name = msg_def['message']
 
@@ -596,7 +584,8 @@ class CodeGenerator:
             'get_godot_io_suffix': get_godot_io_suffix,
             'get_godot_cpp_array_container': get_godot_cpp_array_container,
             'godot_global_class_name': get_godot_global_class_name(root_pkg, msg_name),
-            'get_struct_format': get_struct_format
+            'get_struct_format': get_struct_format,
+            'canonical_primitive_type': canonical_primitive_type,
         }
         return {'container': container}
 

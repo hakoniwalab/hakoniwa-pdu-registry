@@ -77,10 +77,8 @@ module HakoPdu::HakoSrvMsgs::AckEventResponsePacketConverter
     case type
     when 'bool'
       bytes.unpack1('L<') != 0
-    when 'byte', 'uint8'
+    when 'byte', 'char', 'uint8'
       bytes.unpack1('C')
-    when 'char'
-      bytes.unpack1('C').chr
     when 'int8'
       bytes.unpack1('c')
     when 'int16'
@@ -110,10 +108,8 @@ module HakoPdu::HakoSrvMsgs::AckEventResponsePacketConverter
     bytes = case type
             when 'bool'
               [value ? 1 : 0].pack('L<')
-            when 'byte', 'uint8'
+            when 'byte', 'char', 'uint8'
               [value].pack('C')
-            when 'char'
-              [(value || "\x00").to_s.bytes.first || 0].pack('C')
             when 'int8'
               [value].pack('c')
             when 'int16'

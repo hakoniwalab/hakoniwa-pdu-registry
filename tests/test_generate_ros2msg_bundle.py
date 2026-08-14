@@ -89,6 +89,12 @@ class Ros2MsgBundleTest(unittest.TestCase):
             with self.assertRaises(bundle_tool.BundleError):
                 bundle_tool.resolve_bundle("demo_msgs/Outer", [root])
 
+    def test_bounded_string_is_not_mistaken_for_a_constant(self) -> None:
+        self.assertEqual(
+            list(bundle_tool.iter_field_types("string<=32 label\nuint8 VALUE=1\n")),
+            ["string<=32"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

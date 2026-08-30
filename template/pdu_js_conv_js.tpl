@@ -47,7 +47,7 @@ export function binary_read_recursive_{{ container.msg_type_name }}(meta, binary
         const offset_from_heap = view.getInt32(base_off + {{ item.offset }} + 4, littleEndian);
         const one_elm_size = {{ item.size }};
         const array_bin = PduUtils.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size);
-        
+
         if ("{{ item.type_name }}" === 'string') {
             js_obj.{{ item.member_name }} = PduUtils.binToArrayValues("string", array_bin, array_size, one_elm_size);
         } else {
@@ -108,7 +108,7 @@ export function jsToPdu_{{ container.msg_type_name }}(js_obj) {
 
     const base_data_size = base_allocator.size();
     const heap_data_size = bw_container.heap_allocator.size();
-    
+
     bw_container.meta.heap_off = PduUtils.PDU_META_DATA_SIZE + base_data_size;
     bw_container.meta.total_size = bw_container.meta.heap_off + heap_data_size;
 

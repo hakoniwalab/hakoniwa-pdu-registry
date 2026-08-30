@@ -63,7 +63,7 @@ class Time:
         if 'sec' in d:
             field_type = cls.__annotations__.get('sec')
             value = d['sec']
-            
+
             if field_type is bytearray:
                 obj.sec = bytearray(value)
             elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:
@@ -80,7 +80,7 @@ class Time:
         if 'nanosec' in d:
             field_type = cls.__annotations__.get('nanosec')
             value = d['nanosec']
-            
+
             if field_type is bytearray:
                 obj.nanosec = bytearray(value)
             elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:

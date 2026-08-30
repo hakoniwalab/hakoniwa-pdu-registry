@@ -64,7 +64,7 @@ class Header:
         if 'stamp' in d:
             field_type = cls.__annotations__.get('stamp')
             value = d['stamp']
-            
+
             if field_type is bytearray:
                 obj.stamp = bytearray(value)
             elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:
@@ -81,7 +81,7 @@ class Header:
         if 'frame_id' in d:
             field_type = cls.__annotations__.get('frame_id')
             value = d['frame_id']
-            
+
             if field_type is bytearray:
                 obj.frame_id = bytearray(value)
             elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:

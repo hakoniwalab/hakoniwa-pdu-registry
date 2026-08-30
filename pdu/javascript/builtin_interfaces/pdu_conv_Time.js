@@ -23,20 +23,20 @@ export function binary_read_recursive_Time(meta, binary_data, js_obj, base_off) 
     const littleEndian = true;
     // member: sec, type: int32 (primitive)
 
-    
+
     {
         const bin = PduUtils.readBinary(binary_data, base_off + 0, 4);
         js_obj.sec = PduUtils.binToValue("int32", bin);
     }
-    
+
     // member: nanosec, type: uint32 (primitive)
 
-    
+
     {
         const bin = PduUtils.readBinary(binary_data, base_off + 4, 4);
         js_obj.nanosec = PduUtils.binToValue("uint32", bin);
     }
-    
+
     return js_obj;
 }
 
@@ -53,7 +53,7 @@ export function jsToPdu_Time(js_obj) {
 
     const base_data_size = base_allocator.size();
     const heap_data_size = bw_container.heap_allocator.size();
-    
+
     bw_container.meta.heap_off = PduUtils.PDU_META_DATA_SIZE + base_data_size;
     bw_container.meta.total_size = bw_container.meta.heap_off + heap_data_size;
 
@@ -71,18 +71,18 @@ export function binary_write_recursive_Time(parent_off, bw_container, allocator,
     const littleEndian = true;
     // member: sec, type: int32 (primitive)
 
-    
+
     {
         const bin = PduUtils.typeToBin("int32", js_obj.sec, 4);
         allocator.add(bin, parent_off + 0);
     }
-    
+
     // member: nanosec, type: uint32 (primitive)
 
-    
+
     {
         const bin = PduUtils.typeToBin("uint32", js_obj.nanosec, 4);
         allocator.add(bin, parent_off + 4);
     }
-    
+
 }

@@ -2,6 +2,8 @@
 // Sizes include the 4-byte CDR encapsulation header.
 // Variable-length sequences are counted as length 0; strings are counted as empty strings.
 export const PDU_CDR_SIZE = {
+  "ackermann_msgs/AckermannDrive": 24,
+  "ackermann_msgs/AckermannDriveStamped": 40,
   "builtin_interfaces/Duration": 12,
   "builtin_interfaces/Time": 12,
   "can_msgs/HakoCan": 32,

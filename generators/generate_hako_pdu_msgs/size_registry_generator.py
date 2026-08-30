@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 from .code_generator import get_array_type, get_msg_pkg, get_msg_type, is_array, is_primitive, is_string
@@ -223,6 +224,34 @@ class CdrSizeRegistryGenerator:
             })
         return entries
 
+    def _load_existing_entries(self, output_root_dir: Path):
+        registry_path = output_root_dir / 'python' / 'pdu_cdr_size.py'
+        if not registry_path.is_file():
+            return []
+        try:
+            tree = ast.parse(registry_path.read_text(encoding='utf-8'))
+        except (OSError, SyntaxError) as exc:
+            raise RuntimeError(f"Could not read existing CDR size registry: {registry_path}") from exc
+
+        for node in tree.body:
+            if not isinstance(node, ast.Assign):
+                continue
+            if not any(isinstance(target, ast.Name) and target.id == 'PDU_CDR_SIZE' for target in node.targets):
+                continue
+            try:
+                values = ast.literal_eval(node.value)
+            except (ValueError, SyntaxError) as exc:
+                raise RuntimeError(f"Invalid PDU_CDR_SIZE in: {registry_path}") from exc
+            if not isinstance(values, dict):
+                raise RuntimeError(f"PDU_CDR_SIZE must be a dictionary: {registry_path}")
+            entries = []
+            for type_name, size in values.items():
+                if not isinstance(type_name, str) or not isinstance(size, int):
+                    raise RuntimeError(f"Invalid CDR size entry in: {registry_path}")
+                entries.append({'type_name': type_name, 'size': size})
+            return entries
+        raise RuntimeError(f"PDU_CDR_SIZE was not found in: {registry_path}")
+
     def _emit_python_registry(self, output_root_dir: Path, entries):
         python_dir = output_root_dir / 'python'
         python_dir.mkdir(parents=True, exist_ok=True)
@@ -344,8 +373,18 @@ class CdrSizeRegistryGenerator:
         lines.append("")
         source_path.write_text("\n".join(lines), encoding="utf-8")
 
-    def generate(self, output_root_dir: Path, message_cache):
-        entries = self._collect_entries(message_cache)
+    def generate(self, output_root_dir: Path, message_cache, merge_existing=False):
+        entries_by_type = {}
+        if merge_existing:
+            entries_by_type.update({
+                entry['type_name']: entry
+                for entry in self._load_existing_entries(output_root_dir)
+            })
+        entries_by_type.update({
+            entry['type_name']: entry
+            for entry in self._collect_entries(message_cache)
+        })
+        entries = list(entries_by_type.values())
         self._emit_c_registry(output_root_dir, entries)
         self._emit_python_registry(output_root_dir, entries)
         self._emit_javascript_registry(output_root_dir, entries)

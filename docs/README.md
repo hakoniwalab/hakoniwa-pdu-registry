@@ -6,3 +6,4 @@ Start here for detailed specifications and guidance.
 - Godot binding design: `docs/specs/godot-binding-design.md`
 - Binary conversion test specification: `test-spec-binary-conversion.md`
 - ROS 2 `.msg` schema bundle generator: `docs/ros2msg-bundle-generator.md`
+- External ROS message fetch: `docs/external-message-fetch.md`

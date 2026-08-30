@@ -1,0 +1,5 @@
+single:primitive:steering_angle:float32:0:4
+single:primitive:steering_angle_velocity:float32:4:4
+single:primitive:speed:float32:8:4
+single:primitive:acceleration:float32:12:4
+single:primitive:jerk:float32:16:4

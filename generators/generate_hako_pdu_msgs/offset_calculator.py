@@ -4,11 +4,16 @@ from pathlib import Path
 import jinja2
 
 class OffsetCalculator:
-    def __init__(self, template_dir, base_dir, additional_include_paths=None):
+    def __init__(self, template_dir, base_dir, additional_include_paths=None, generated_types_dir=None):
         self.template_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
         self.template_env.undefined = jinja2.StrictUndefined
         self.base_dir = Path(base_dir)
         self.additional_include_paths = additional_include_paths if additional_include_paths is not None else []
+        self.generated_types_dir = (
+            Path(generated_types_dir)
+            if generated_types_dir is not None
+            else self.base_dir / 'pdu' / 'types'
+        )
 
     def _render_template(self, template_name, context):
         template = self.template_env.get_template(template_name)
@@ -88,8 +93,13 @@ class OffsetCalculator:
             f.write(c_code)
 
         # Cコードをコンパイル
-        include_paths = [self.base_dir / 'pdu' / 'types']
+        # Generated message headers belong to the selected output tree. The
+        # registry's baseline pdu/types directory also contains shared runtime
+        # headers (for example pdu_primitive_ctypes.h) that are not regenerated
+        # for each selected subset.
+        include_paths = [self.generated_types_dir, self.base_dir / 'pdu' / 'types']
         include_paths.extend([Path(p) for p in self.additional_include_paths])
+        include_paths = list(dict.fromkeys(include_paths))
         
         compile_command = [
             'gcc', '-o', str(executable_path), str(c_file_path)
@@ -101,18 +111,20 @@ class OffsetCalculator:
         try:
             subprocess.run(compile_command, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
-            print(f"Error compiling {c_file_path}:")
-            print(e.stderr)
-            return
+            if c_file_path.exists():
+                c_file_path.unlink()
+            raise RuntimeError(
+                f"Error compiling offset calculator for {pkg_name}/{msg_name}:\n{e.stderr}"
+            ) from e
 
         # 実行してオフセットを取得
         try:
             result = subprocess.run([str(executable_path)], check=True, capture_output=True, text=True)
             offset_data = result.stdout
         except subprocess.CalledProcessError as e:
-            print(f"Error running {executable_path}:")
-            print(e.stderr)
-            return
+            raise RuntimeError(
+                f"Error running offset calculator for {pkg_name}/{msg_name}:\n{e.stderr}"
+            ) from e
         finally:
             # 一時ファイルをクリーンアップ
             if c_file_path.exists():

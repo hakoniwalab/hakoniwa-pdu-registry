@@ -22,11 +22,11 @@ def pdu_to_py_{{ container.msg_type_name }}(binary_data: bytearray) -> {{ contai
 
 def binary_read_recursive_{{ container.msg_type_name }}(meta: binary_io.PduMetaData, binary_data: bytearray, py_obj: {{ container.class_name }}, base_off: int):
 {%- for item in container.offset_data %}
-    # array_type: {{ item.array_type }} 
-    # data_type: {{ item.data_type }} 
-    # member_name: {{ item.member_name }} 
-    # type_name: {{ item.type_name }} 
-    # offset: {{ item.offset }} size: {{ item.size }} 
+    # array_type: {{ item.array_type }}
+    # data_type: {{ item.data_type }}
+    # member_name: {{ item.member_name }}
+    # type_name: {{ item.type_name }}
+    # offset: {{ item.offset }} size: {{ item.size }}
     # array_len: {{ item.array_len }}
 {% if item.data_type == 'primitive' %}
     {% if item.array_type == 'single' %}
@@ -42,7 +42,7 @@ def binary_read_recursive_{{ container.msg_type_name }}(meta: binary_io.PduMetaD
     {% else -%}
     array_size = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + {{ item.offset }}, 4))
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + {{ item.offset }} + 4, 4))
-    one_elm_size = {{ item.size }} 
+    one_elm_size = {{ item.size }}
     array_value = binary_io.readBinary(binary_data, meta.heap_off + offset_from_heap, one_elm_size * array_size)
     {% if item.type_name == 'string' %}
     py_obj.{{ item.member_name }} = binary_io.binToArrayValues("{{ item.type_name }}", array_value, array_size, one_elm_size)
@@ -65,7 +65,7 @@ def binary_read_recursive_{{ container.msg_type_name }}(meta: binary_io.PduMetaD
         binary_read_recursive_{{ container.get_msg_type(item.type_name) }}(meta, binary_data, tmp_py_obj, base_off + {{ item.offset }} + (i * one_elm_size))
         array_value.append(tmp_py_obj)
         i = i + 1
-    py_obj.{{ item.member_name }} = array_value    
+    py_obj.{{ item.member_name }} = array_value
     {% else %}
     array_size = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + {{ item.offset }}, 4))
     offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + {{ item.offset }} + 4, 4))
@@ -77,7 +77,7 @@ def binary_read_recursive_{{ container.msg_type_name }}(meta: binary_io.PduMetaD
         binary_read_recursive_{{ container.get_msg_type(item.type_name) }}(meta, binary_data, tmp_py_obj, meta.heap_off + offset_from_heap + (i * one_elm_size))
         array_value.append(tmp_py_obj)
         i = i + 1
-    py_obj.{{ item.member_name }} = array_value    
+    py_obj.{{ item.member_name }} = array_value
     {% endif -%}
 {% endif -%}
 {% endfor %}
@@ -114,11 +114,11 @@ def py_to_pdu_{{ container.msg_type_name }}(py_obj: {{ container.class_name }}) 
 
 def binary_write_recursive_{{ container.get_msg_type(container.msg_type_name) }}(parent_off: int, bw_container: BinaryWriterContainer, allocator, py_obj: {{ container.get_msg_type(container.msg_type_name) }}):
 {%- for item in container.offset_data %}
-    # array_type: {{ item.array_type }} 
-    # data_type: {{ item.data_type }} 
-    # member_name: {{ item.member_name }} 
-    # type_name: {{ item.type_name }} 
-    # offset: {{ item.offset }} size: {{ item.size }} 
+    # array_type: {{ item.array_type }}
+    # data_type: {{ item.data_type }}
+    # member_name: {{ item.member_name }}
+    # type_name: {{ item.type_name }}
+    # offset: {{ item.offset }} size: {{ item.size }}
     # array_len: {{ item.array_len }}
     type = "{{ container.get_msg_type(item.type_name)  }}"
     off = {{ item.offset }}
@@ -180,15 +180,15 @@ if __name__ == "__main__":
         if len(sys.argv) != 4:
             print_usage()
             sys.exit(1)
-        
+
         binary_filepath = sys.argv[2]
         output_json_filepath = sys.argv[3]
 
         with open(binary_filepath, "rb") as f:
             binary_data = bytearray(f.read())
-        
+
         py_obj = pdu_to_py_{{ container.msg_type_name }}(binary_data)
-        
+
         with open(output_json_filepath, "w") as f:
             f.write(py_obj.to_json())
 
@@ -202,9 +202,9 @@ if __name__ == "__main__":
 
         with open(input_json_filepath, "r") as f:
             json_str = f.read()
-        
+
         py_obj = {{ container.class_name }}.from_json(json_str)
-        
+
         binary_data = py_to_pdu_{{ container.msg_type_name }}(py_obj)
 
         with open(output_binary_filepath, "wb") as f:

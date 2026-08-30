@@ -30,15 +30,15 @@ export function binary_read_recursive_Header(meta, binary_data, js_obj, base_off
         binary_read_recursive_Time(meta, binary_data, tmp_obj, base_off + 0);
         js_obj.stamp = tmp_obj;
     }
-    
+
     // member: frame_id, type: string (primitive)
 
-    
+
     {
         const bin = PduUtils.readBinary(binary_data, base_off + 8, 128);
         js_obj.frame_id = PduUtils.binToValue("string", bin);
     }
-    
+
     return js_obj;
 }
 
@@ -55,7 +55,7 @@ export function jsToPdu_Header(js_obj) {
 
     const base_data_size = base_allocator.size();
     const heap_data_size = bw_container.heap_allocator.size();
-    
+
     bw_container.meta.heap_off = PduUtils.PDU_META_DATA_SIZE + base_data_size;
     bw_container.meta.total_size = bw_container.meta.heap_off + heap_data_size;
 
@@ -76,13 +76,13 @@ export function binary_write_recursive_Header(parent_off, bw_container, allocato
     {
         binary_write_recursive_Time(parent_off + 0, bw_container, allocator, js_obj.stamp);
     }
-    
+
     // member: frame_id, type: string (primitive)
 
-    
+
     {
         const bin = PduUtils.typeToBin("string", js_obj.frame_id, 128);
         allocator.add(bin, parent_off + 8);
     }
-    
+
 }

@@ -206,3 +206,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# External ROS message sources fetched for local generation.
+output_msgs/

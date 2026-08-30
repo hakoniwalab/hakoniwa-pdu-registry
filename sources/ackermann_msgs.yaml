@@ -1,0 +1,10 @@
+schema_version: 1
+
+source:
+  type: git
+  repository: https://github.com/ros-drivers/ackermann_msgs.git
+  # ackermann_msgs 2.0.2; pin the commit rather than a moving branch.
+  ref: df2fe51eb04e8bd3c0ba4f8a6ded8aea3815b660
+
+packages:
+  - ackermann_msgs

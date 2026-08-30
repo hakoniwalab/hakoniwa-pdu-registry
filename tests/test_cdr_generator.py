@@ -427,6 +427,26 @@ for (const [name, wanted] of Object.entries(expected)) {{
             self.assertIn('"hako_msgs/GameControllerOperation": 67', py_text)
             self.assertIn('"hako_msgs/GameControllerOperation": 67', js_text)
 
+    def test_incremental_cdr_registry_preserves_existing_entries(self):
+        first_cache = DependencyResolver(["idl"]).get_all_dependencies(
+            ["hako_msgs/GameControllerOperation"]
+        )
+        second_cache = DependencyResolver(["idl"]).get_all_dependencies(
+            ["hako_msgs/SimTime"]
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "pdu"
+            generator = CdrSizeRegistryGenerator()
+            generator.generate(output_dir, first_cache)
+            generator.generate(output_dir, second_cache, merge_existing=True)
+
+            registry = (output_dir / "python" / "pdu_cdr_size.py").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('"hako_msgs/GameControllerOperation": 67', registry)
+            self.assertIn('"hako_msgs/SimTime":', registry)
+
 
 if __name__ == "__main__":
     unittest.main()

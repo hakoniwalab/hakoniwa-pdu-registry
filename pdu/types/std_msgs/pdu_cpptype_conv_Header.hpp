@@ -117,7 +117,7 @@ public:
         if (base_ptr == nullptr) {
             std::cerr << "[ConvertorError][" << "Header" << "] hako_get_base_ptr_pdu returned null" << std::endl;
             return false;
-        } 
+        }
         int ret = hako_convert_pdu2cpp_Header(*(Hako_Header*)base_ptr, cppData);
         if (ret != 0) {
             std::cerr << "[ConvertorError][" << "Header" << "] hako_convert_pdu2cpp returned " << ret << std::endl;

@@ -60,7 +60,7 @@ class {{ container.class_name }}:
         if '{{ field.name }}' in d:
             field_type = cls.__annotations__.get('{{ field.name }}')
             value = d['{{ field.name }}']
-            
+
             if field_type is bytearray:
                 obj.{{ field.name }} = bytearray(value)
             elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:

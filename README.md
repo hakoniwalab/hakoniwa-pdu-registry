@@ -74,6 +74,42 @@ Typical outputs include:
 - Message list and search paths: `config/ros_msgs.txt`, `config/search_path.txt`
 - PDU binary format details: `docs/specs/pdu-binary-format.md`
 - Docs index: `docs/README.md`
+- External ROS message fetch: `docs/external-message-fetch.md`
+
+## Fetch external ROS message definitions
+
+External ROS repositories can be used as reproducible, temporary inputs without
+vendoring their complete source trees. A source manifest pins the repository,
+commit, and selected packages:
+
+```bash
+python3 tools/fetch.py \
+  --sources sources/ackermann_msgs.yaml \
+  --output output_msgs \
+  --clean
+```
+
+The output contains only each selected package's `msg/*.msg` files plus a
+deterministic `source-manifest.json` with commit, package license metadata, and
+file hashes. `output_msgs/` is local generator input and is ignored by Git. See
+[`docs/external-message-fetch.md`](docs/external-message-fetch.md) for the source
+schema, safety rules, and dependency boundary.
+
+To fetch and generate only the messages a user requests, run the host-side
+Docker wrapper instead of adding them to the large global message list:
+
+```bash
+python3 tools/generate_from_sources.py \
+  --sources sources/ackermann_msgs.yaml \
+  ackermann_msgs/AckermannDrive
+```
+
+`config/ros_msgs.txt` and `config/search_path.txt` are not edited. The command
+creates temporary files containing only the selected message names and an
+additional `output_msgs/` search root, then invokes the pinned Docker generator
+in incremental mode. Required transitive dependencies are resolved by the
+existing generator; unrelated messages are not regenerated. Use `--cdr` for
+CDR-only output or `--output-dir .cache/pdu-smoke` for an isolated trial.
 
 ## Quickstart (Docker, reproducible)
 
@@ -98,7 +134,8 @@ bash docker/create-image.bash
 `docker/create-image.bash` also accepts an explicit distro argument, but generated
 type hash metadata is guarded to Jazzy and will fail on other distros.
 
-2. Configure the target message list and search paths.
+2. For a full registry regeneration, configure the target message list and
+search paths.
 
 Edit `config/ros_msgs.txt` to list the ROS messages to convert.
 Edit `config/search_path.txt` to point at ROS message definition roots.
@@ -107,6 +144,12 @@ Edit `config/search_path.txt` to point at ROS message definition roots.
 
 ```bash
 bash docker/run.bash
+```
+
+`docker/run.bash` also accepts a command for non-interactive host/CI use:
+
+```bash
+bash docker/run.bash python3 --version
 ```
 
 4. Inside the container, run the generator.

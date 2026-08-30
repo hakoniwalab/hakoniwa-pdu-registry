@@ -2,6 +2,8 @@
 #include <string.h>
 
 static const HakoPduSizeEntry g_pdu_size_table[] = {
+    { "ackermann_msgs/AckermannDrive", 24 },
+    { "ackermann_msgs/AckermannDriveStamped", 160 },
     { "builtin_interfaces/Duration", 8 },
     { "builtin_interfaces/Time", 8 },
     { "can_msgs/HakoCan", 32 },

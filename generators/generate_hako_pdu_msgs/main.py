@@ -46,7 +46,7 @@ def create_python_init_files(output_root_dir):
         if package_dir.is_dir():
             (package_dir / '__init__.py').touch()
 
-def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ros_root, offset_include_path_file, cdr_only=False):
+def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ros_root, offset_include_path_file, cdr_only=False, incremental=False):
     output_root_dir = Path(output_dir)
     template_dir = Path(template_dir)
     project_root = Path.cwd()
@@ -93,7 +93,11 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             print("\n3. Creating __init__.py for Python packages...")
             create_python_init_files(output_root_dir)
             print("\n4. Generating CDR minimum size registry...")
-            CdrSizeRegistryGenerator().generate(output_root_dir, message_cache)
+            CdrSizeRegistryGenerator().generate(
+                output_root_dir,
+                message_cache,
+                merge_existing=incremental,
+            )
             print("\n--- CDR Generation Complete! ---")
             return
 
@@ -108,7 +112,12 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
             for p in additional_offset_includes:
                 print(f"  - {p}")
 
-        offset_calculator = OffsetCalculator(template_dir, project_root, additional_include_paths=additional_offset_includes)
+        offset_calculator = OffsetCalculator(
+            template_dir,
+            project_root,
+            additional_include_paths=additional_offset_includes,
+            generated_types_dir=output_root_dir / 'types',
+        )
         offset_output_dir = output_root_dir / 'offset'
         
         for package_msg in message_cache.keys():
@@ -182,7 +191,11 @@ def run_generation(ros_msgs_file, search_path_file, output_dir, template_dir, ro
         SizeRegistryGenerator().generate(output_root_dir)
 
         print("\n12. Generating CDR minimum size registry...")
-        CdrSizeRegistryGenerator().generate(output_root_dir, message_cache)
+        CdrSizeRegistryGenerator().generate(
+            output_root_dir,
+            message_cache,
+            merge_existing=incremental,
+        )
 
         print("\n--- Generation Complete! ---")
 
@@ -204,6 +217,11 @@ def main():
     parser.add_argument('--ros-root', type=str, help="(Optional) Root path of your local ROS 2 installation for testing.")
     parser.add_argument('--offset-include-path-file', type=str, help="Path to a file listing additional include paths for offset calculation.")
     parser.add_argument('--cdr', action='store_true', help="Generate only CDR type/runtime/converter files and skip offset-based generation.")
+    parser.add_argument(
+        '--incremental',
+        action='store_true',
+        help="Merge global registries with existing output when generating a selected message subset.",
+    )
     
     args = parser.parse_args()
     run_generation(
@@ -214,6 +232,7 @@ def main():
         args.ros_root,
         args.offset_include_path_file,
         cdr_only=args.cdr,
+        incremental=args.incremental,
     )
 if __name__ == '__main__':
     main()

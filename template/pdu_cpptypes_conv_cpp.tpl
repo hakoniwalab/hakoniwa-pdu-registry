@@ -298,7 +298,7 @@ public:
         if (base_ptr == nullptr) {
             std::cerr << "[ConvertorError][" << "{{container.msg_type_name}}" << "] hako_get_base_ptr_pdu returned null" << std::endl;
             return false;
-        } 
+        }
         int ret = hako_convert_pdu2cpp_{{container.msg_type_name}}(*(Hako_{{container.msg_type_name}}*)base_ptr, cppData);
         if (ret != 0) {
             std::cerr << "[ConvertorError][" << "{{container.msg_type_name}}" << "] hako_convert_pdu2cpp returned " << ret << std::endl;

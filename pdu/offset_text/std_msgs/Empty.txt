@@ -1,0 +1,1 @@
+single:primitive:hako_dummy:uint8:0:1

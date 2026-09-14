@@ -15,5 +15,10 @@ namespace hakoniwa.pdu.msgs.std_msgs
         {
             _pdu = pdu;
         }
+        public byte hako_dummy
+        {
+            get => _pdu.GetData<byte>("hako_dummy");
+            set => _pdu.SetData("hako_dummy", value);
+        }
     }
 }

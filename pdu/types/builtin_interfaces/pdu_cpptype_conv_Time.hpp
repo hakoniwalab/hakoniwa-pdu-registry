@@ -113,7 +113,7 @@ public:
         if (base_ptr == nullptr) {
             std::cerr << "[ConvertorError][" << "Time" << "] hako_get_base_ptr_pdu returned null" << std::endl;
             return false;
-        }
+        } 
         int ret = hako_convert_pdu2cpp_Time(*(Hako_Time*)base_ptr, cppData);
         if (ret != 0) {
             std::cerr << "[ConvertorError][" << "Time" << "] hako_convert_pdu2cpp returned " << ret << std::endl;

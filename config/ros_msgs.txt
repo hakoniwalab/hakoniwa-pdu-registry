@@ -1,4 +1,5 @@
 hako_msgs/MetaPdu
+std_msgs/Empty
 hako_srv_msgs/SystemControlRequest
 hako_srv_msgs/SystemControlResponse
 hako_srv_msgs/SystemControlRequestPacket

@@ -7,6 +7,8 @@ defmodule HakoPdu.StdMsgs.Empty do
 
   defstruct [
 
+    hako_dummy: 0
+
   ]
 
   def new(attrs \\ %{}) when is_map(attrs) do
@@ -16,11 +18,15 @@ defmodule HakoPdu.StdMsgs.Empty do
   def to_map(%__MODULE__{} = msg) do
     %{
 
+      "hako_dummy" => encode_value(msg.hako_dummy)
+
     }
   end
 
   def from_map(map) when is_map(map) do
     %__MODULE__{
+
+      hako_dummy: map |> get_value(:hako_dummy, "hako_dummy", 0) |> decode_hako_dummy()
 
     }
   end
@@ -61,6 +67,11 @@ defmodule HakoPdu.StdMsgs.Empty do
       Code.ensure_loaded?(JSON) and function_exported?(JSON, :decode!, 1) -> apply(JSON, :decode!, [value])
       true -> raise "No JSON decoder found. Add Jason or JSON to use from_json/1."
     end
+  end
+
+
+  defp decode_hako_dummy(value) do
+    value
   end
 
 end

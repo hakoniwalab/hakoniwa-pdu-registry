@@ -29,6 +29,8 @@ static inline void cpp2cdr_Empty(
     eprosima::fastcdr::Cdr& cdr,
     const HakoCpp_Empty& src)
 {
+    // primitive: hako_dummy
+    cdr << src.hako_dummy;
 }
 
 /***************************
@@ -40,6 +42,8 @@ static inline void cdr2cpp_Empty(
     eprosima::fastcdr::Cdr& cdr,
     HakoCpp_Empty& dst)
 {
+    // primitive: hako_dummy
+    cdr >> dst.hako_dummy;
 }
 
 /***************************

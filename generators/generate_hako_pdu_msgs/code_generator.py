@@ -483,8 +483,7 @@ class CodeGenerator:
         with open(template_path, 'r', encoding='utf-8') as f:
             template_str = f.read()
         env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(self.template_dir, encoding='utf8'),
-            lstrip_blocks=True,
+            loader=jinja2.FileSystemLoader(self.template_dir, encoding='utf8')
         )
         tpl = env.get_template(template_name)
         return tpl.render(context)

@@ -25,6 +25,8 @@
 
 static inline int cpp_pdu2cpp_Empty(const char* heap_ptr, Hako_Empty &src, HakoCpp_Empty &dst)
 {
+    // primitive convert
+    hako_convert_pdu2cpp(src.hako_dummy, dst.hako_dummy);
     (void)heap_ptr;
     return 0;
 }
@@ -51,6 +53,8 @@ static inline int hako_convert_pdu2cpp_Empty(Hako_Empty &src, HakoCpp_Empty &dst
 static inline bool cpp_cpp2pdu_Empty(HakoCpp_Empty &src, Hako_Empty &dst, PduDynamicMemory &dynamic_memory)
 {
     try {
+        // primitive convert
+        hako_convert_cpp2pdu(src.hako_dummy, dst.hako_dummy);
     } catch (const std::runtime_error& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;

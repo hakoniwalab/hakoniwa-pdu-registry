@@ -230,6 +230,7 @@ PDU_SIZE = {
     "std_msgs/ByteMultiArray": 24,
     "std_msgs/Char": 8,
     "std_msgs/ColorRGBA": 16,
+    "std_msgs/Empty": 8,
     "std_msgs/Float32": 8,
     "std_msgs/Float32MultiArray": 24,
     "std_msgs/Float64": 8,

@@ -8,7 +8,7 @@ export class PduEmptyConverter {
      * @param { Empty } src
      */
     static to_cdr_body(writer, src) {
-        return;
+        writer.write_uint8(src.hako_dummy);
     }
 
     /**
@@ -17,7 +17,7 @@ export class PduEmptyConverter {
      * @returns { Empty }
      */
     static cdr_body_to_js(reader, dst) {
-        return dst;
+        dst.hako_dummy = reader.read_uint8();
         return dst;
     }
 

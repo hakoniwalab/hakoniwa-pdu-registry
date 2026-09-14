@@ -2,8 +2,6 @@
 # Sizes include the 4-byte CDR encapsulation header.
 # Variable-length sequences are counted as length 0; strings are counted as empty strings.
 PDU_CDR_SIZE = {
-    "ackermann_msgs/AckermannDrive": 24,
-    "ackermann_msgs/AckermannDriveStamped": 40,
     "builtin_interfaces/Duration": 12,
     "builtin_interfaces/Time": 12,
     "can_msgs/HakoCan": 32,
@@ -229,7 +227,7 @@ PDU_CDR_SIZE = {
     "std_msgs/ByteMultiArray": 16,
     "std_msgs/Char": 5,
     "std_msgs/ColorRGBA": 20,
-    "std_msgs/Empty": 4,
+    "std_msgs/Empty": 5,
     "std_msgs/Float32": 8,
     "std_msgs/Float32MultiArray": 16,
     "std_msgs/Float64": 12,

@@ -6,6 +6,7 @@
 #include <array>
 
 typedef struct {
+        Hako_uint8 hako_dummy;
 } HakoCpp_Empty;
 
 #endif /* _pdu_cpptype_std_msgs_Empty_HPP_ */

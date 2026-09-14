@@ -7,16 +7,22 @@ namespace Hakoniwa.Pdu.CSharpV2.std_msgs
 {
     public class Empty
     {
+        public byte hako_dummy { get; set; } = 0;
 
         public Dictionary<string, object?> ToDictionary()
         {
             var dict = new Dictionary<string, object?>();
+            dict["hako_dummy"] = ToSerializableValue(hako_dummy);
             return dict;
         }
 
         public static Empty FromDictionary(Dictionary<string, object?> dict)
         {
             var obj = new Empty();
+            if (dict.TryGetValue("hako_dummy", out var hako_dummyValue))
+            {
+                obj.hako_dummy = PduRuntime.ConvertValue<byte>(hako_dummyValue);
+            }
             return obj;
         }
 

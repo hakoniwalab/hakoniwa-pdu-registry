@@ -19,28 +19,28 @@ def pdu_to_py_Time(binary_data: bytearray) -> Time:
 
 
 def binary_read_recursive_Time(meta: binary_io.PduMetaData, binary_data: bytearray, py_obj: Time, base_off: int):
-    # array_type: single
-    # data_type: primitive
-    # member_name: sec
-    # type_name: int32
-    # offset: 0 size: 4
+    # array_type: single 
+    # data_type: primitive 
+    # member_name: sec 
+    # type_name: int32 
+    # offset: 0 size: 4 
     # array_len: 1
 
-
+    
     bin = binary_io.readBinary(binary_data, base_off + 0, 4)
     py_obj.sec = binary_io.binTovalue("int32", bin)
-
-    # array_type: single
-    # data_type: primitive
-    # member_name: nanosec
-    # type_name: uint32
-    # offset: 4 size: 4
+    
+    # array_type: single 
+    # data_type: primitive 
+    # member_name: nanosec 
+    # type_name: uint32 
+    # offset: 4 size: 4 
     # array_len: 1
 
-
+    
     bin = binary_io.readBinary(binary_data, base_off + 4, 4)
     py_obj.nanosec = binary_io.binTovalue("uint32", bin)
-
+    
     return py_obj
 
 
@@ -73,34 +73,34 @@ def py_to_pdu_Time(py_obj: Time) -> bytearray:
     return binary_data
 
 def binary_write_recursive_Time(parent_off: int, bw_container: BinaryWriterContainer, allocator, py_obj: Time):
-    # array_type: single
-    # data_type: primitive
-    # member_name: sec
-    # type_name: int32
-    # offset: 0 size: 4
+    # array_type: single 
+    # data_type: primitive 
+    # member_name: sec 
+    # type_name: int32 
+    # offset: 0 size: 4 
     # array_len: 1
     type = "int32"
     off = 0
 
-
+    
     bin = binary_io.typeTobin(type, py_obj.sec)
     bin = get_binary(type, bin, 4)
     allocator.add(bin, expected_offset=parent_off + off)
-
-    # array_type: single
-    # data_type: primitive
-    # member_name: nanosec
-    # type_name: uint32
-    # offset: 4 size: 4
+    
+    # array_type: single 
+    # data_type: primitive 
+    # member_name: nanosec 
+    # type_name: uint32 
+    # offset: 4 size: 4 
     # array_len: 1
     type = "uint32"
     off = 4
 
-
+    
     bin = binary_io.typeTobin(type, py_obj.nanosec)
     bin = get_binary(type, bin, 4)
     allocator.add(bin, expected_offset=parent_off + off)
-
+    
 
 if __name__ == "__main__":
     import sys
@@ -121,15 +121,15 @@ if __name__ == "__main__":
         if len(sys.argv) != 4:
             print_usage()
             sys.exit(1)
-
+        
         binary_filepath = sys.argv[2]
         output_json_filepath = sys.argv[3]
 
         with open(binary_filepath, "rb") as f:
             binary_data = bytearray(f.read())
-
+        
         py_obj = pdu_to_py_Time(binary_data)
-
+        
         with open(output_json_filepath, "w") as f:
             f.write(py_obj.to_json())
 
@@ -143,9 +143,9 @@ if __name__ == "__main__":
 
         with open(input_json_filepath, "r") as f:
             json_str = f.read()
-
+        
         py_obj = Time.from_json(json_str)
-
+        
         binary_data = py_to_pdu_Time(py_obj)
 
         with open(output_binary_filepath, "wb") as f:

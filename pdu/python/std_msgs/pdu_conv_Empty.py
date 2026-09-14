@@ -1,55 +1,43 @@
 
 import struct
-from .pdu_pytype_Header import Header
+from .pdu_pytype_Empty import Empty
 from ..pdu_utils import *
 from .. import binary_io
 
 # dependencies for the generated Python class
-from ..builtin_interfaces.pdu_conv_Time import *
 
 
 
-def pdu_to_py_Header(binary_data: bytearray) -> Header:
-    py_obj = Header()
+def pdu_to_py_Empty(binary_data: bytearray) -> Empty:
+    py_obj = Empty()
     meta_parser = binary_io.PduMetaDataParser()
     meta = meta_parser.load_pdu_meta(binary_data)
     if meta is None:
         raise ValueError("Invalid PDU binary data: MetaData not found or corrupted")
-    binary_read_recursive_Header(meta, binary_data, py_obj, binary_io.PduMetaData.PDU_META_DATA_SIZE)
+    binary_read_recursive_Empty(meta, binary_data, py_obj, binary_io.PduMetaData.PDU_META_DATA_SIZE)
     return py_obj
 
 
-def binary_read_recursive_Header(meta: binary_io.PduMetaData, binary_data: bytearray, py_obj: Header, base_off: int):
-    # array_type: single 
-    # data_type: struct 
-    # member_name: stamp 
-    # type_name: builtin_interfaces/Time 
-    # offset: 0 size: 8 
-    # array_len: 1
-
-    tmp_py_obj = Time()
-    binary_read_recursive_Time(meta, binary_data, tmp_py_obj, base_off + 0)
-    py_obj.stamp = tmp_py_obj
-    
+def binary_read_recursive_Empty(meta: binary_io.PduMetaData, binary_data: bytearray, py_obj: Empty, base_off: int):
     # array_type: single 
     # data_type: primitive 
-    # member_name: frame_id 
-    # type_name: string 
-    # offset: 8 size: 128 
+    # member_name: hako_dummy 
+    # type_name: uint8 
+    # offset: 0 size: 1 
     # array_len: 1
 
     
-    bin = binary_io.readBinary(binary_data, base_off + 8, 128)
-    py_obj.frame_id = binary_io.binTovalue("string", bin)
+    bin = binary_io.readBinary(binary_data, base_off + 0, 1)
+    py_obj.hako_dummy = binary_io.binTovalue("uint8", bin)
     
     return py_obj
 
 
-def py_to_pdu_Header(py_obj: Header) -> bytearray:
+def py_to_pdu_Empty(py_obj: Empty) -> bytearray:
     binary_data = bytearray()
     base_allocator = DynamicAllocator(False)
     bw_container = BinaryWriterContainer(binary_io.PduMetaData())
-    binary_write_recursive_Header(0, bw_container, base_allocator, py_obj)
+    binary_write_recursive_Empty(0, bw_container, base_allocator, py_obj)
 
     # メタデータの設定
     total_size = base_allocator.size() + bw_container.heap_allocator.size() + binary_io.PduMetaData.PDU_META_DATA_SIZE
@@ -73,30 +61,19 @@ def py_to_pdu_Header(py_obj: Header) -> bytearray:
 
     return binary_data
 
-def binary_write_recursive_Header(parent_off: int, bw_container: BinaryWriterContainer, allocator, py_obj: Header):
-    # array_type: single 
-    # data_type: struct 
-    # member_name: stamp 
-    # type_name: builtin_interfaces/Time 
-    # offset: 0 size: 8 
-    # array_len: 1
-    type = "Time"
-    off = 0
-
-    binary_write_recursive_Time(parent_off + off, bw_container, allocator, py_obj.stamp)
-    
+def binary_write_recursive_Empty(parent_off: int, bw_container: BinaryWriterContainer, allocator, py_obj: Empty):
     # array_type: single 
     # data_type: primitive 
-    # member_name: frame_id 
-    # type_name: string 
-    # offset: 8 size: 128 
+    # member_name: hako_dummy 
+    # type_name: uint8 
+    # offset: 0 size: 1 
     # array_len: 1
-    type = "string"
-    off = 8
+    type = "uint8"
+    off = 0
 
     
-    bin = binary_io.typeTobin(type, py_obj.frame_id)
-    bin = get_binary(type, bin, 128)
+    bin = binary_io.typeTobin(type, py_obj.hako_dummy)
+    bin = get_binary(type, bin, 1)
     allocator.add(bin, expected_offset=parent_off + off)
     
 
@@ -105,7 +82,7 @@ if __name__ == "__main__":
     import json
 
     def print_usage():
-        print(f"Usage: python -m pdu.python.pdu_conv_Header <read|write> [args...]")
+        print(f"Usage: python -m pdu.python.pdu_conv_Empty <read|write> [args...]")
         print(f"  read <input_binary_file> <output_json_file>")
         print(f"  write <input_json_file> <output_binary_file>")
 
@@ -126,7 +103,7 @@ if __name__ == "__main__":
         with open(binary_filepath, "rb") as f:
             binary_data = bytearray(f.read())
         
-        py_obj = pdu_to_py_Header(binary_data)
+        py_obj = pdu_to_py_Empty(binary_data)
         
         with open(output_json_filepath, "w") as f:
             f.write(py_obj.to_json())
@@ -142,9 +119,9 @@ if __name__ == "__main__":
         with open(input_json_filepath, "r") as f:
             json_str = f.read()
         
-        py_obj = Header.from_json(json_str)
+        py_obj = Empty.from_json(json_str)
         
-        binary_data = py_to_pdu_Header(py_obj)
+        binary_data = py_to_pdu_Empty(py_obj)
 
         with open(output_binary_filepath, "wb") as f:
             f.write(binary_data)

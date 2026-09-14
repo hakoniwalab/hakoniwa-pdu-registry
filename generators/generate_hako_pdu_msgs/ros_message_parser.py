@@ -4,12 +4,20 @@ from pathlib import Path
 
 from .primitive_types import is_constant_definition, reject_unsupported_builtin_type
 
+
+HAKO_ZERO_FIELD_PLACEHOLDER = {
+    'type': 'uint8',
+    'name': 'hako_dummy',
+}
+
+
 def find_ros_message_file(search_paths, package_name, message_name):
     for search_path in search_paths:
         path = Path(search_path) / package_name / 'msg' / f'{message_name}.msg'
         if path.exists():
             return path
     return None
+
 
 def parse_ros_message_file(file_path):
     fields = []
@@ -33,7 +41,15 @@ def parse_ros_message_file(file_path):
                 reject_unsupported_builtin_type(field_type)
                 
                 fields.append({'type': field_type, 'name': field_name})
+
+    # Hakoniwa PDU generation expects a data-bearing body. Represent ROS
+    # zero-field messages with one reserved octet so the existing generation,
+    # offset, converter, and runtime paths can be reused unchanged.
+    if not fields:
+        fields.append(dict(HAKO_ZERO_FIELD_PLACEHOLDER))
+
     return fields
+
 
 def get_ros_message_definition(search_paths, package_msg):
     base_pkg_msg = package_msg.split('[', 1)[0].strip()

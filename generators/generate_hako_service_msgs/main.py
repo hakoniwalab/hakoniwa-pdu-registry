@@ -3,7 +3,7 @@ from generators.generate_hako_service_msgs.service_context import ServiceContext
 from generators.generate_hako_service_msgs.srv_parser import SrvParser
 from generators.generate_hako_service_msgs.msg_generator import MsgGenerator
 from generators.generate_hako_service_msgs.msg_writer import MsgWriter
-from generators.generate_hako_service_msgs.common import validate_fields
+
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Hakoniwa Service .msg files from a ROS .srv file")
@@ -13,8 +13,6 @@ def main():
 
     context = ServiceContext(args.srv_file)
     fields_request, fields_response = SrvParser(context).parse()
-
-    validate_fields(context.service_name, fields_request, fields_response)
 
     generator = MsgGenerator(context)
     writer = MsgWriter(context, args.out)

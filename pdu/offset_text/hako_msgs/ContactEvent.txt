@@ -1,0 +1,7 @@
+single:struct:stamp:builtin_interfaces/Time:0:8
+single:primitive:self_name:string:8:128
+single:primitive:other_name:string:136:128
+single:primitive:other_kind:string:264:128
+single:struct:position:geometry_msgs/Point:392:24
+single:primitive:relative_speed:float64:416:8
+single:primitive:started:bool:424:4

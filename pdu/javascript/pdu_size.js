@@ -94,6 +94,7 @@ export const PDU_SIZE = {
   "hako_mavlink_msgs/HakoSERVO_OUTPUT_RAW": 24,
   "hako_mavlink_msgs/HakoSystemTime": 16,
   "hako_msgs/Collision": 280,
+  "hako_msgs/ContactEvent": 432,
   "hako_msgs/Disturbance": 96,
   "hako_msgs/DisturbanceAtm": 8,
   "hako_msgs/DisturbanceBoundary": 48,

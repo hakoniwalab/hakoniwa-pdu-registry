@@ -1,5 +1,6 @@
 hako_msgs/MetaPdu
 hako_msgs/ContactEvent
+hako_msgs/ContactEventArray
 std_msgs/Empty
 hako_srv_msgs/SystemControlRequest
 hako_srv_msgs/SystemControlResponse

@@ -97,6 +97,7 @@ static const HakoPduSizeEntry g_pdu_size_table[] = {
     { "hako_mavlink_msgs/HakoSystemTime", 16 },
     { "hako_msgs/Collision", 280 },
     { "hako_msgs/ContactEvent", 432 },
+    { "hako_msgs/ContactEventArray", 8 },
     { "hako_msgs/Disturbance", 96 },
     { "hako_msgs/DisturbanceAtm", 8 },
     { "hako_msgs/DisturbanceBoundary", 48 },

@@ -5,6 +5,7 @@ static const HakoPduCdrSizeEntry g_pdu_cdr_size_table[] = {
     { "builtin_interfaces/Time", 12 },
     { "geometry_msgs/Point", 28 },
     { "hako_msgs/ContactEvent", 69 },
+    { "hako_msgs/ContactEventArray", 8 },
 };
 
 const HakoPduCdrSizeEntry* hako_pdu_cdr_size_table(void) {

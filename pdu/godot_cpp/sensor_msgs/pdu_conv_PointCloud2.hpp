@@ -53,12 +53,8 @@ inline void binary_read_recursive_PointCloud2(
     {
         const int32_t array_size = hako::godot_runtime::read_int32(binary_data, base_off + 164);
         const int32_t offset_from_heap = hako::godot_runtime::read_int32(binary_data, base_off + 164 + 4);
-        godot::PackedByteArray values;
-        for (int32_t i = 0; i < array_size; ++i) {
-            values.append(hako::godot_runtime::read_uint8(
-                binary_data, meta.heap_off + offset_from_heap + (i * 1)));
-        }
-        obj["data"] = values;
+        obj["data"] = hako::godot_runtime::read_binary(
+            binary_data, meta.heap_off + offset_from_heap, array_size);
     }
     obj["is_dense"] = hako::godot_runtime::read_bool(
         binary_data, base_off + 172);
@@ -140,10 +136,7 @@ inline void binary_write_recursive_PointCloud2(
         const int32_t array_size = values.size();
         allocator.add(hako::godot_runtime::get_binary_for_int32(array_size), parent_off + 164);
         allocator.add(hako::godot_runtime::get_binary_for_int32(offset_from_heap), parent_off + 164 + 4);
-        for (int32_t i = 0; i < array_size; ++i) {
-            writer.heap_allocator.add(
-                hako::godot_runtime::get_binary_for_uint8(values[i]));
-        }
+        writer.heap_allocator.add(values);
     }
     if (obj.has("is_dense")) {
         allocator.add(

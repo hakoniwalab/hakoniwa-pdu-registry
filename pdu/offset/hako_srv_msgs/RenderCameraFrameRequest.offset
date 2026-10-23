@@ -1,0 +1,4 @@
+single:primitive:camera_name:string:0:128
+single:primitive:sim_time_usec:uint64:128:8
+single:struct:camera_pose:geometry_msgs/Pose:136:56
+single:primitive:outputs:uint8:192:1

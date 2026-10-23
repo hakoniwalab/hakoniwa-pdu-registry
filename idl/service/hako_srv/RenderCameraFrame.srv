@@ -1,0 +1,20 @@
+# Request
+# camera_name: 描画サーバーがカメラの特性（画角、解像度、切り取り）を引く名前（カメラのスキーマの frame_id）
+# sim_time_usec: 撮るシミュレーション時刻。描画側の時刻で動くものは、この時刻の姿で描く
+# camera_pose: 世界座標でのカメラの位置と姿勢（ROS の決まり：右手系、m。カメラは自身の +x を見る（SDF と同じ））
+# outputs: 撮るもの。1 rgb、2 depth、4 segmentation の足し合わせ
+string camera_name
+uint64 sim_time_usec
+geometry_msgs/Pose camera_pose
+uint8 outputs
+---
+# Response
+# result_code: hako_srv のほかのサービスと同じ使い方
+# sim_time_usec: 頼みと同じ時刻（どの頼みへの返事かを確かめる）
+# rgb / depth / segmentation: 頼まなかったものは空（width、height が 0）
+#   depth は 32FC1（m）か 16UC1（mm）、segmentation は mono8（分類の番号）など、カメラのスキーマの形式による
+uint32 result_code
+uint64 sim_time_usec
+sensor_msgs/Image rgb
+sensor_msgs/Image depth
+sensor_msgs/Image segmentation

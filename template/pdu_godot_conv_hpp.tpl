@@ -45,12 +45,17 @@ inline void binary_read_recursive_{{ container.msg_type_name }}(
         {%- set container_type = container.get_godot_cpp_array_container(item.type_name) %}
         const int32_t array_size = hako::godot_runtime::read_int32(binary_data, base_off + {{ item.offset }});
         const int32_t offset_from_heap = hako::godot_runtime::read_int32(binary_data, base_off + {{ item.offset }} + 4);
+        {%- if container_type == 'PackedByteArray' %}
+        obj["{{ item.member_name }}"] = hako::godot_runtime::read_binary(
+            binary_data, meta.heap_off + offset_from_heap, array_size);
+        {%- else %}
         godot::{{ container_type }} values;
         for (int32_t i = 0; i < array_size; ++i) {
             values.append(hako::godot_runtime::read_{{ container.get_godot_io_suffix(item.type_name).lower() }}(
                 binary_data, meta.heap_off + offset_from_heap + (i * {{ item.size }}){% if item.type_name == 'string' %}, {{ item.size }}{% endif %}));
         }
         obj["{{ item.member_name }}"] = values;
+        {%- endif %}
     }
     {%- endif %}
 {%- else %}
@@ -164,11 +169,15 @@ inline void binary_write_recursive_{{ container.msg_type_name }}(
         const int32_t array_size = values.size();
         allocator.add(hako::godot_runtime::get_binary_for_int32(array_size), parent_off + {{ item.offset }});
         allocator.add(hako::godot_runtime::get_binary_for_int32(offset_from_heap), parent_off + {{ item.offset }} + 4);
+        {%- if container_type == 'PackedByteArray' %}
+        writer.heap_allocator.add(values);
+        {%- else %}
         for (int32_t i = 0; i < array_size; ++i) {
             writer.heap_allocator.add(
                 hako::godot_runtime::get_binary_for_{{ container.get_godot_io_suffix(item.type_name).lower() }}(
                     {%- if container_type == 'Array' %}hako::godot_runtime::variant_to_{{ container.get_godot_io_suffix(item.type_name).lower() }}(values[i]){% else %}values[i]{% endif %}{% if item.type_name == 'string' %}, {{ item.size }}{% endif %}));
         }
+        {%- endif %}
     }
     {%- endif %}
 {%- else %}

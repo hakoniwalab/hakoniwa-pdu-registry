@@ -94,8 +94,8 @@ public:
     {
         const int32_t offset = (expected_offset >= 0) ? expected_offset : _data.size();
         ensure_size(offset + bytes.size());
-        for (int32_t i = 0; i < bytes.size(); ++i) {
-            _data.set(offset + i, bytes[i]);
+        if (bytes.size() > 0) {
+            std::memcpy(_data.ptrw() + offset, bytes.ptr(), static_cast<size_t>(bytes.size()));
         }
         return offset;
     }
@@ -122,10 +122,11 @@ struct BinaryWriterContainer {
 inline godot::PackedByteArray read_binary(const godot::PackedByteArray &binary, int32_t offset, int32_t size)
 {
     godot::PackedByteArray out;
-    out.resize(size);
-    for (int32_t i = 0; i < size; ++i) {
-        out.set(i, binary[offset + i]);
+    if (size <= 0 || offset < 0 || offset + size > binary.size()) {
+        return out;
     }
+    out.resize(size);
+    std::memcpy(out.ptrw(), binary.ptr() + offset, static_cast<size_t>(size));
     return out;
 }
 
@@ -134,8 +135,8 @@ inline void write_binary(godot::PackedByteArray &binary, int32_t offset, const g
     if (binary.size() < offset + value.size()) {
         binary.resize(offset + value.size());
     }
-    for (int32_t i = 0; i < value.size(); ++i) {
-        binary.set(offset + i, value[i]);
+    if (value.size() > 0) {
+        std::memcpy(binary.ptrw() + offset, value.ptr(), static_cast<size_t>(value.size()));
     }
 }
 

@@ -1,0 +1,3 @@
+string camera_name
+uint64 sim_time_usec
+geometry_msgs/Pose camera_pose

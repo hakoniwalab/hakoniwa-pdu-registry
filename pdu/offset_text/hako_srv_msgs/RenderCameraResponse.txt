@@ -1,0 +1,3 @@
+single:primitive:result_code:uint32:0:4
+single:primitive:sim_time_usec:uint64:8:8
+single:struct:image:sensor_msgs/Image:16:288

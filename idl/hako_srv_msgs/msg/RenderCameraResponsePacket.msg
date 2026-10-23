@@ -1,0 +1,2 @@
+ServiceResponseHeader header
+RenderCameraResponse body

@@ -1,0 +1,54 @@
+import { RenderCameraRequest } from './pdu_jstype_RenderCameraRequest.js';
+import { PduCdrWriter, PduCdrReader } from '../pdu_cdr_runtime.js';
+import { Point } from '../geometry_msgs/pdu_jstype_Point.js';
+import { PduPointConverter } from '../geometry_msgs/pdu_cdr_conv_Point.js';
+import { Pose } from '../geometry_msgs/pdu_jstype_Pose.js';
+import { PduPoseConverter } from '../geometry_msgs/pdu_cdr_conv_Pose.js';
+import { Quaternion } from '../geometry_msgs/pdu_jstype_Quaternion.js';
+import { PduQuaternionConverter } from '../geometry_msgs/pdu_cdr_conv_Quaternion.js';
+
+
+export class PduRenderCameraRequestConverter {
+    /**
+     * @param {PduCdrWriter} writer
+     * @param { RenderCameraRequest } src
+     */
+    static to_cdr_body(writer, src) {
+        writer.write_string(src.camera_name);
+        writer.write_uint64(src.sim_time_usec);
+        PduPoseConverter.to_cdr_body(writer, src.camera_pose);
+    }
+
+    /**
+     * @param {PduCdrReader} reader
+     * @param { RenderCameraRequest } dst
+     * @returns { RenderCameraRequest }
+     */
+    static cdr_body_to_js(reader, dst) {
+        dst.camera_name = reader.read_string();
+        dst.sim_time_usec = reader.read_uint64();
+        PduPoseConverter.cdr_body_to_js(reader, dst.camera_pose);
+        return dst;
+    }
+
+    /**
+     * @param { RenderCameraRequest } src
+     * @returns {ArrayBuffer}
+     */
+    static to_cdr(src) {
+        const writer = new PduCdrWriter();
+        writer.write_encapsulation();
+        this.to_cdr_body(writer, src);
+        return writer.get_buf();
+    }
+
+    /**
+     * @param {ArrayBuffer|ArrayBufferView} cdrPayload
+     * @returns { RenderCameraRequest }
+     */
+    static from_cdr(cdrPayload) {
+        const reader = new PduCdrReader(cdrPayload);
+        reader.read_encapsulation();
+        return this.cdr_body_to_js(reader, new RenderCameraRequest());
+    }
+}

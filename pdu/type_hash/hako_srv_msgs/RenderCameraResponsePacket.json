@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "ros_distro": "jazzy",
+  "hash_algorithm": "RIHS01",
+  "type_name": "hako_srv_msgs/msg/RenderCameraResponsePacket",
+  "package_message": "hako_srv_msgs/RenderCameraResponsePacket",
+  "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/RenderCameraResponsePacket.msg",
+  "hash_string": "RIHS01_c30cecb0d28e71fe43873b6349b1734953bb0129aad286a362a987566c7f9fdb",
+  "hash_value": "c30cecb0d28e71fe43873b6349b1734953bb0129aad286a362a987566c7f9fdb",
+  "dependencies": [
+    {
+      "type_name": "builtin_interfaces/msg/Time",
+      "package_message": "builtin_interfaces/Time",
+      "hash_string": "RIHS01_b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/RenderCameraResponse",
+      "package_message": "hako_srv_msgs/RenderCameraResponse",
+      "hash_string": "RIHS01_062d0df8b21c225355f3e34a5b97f9cdd9011a120df65f9e8738e59e0acb1d29"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/ServiceResponseHeader",
+      "package_message": "hako_srv_msgs/ServiceResponseHeader",
+      "hash_string": "RIHS01_0f48a2bd1721601f58775ddb9af3f9afdb70beb47d758d06a80ef346649c017e"
+    },
+    {
+      "type_name": "sensor_msgs/msg/Image",
+      "package_message": "sensor_msgs/Image",
+      "hash_string": "RIHS01_d31d41a9a4c4bc8eae9be757b0beed306564f7526c88ea6a4588fb9582527d47"
+    },
+    {
+      "type_name": "std_msgs/msg/Header",
+      "package_message": "std_msgs/Header",
+      "hash_string": "RIHS01_f49fb3ae2cf070f793645ff749683ac6b06203e41c891e17701b1cb597ce6a01"
+    }
+  ]
+}

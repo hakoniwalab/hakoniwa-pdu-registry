@@ -5,8 +5,8 @@
   "type_name": "hako_srv_msgs/msg/RenderCameraFrameRequest",
   "package_message": "hako_srv_msgs/RenderCameraFrameRequest",
   "source_msg": "/root/workspace/hakoniwa-pdu-registry/idl/hako_srv_msgs/msg/RenderCameraFrameRequest.msg",
-  "hash_string": "RIHS01_4e39cadfbf90d4e848ad7d7d1f3062188c0b8d1117460e1a614f957d5bd60f50",
-  "hash_value": "4e39cadfbf90d4e848ad7d7d1f3062188c0b8d1117460e1a614f957d5bd60f50",
+  "hash_string": "RIHS01_36e17d76cb6326d3c1f343f55a6d02f406d8577b1203e20dd39beb89256c726d",
+  "hash_value": "36e17d76cb6326d3c1f343f55a6d02f406d8577b1203e20dd39beb89256c726d",
   "dependencies": [
     {
       "type_name": "geometry_msgs/msg/Point",
@@ -22,6 +22,11 @@
       "type_name": "geometry_msgs/msg/Quaternion",
       "package_message": "geometry_msgs/Quaternion",
       "hash_string": "RIHS01_8a765f66778c8ff7c8ab94afcc590a2ed5325a1d9a076ffff38fbce36f458684"
+    },
+    {
+      "type_name": "hako_srv_msgs/msg/RenderObject",
+      "package_message": "hako_srv_msgs/RenderObject",
+      "hash_string": "RIHS01_9620851fc6400ec7b91dbf538e8e23d380ba6dcd1d519f8cc42088263fb5f811"
     }
   ]
 }

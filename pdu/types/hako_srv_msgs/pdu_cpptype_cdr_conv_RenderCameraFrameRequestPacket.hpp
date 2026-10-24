@@ -23,6 +23,7 @@
 #include "geometry_msgs/pdu_cpptype_cdr_conv_Pose.hpp"
 #include "geometry_msgs/pdu_cpptype_cdr_conv_Quaternion.hpp"
 #include "hako_srv_msgs/pdu_cpptype_cdr_conv_RenderCameraFrameRequest.hpp"
+#include "hako_srv_msgs/pdu_cpptype_cdr_conv_RenderObject.hpp"
 #include "hako_srv_msgs/pdu_cpptype_cdr_conv_ServiceRequestHeader.hpp"
 
 /***************************

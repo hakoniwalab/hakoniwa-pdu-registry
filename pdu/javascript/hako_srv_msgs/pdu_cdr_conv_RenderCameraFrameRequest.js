@@ -6,6 +6,8 @@ import { Pose } from '../geometry_msgs/pdu_jstype_Pose.js';
 import { PduPoseConverter } from '../geometry_msgs/pdu_cdr_conv_Pose.js';
 import { Quaternion } from '../geometry_msgs/pdu_jstype_Quaternion.js';
 import { PduQuaternionConverter } from '../geometry_msgs/pdu_cdr_conv_Quaternion.js';
+import { RenderObject } from '../hako_srv_msgs/pdu_jstype_RenderObject.js';
+import { PduRenderObjectConverter } from '../hako_srv_msgs/pdu_cdr_conv_RenderObject.js';
 
 
 export class PduRenderCameraFrameRequestConverter {
@@ -18,6 +20,10 @@ export class PduRenderCameraFrameRequestConverter {
         writer.write_uint64(src.sim_time_usec);
         PduPoseConverter.to_cdr_body(writer, src.camera_pose);
         writer.write_uint8(src.outputs);
+        writer.write_sequence_length(src.objects);
+        for (const elem of src.objects) {
+            PduRenderObjectConverter.to_cdr_body(writer, elem);
+        }
     }
 
     /**
@@ -30,6 +36,10 @@ export class PduRenderCameraFrameRequestConverter {
         dst.sim_time_usec = reader.read_uint64();
         PduPoseConverter.cdr_body_to_js(reader, dst.camera_pose);
         dst.outputs = reader.read_uint8();
+        dst.objects = [];
+        for (let i = 0, len = reader.read_uint32(); i < len; i++) {
+            dst.objects.push(PduRenderObjectConverter.cdr_body_to_js(reader, new RenderObject()));
+        }
         return dst;
     }
 

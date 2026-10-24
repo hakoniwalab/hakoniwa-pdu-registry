@@ -5,6 +5,7 @@ from ..geometry_msgs.pdu_pytype_Point import Point
 from ..geometry_msgs.pdu_pytype_Pose import Pose
 from ..geometry_msgs.pdu_pytype_Quaternion import Quaternion
 from ..hako_srv_msgs.pdu_pytype_RenderCameraFrameRequest import RenderCameraFrameRequest
+from ..hako_srv_msgs.pdu_pytype_RenderObject import RenderObject
 from ..hako_srv_msgs.pdu_pytype_ServiceRequestHeader import ServiceRequestHeader
 
 

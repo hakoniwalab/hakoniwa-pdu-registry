@@ -2,6 +2,7 @@ import { Point } from '../geometry_msgs/pdu_jstype_Point.js';
 import { Pose } from '../geometry_msgs/pdu_jstype_Pose.js';
 import { Quaternion } from '../geometry_msgs/pdu_jstype_Quaternion.js';
 import { RenderCameraFrameRequest } from '../hako_srv_msgs/pdu_jstype_RenderCameraFrameRequest.js';
+import { RenderObject } from '../hako_srv_msgs/pdu_jstype_RenderObject.js';
 import { ServiceRequestHeader } from '../hako_srv_msgs/pdu_jstype_ServiceRequestHeader.js';
 
 

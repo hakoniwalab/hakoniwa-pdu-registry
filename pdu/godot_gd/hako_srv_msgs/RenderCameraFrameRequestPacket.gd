@@ -14,6 +14,9 @@ const QuaternionScript = preload("../geometry_msgs/Quaternion.gd")
 const RenderCameraFrameRequestScript = preload("./RenderCameraFrameRequest.gd")
 
 
+const RenderObjectScript = preload("./RenderObject.gd")
+
+
 const ServiceRequestHeaderScript = preload("./ServiceRequestHeader.gd")
 
 

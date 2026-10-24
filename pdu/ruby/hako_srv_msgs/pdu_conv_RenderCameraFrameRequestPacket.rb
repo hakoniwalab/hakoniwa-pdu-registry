@@ -32,7 +32,7 @@ module HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestPacketConverter
     obj.header = HakoPdu::HakoSrvMsgs::ServiceRequestHeader.new
     HakoPdu::HakoSrvMsgs::ServiceRequestHeaderConverter.binary_read_recursive_service_request_header(meta, binary_data, obj.header, base_off + 0)
 
-    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 200
+    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 208
     obj.body = HakoPdu::HakoSrvMsgs::RenderCameraFrameRequest.new
     HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestConverter.binary_read_recursive_render_camera_frame_request(meta, binary_data, obj.body, base_off + 272)
 
@@ -43,7 +43,7 @@ module HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestPacketConverter
     # member: header, type: ServiceRequestHeader (struct), offset: 0, size: 268
     HakoPdu::HakoSrvMsgs::ServiceRequestHeaderConverter.binary_write_recursive_service_request_header(parent_off + 0, heap_data, allocator, obj.header)
 
-    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 200
+    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 208
     HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestConverter.binary_write_recursive_render_camera_frame_request(parent_off + 272, heap_data, allocator, obj.body)
 
     obj

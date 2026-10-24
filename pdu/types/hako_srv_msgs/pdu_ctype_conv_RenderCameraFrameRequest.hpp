@@ -20,12 +20,28 @@
 #include "geometry_msgs/pdu_ctype_conv_Point.hpp"
 #include "geometry_msgs/pdu_ctype_conv_Pose.hpp"
 #include "geometry_msgs/pdu_ctype_conv_Quaternion.hpp"
+#include "hako_srv_msgs/pdu_ctype_conv_RenderObject.hpp"
 
 /***************************
  *
  * PDU ==> ROS2
  *
  ***************************/
+static inline int _pdu2ros_struct_array_RenderCameraFrameRequest_objects(const char* heap_ptr, Hako_RenderCameraFrameRequest &src, hako_srv_msgs::msg::RenderCameraFrameRequest &dst)
+{
+    // Convert using len and off
+    int offset = src._objects_off;
+    int length = src._objects_len;
+    if (length > 0) {
+        dst.objects.resize(length);
+        Hako_RenderObject *temp_struct_ptr = (Hako_RenderObject *)(heap_ptr + offset);
+        for (int i = 0; i < length; ++i) {
+            _pdu2ros_RenderObject(heap_ptr, *temp_struct_ptr, dst.objects[i]);
+            temp_struct_ptr++;
+        }
+    }
+    return 0;
+}
 
 static inline int _pdu2ros_RenderCameraFrameRequest(const char* heap_ptr, Hako_RenderCameraFrameRequest &src, hako_srv_msgs::msg::RenderCameraFrameRequest &dst)
 {
@@ -37,6 +53,8 @@ static inline int _pdu2ros_RenderCameraFrameRequest(const char* heap_ptr, Hako_R
     _pdu2ros_Pose(heap_ptr, src.camera_pose, dst.camera_pose);
     // primitive convert
     hako_convert_pdu2ros(src.outputs, dst.outputs);
+    // struct array convertor
+    _pdu2ros_struct_array_RenderCameraFrameRequest_objects(heap_ptr, src, dst);
     (void)heap_ptr;
     return 0;
 }
@@ -59,6 +77,23 @@ static inline int hako_convert_pdu2ros_RenderCameraFrameRequest(Hako_RenderCamer
  * ROS2 ==> PDU
  *
  ***************************/
+static inline bool _ros2pdu_struct_array_RenderCameraFrameRequest_objects(hako_srv_msgs::msg::RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest &dst, PduDynamicMemory &dynamic_memory)
+{
+    // array struct
+    dst._objects_len = src.objects.size();
+    if (dst._objects_len > 0) {
+        Hako_RenderObject* temp_struct_ptr = (Hako_RenderObject*)dynamic_memory.allocate(dst._objects_len, sizeof(Hako_RenderObject));
+        dst._objects_off = dynamic_memory.get_offset(temp_struct_ptr);
+        for (int i = 0; i < dst._objects_len; ++i) {
+            _ros2pdu_RenderObject(src.objects[i], *temp_struct_ptr, dynamic_memory);
+            temp_struct_ptr++;
+        }
+    }
+    else {
+        dst._objects_off = dynamic_memory.get_total_size();
+    }
+    return true;
+}
 
 static inline bool _ros2pdu_RenderCameraFrameRequest(hako_srv_msgs::msg::RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest &dst, PduDynamicMemory &dynamic_memory)
 {
@@ -74,6 +109,8 @@ static inline bool _ros2pdu_RenderCameraFrameRequest(hako_srv_msgs::msg::RenderC
         _ros2pdu_Pose(src.camera_pose, dst.camera_pose, dynamic_memory);
         // primitive convert
         hako_convert_ros2pdu(src.outputs, dst.outputs);
+        //struct array convert
+        _ros2pdu_struct_array_RenderCameraFrameRequest_objects(src, dst, dynamic_memory);
     } catch (const std::runtime_error& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;

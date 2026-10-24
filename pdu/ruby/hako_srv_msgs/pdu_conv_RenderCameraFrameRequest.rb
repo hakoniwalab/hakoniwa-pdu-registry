@@ -1,6 +1,8 @@
 require_relative 'pdu_type_RenderCameraFrameRequest'
 require_relative '../geometry_msgs/pdu_type_Pose'
 require_relative '../geometry_msgs/pdu_conv_Pose'
+require_relative 'pdu_type_RenderObject'
+require_relative 'pdu_conv_RenderObject'
 
 
 module HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestConverter
@@ -39,6 +41,16 @@ module HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestConverter
     # member: outputs, type: uint8 (primitive), offset: 192, size: 1
     obj.outputs = read_primitive('uint8', binary_data.byteslice(base_off + 192, 1))
 
+    # member: objects, type: RenderObject (struct), offset: 196, size: 312
+    array_size = read_primitive('int32', binary_data.byteslice(base_off + 196, 4))
+    offset_from_heap = read_primitive('int32', binary_data.byteslice(base_off + 196 + 4, 4))
+    obj.objects = []
+    array_size.times do |i|
+      child = HakoPdu::HakoSrvMsgs::RenderObject.new
+      HakoPdu::HakoSrvMsgs::RenderObjectConverter.binary_read_recursive_render_object(meta, binary_data, child, meta[:heap_off] + offset_from_heap + i * 312)
+      obj.objects << child
+    end
+
     obj
   end
 
@@ -54,6 +66,15 @@ module HakoPdu::HakoSrvMsgs::RenderCameraFrameRequestConverter
 
     # member: outputs, type: uint8 (primitive), offset: 192, size: 1
     add_binary(allocator, parent_off + 192, primitive_to_bin('uint8', obj.outputs, 1))
+
+    # member: objects, type: RenderObject (struct), offset: 196, size: 312
+    offset_from_heap = heap_data.bytesize
+    values = obj.objects || []
+    add_binary(allocator, parent_off + 196, [values.length, offset_from_heap].pack('l<l<'))
+    add_binary(heap_data, offset_from_heap, "\x00".b * (values.length * 312))
+    values.each_with_index do |child, i|
+      HakoPdu::HakoSrvMsgs::RenderObjectConverter.binary_write_recursive_render_object(offset_from_heap + i * 312, heap_data, heap_data, child)
+    end
 
     obj
   end

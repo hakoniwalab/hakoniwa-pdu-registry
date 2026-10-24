@@ -34,7 +34,7 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestPacketConverter do
         base_off + 0
       )
 
-    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 200
+    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 208
     body =
       HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestConverter.binary_read_recursive_render_camera_frame_request(
         meta,
@@ -62,7 +62,7 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestPacketConverter do
         obj.header
       )
 
-    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 200
+    # member: body, type: RenderCameraFrameRequest (struct), offset: 272, size: 208
     {allocator, heap_data} =
       HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestConverter.binary_write_recursive_render_camera_frame_request(
         parent_off + 272,

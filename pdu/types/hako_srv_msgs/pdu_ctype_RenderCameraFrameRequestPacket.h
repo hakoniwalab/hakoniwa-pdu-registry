@@ -6,6 +6,7 @@
 #include "geometry_msgs/pdu_ctype_Pose.h"
 #include "geometry_msgs/pdu_ctype_Quaternion.h"
 #include "hako_srv_msgs/pdu_ctype_RenderCameraFrameRequest.h"
+#include "hako_srv_msgs/pdu_ctype_RenderObject.h"
 #include "hako_srv_msgs/pdu_ctype_ServiceRequestHeader.h"
 
 typedef struct {

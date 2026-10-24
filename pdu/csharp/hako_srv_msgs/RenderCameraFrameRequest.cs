@@ -48,5 +48,34 @@ namespace hakoniwa.pdu.msgs.hako_srv_msgs
             get => _pdu.GetData<byte>("outputs");
             set => _pdu.SetData("outputs", value);
         }
+        private RenderObject[] _objects;
+        public RenderObject[] objects
+        {
+            get
+            {
+                if (_objects == null)
+                {
+                    var fieldPdus = _pdu.GetDataArray<IPdu>("objects");
+                    _objects = new RenderObject[fieldPdus.Length];
+                    RenderObject[] result = new RenderObject[fieldPdus.Length];
+                    for (int i = 0; i < fieldPdus.Length; i++)
+                    {
+                        _objects[i] = new RenderObject(fieldPdus[i]);
+                    }
+                }
+                return _objects;
+            }
+            set
+            {
+                _objects = new RenderObject[value.Length];
+                IPdu[] fieldPdus = new IPdu[value.Length];
+                for (int i = 0; i < value.Length; i++)
+                {
+                    fieldPdus[i] = value[i].GetPdu();
+                    _objects[i] = value[i];
+                }
+                _pdu.SetData("objects", fieldPdus);
+            }
+        }
     }
 }

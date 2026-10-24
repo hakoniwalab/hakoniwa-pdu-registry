@@ -19,12 +19,28 @@
 #include "geometry_msgs/pdu_cpptype_conv_Point.hpp"
 #include "geometry_msgs/pdu_cpptype_conv_Pose.hpp"
 #include "geometry_msgs/pdu_cpptype_conv_Quaternion.hpp"
+#include "hako_srv_msgs/pdu_cpptype_conv_RenderObject.hpp"
 
 /***************************
  *
  * PDU ==> CPP PDU
  *
  ***************************/
+static inline int cpp_pdu2cpp_struct_array_RenderCameraFrameRequest_objects(const char* heap_ptr, Hako_RenderCameraFrameRequest &src, HakoCpp_RenderCameraFrameRequest &dst)
+{
+    // Convert using len and off
+    int offset = src._objects_off;
+    int length = src._objects_len;
+    if (length > 0) {
+        dst.objects.resize(length);
+        Hako_RenderObject *temp_struct_ptr = (Hako_RenderObject *)(heap_ptr + offset);
+        for (int i = 0; i < length; ++i) {
+            cpp_pdu2cpp_RenderObject(heap_ptr, *temp_struct_ptr, dst.objects[i]);
+            temp_struct_ptr++;
+        }
+    }
+    return 0;
+}
 
 static inline int cpp_pdu2cpp_RenderCameraFrameRequest(const char* heap_ptr, Hako_RenderCameraFrameRequest &src, HakoCpp_RenderCameraFrameRequest &dst)
 {
@@ -36,6 +52,8 @@ static inline int cpp_pdu2cpp_RenderCameraFrameRequest(const char* heap_ptr, Hak
     cpp_pdu2cpp_Pose(heap_ptr, src.camera_pose, dst.camera_pose);
     // primitive convert
     hako_convert_pdu2cpp(src.outputs, dst.outputs);
+    // struct array convertor
+    cpp_pdu2cpp_struct_array_RenderCameraFrameRequest_objects(heap_ptr, src, dst);
     (void)heap_ptr;
     return 0;
 }
@@ -58,6 +76,23 @@ static inline int hako_convert_pdu2cpp_RenderCameraFrameRequest(Hako_RenderCamer
  * CPP PDU ==> PDU
  *
  ***************************/
+static inline bool cpp_cpp2pdu_struct_array_RenderCameraFrameRequest_objects(HakoCpp_RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest &dst, PduDynamicMemory &dynamic_memory)
+{
+    // array struct
+    dst._objects_len = src.objects.size();
+    if (dst._objects_len > 0) {
+        Hako_RenderObject* temp_struct_ptr = (Hako_RenderObject*)dynamic_memory.allocate(dst._objects_len, sizeof(Hako_RenderObject));
+        dst._objects_off = dynamic_memory.get_offset(temp_struct_ptr);
+        for (int i = 0; i < dst._objects_len; ++i) {
+            cpp_cpp2pdu_RenderObject(src.objects[i], *temp_struct_ptr, dynamic_memory);
+            temp_struct_ptr++;
+        }
+    }
+    else {
+        dst._objects_off = dynamic_memory.get_total_size();
+    }
+    return true;
+}
 
 static inline bool cpp_cpp2pdu_RenderCameraFrameRequest(HakoCpp_RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest &dst, PduDynamicMemory &dynamic_memory)
 {
@@ -73,6 +108,8 @@ static inline bool cpp_cpp2pdu_RenderCameraFrameRequest(HakoCpp_RenderCameraFram
         cpp_cpp2pdu_Pose(src.camera_pose, dst.camera_pose, dynamic_memory);
         // primitive convert
         hako_convert_cpp2pdu(src.outputs, dst.outputs);
+        //struct array convert
+        cpp_cpp2pdu_struct_array_RenderCameraFrameRequest_objects(src, dst, dynamic_memory);
     } catch (const std::runtime_error& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;

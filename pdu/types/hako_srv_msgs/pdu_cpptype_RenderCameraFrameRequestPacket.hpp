@@ -8,6 +8,7 @@
 #include "geometry_msgs/pdu_cpptype_Pose.hpp"
 #include "geometry_msgs/pdu_cpptype_Quaternion.hpp"
 #include "hako_srv_msgs/pdu_cpptype_RenderCameraFrameRequest.hpp"
+#include "hako_srv_msgs/pdu_cpptype_RenderObject.hpp"
 #include "hako_srv_msgs/pdu_cpptype_ServiceRequestHeader.hpp"
 
 typedef struct {

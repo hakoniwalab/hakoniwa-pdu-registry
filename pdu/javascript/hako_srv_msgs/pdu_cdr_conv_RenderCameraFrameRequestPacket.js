@@ -8,6 +8,8 @@ import { Quaternion } from '../geometry_msgs/pdu_jstype_Quaternion.js';
 import { PduQuaternionConverter } from '../geometry_msgs/pdu_cdr_conv_Quaternion.js';
 import { RenderCameraFrameRequest } from '../hako_srv_msgs/pdu_jstype_RenderCameraFrameRequest.js';
 import { PduRenderCameraFrameRequestConverter } from '../hako_srv_msgs/pdu_cdr_conv_RenderCameraFrameRequest.js';
+import { RenderObject } from '../hako_srv_msgs/pdu_jstype_RenderObject.js';
+import { PduRenderObjectConverter } from '../hako_srv_msgs/pdu_cdr_conv_RenderObject.js';
 import { ServiceRequestHeader } from '../hako_srv_msgs/pdu_jstype_ServiceRequestHeader.js';
 import { PduServiceRequestHeaderConverter } from '../hako_srv_msgs/pdu_cdr_conv_ServiceRequestHeader.js';
 

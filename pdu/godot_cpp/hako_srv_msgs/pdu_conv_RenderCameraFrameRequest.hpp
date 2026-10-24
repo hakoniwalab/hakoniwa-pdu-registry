@@ -12,6 +12,7 @@
 
 #include "godot_cpp_runtime/PduRuntime.hpp"
 #include "geometry_msgs/pdu_conv_Pose.hpp"
+#include "hako_srv_msgs/pdu_conv_RenderObject.hpp"
 
 namespace hako::godot_pdu::hako_srv_msgs {
 
@@ -33,6 +34,18 @@ inline void binary_read_recursive_RenderCameraFrameRequest(
     }
     obj["outputs"] = hako::godot_runtime::read_uint8(
         binary_data, base_off + 192);
+    {
+        const int32_t array_size = hako::godot_runtime::read_int32(binary_data, base_off + 196);
+        const int32_t offset_from_heap = hako::godot_runtime::read_int32(binary_data, base_off + 196 + 4);
+        godot::Array values;
+        for (int32_t i = 0; i < array_size; ++i) {
+            godot::Dictionary child;
+            hako::godot_pdu::hako_srv_msgs::binary_read_recursive_RenderObject(
+                meta, binary_data, child, meta.heap_off + offset_from_heap + (i * 312));
+            values.append(child);
+        }
+        obj["objects"] = values;
+    }
 }
 
 inline godot::Dictionary pdu_to_godot_RenderCameraFrameRequest(const godot::PackedByteArray &binary_data)
@@ -52,7 +65,7 @@ inline void binary_write_recursive_RenderCameraFrameRequest(
     hako::godot_runtime::DynamicAllocator &allocator,
     const godot::Dictionary &obj)
 {
-    allocator.ensure_size(parent_off + 193);
+    allocator.ensure_size(parent_off + 508);
     if (obj.has("camera_name")) {
         allocator.add(
             hako::godot_runtime::get_binary_for_string(
@@ -77,6 +90,21 @@ inline void binary_write_recursive_RenderCameraFrameRequest(
             hako::godot_runtime::get_binary_for_uint8(
                 hako::godot_runtime::variant_to_uint8(obj["outputs"])),
             parent_off + 192);
+    }
+    if (obj.has("objects")) {
+        godot::Array values = hako::godot_runtime::variant_to_array(obj["objects"]);
+        const int32_t offset_from_heap = writer.heap_allocator.size();
+        const int32_t array_size = values.size();
+        allocator.add(hako::godot_runtime::get_binary_for_int32(array_size), parent_off + 196);
+        allocator.add(hako::godot_runtime::get_binary_for_int32(offset_from_heap), parent_off + 196 + 4);
+        writer.heap_allocator.add(hako::godot_runtime::zero_bytes(array_size * 312), offset_from_heap);
+        for (int32_t i = 0; i < array_size; ++i) {
+            hako::godot_pdu::hako_srv_msgs::binary_write_recursive_RenderObject(
+                offset_from_heap + (i * 312),
+                writer,
+                writer.heap_allocator,
+                hako::godot_runtime::variant_to_dictionary(values[i]));
+        }
     }
 }
 

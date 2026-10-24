@@ -43,6 +43,20 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestConverter do
     # member: outputs, type: uint8 (primitive), offset: 192, size: 1
     outputs = read_primitive("uint8", binary_part(binary_data, base_off + 192, 1))
 
+    # member: objects, type: RenderObject (struct), offset: 196, size: 312
+    array_size = read_primitive("int32", binary_part(binary_data, base_off + 196, 4))
+    offset_from_heap = read_primitive("int32", binary_part(binary_data, base_off + 196 + 4, 4))
+    objects =
+      range_indices(array_size)
+      |> Enum.map(fn i ->
+        HakoPdu.HakoSrvMsgs.RenderObjectConverter.binary_read_recursive_render_object(
+          meta,
+          binary_data,
+          HakoPdu.HakoSrvMsgs.RenderObject.new(),
+          meta.heap_off + offset_from_heap + i * 312
+        )
+      end)
+
     struct(obj, %{
 
       camera_name: camera_name,
@@ -51,7 +65,9 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestConverter do
 
       camera_pose: camera_pose,
 
-      outputs: outputs
+      outputs: outputs,
+
+      objects: objects
 
     })
   end
@@ -74,6 +90,25 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequestConverter do
 
     # member: outputs, type: uint8 (primitive), offset: 192, size: 1
     allocator = add_binary(allocator, parent_off + 192, primitive_to_bin("uint8", obj.outputs, 1))
+
+    # member: objects, type: RenderObject (struct), offset: 196, size: 312
+    offset_from_heap = byte_size(heap_data)
+    values = obj.objects || []
+    allocator = add_binary(allocator, parent_off + 196, <<length(values)::little-signed-integer-size(32), offset_from_heap::little-signed-integer-size(32)>>)
+    heap_data = add_binary(heap_data, offset_from_heap, :binary.copy(<<0>>, length(values) * 312))
+    heap_data =
+      values
+      |> Enum.with_index()
+      |> Enum.reduce(heap_data, fn {child, i}, acc_heap ->
+        {new_heap_allocator, new_heap_data} =
+          HakoPdu.HakoSrvMsgs.RenderObjectConverter.binary_write_recursive_render_object(
+            offset_from_heap + i * 312,
+            acc_heap,
+            acc_heap,
+            child
+          )
+        add_binary(new_heap_data, 0, new_heap_allocator)
+      end)
 
     {allocator, heap_data}
   end

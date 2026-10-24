@@ -2,6 +2,7 @@ require_relative '../geometry_msgs/pdu_type_Point'
 require_relative '../geometry_msgs/pdu_type_Pose'
 require_relative '../geometry_msgs/pdu_type_Quaternion'
 require_relative '../hako_srv_msgs/pdu_type_RenderCameraFrameRequest'
+require_relative '../hako_srv_msgs/pdu_type_RenderObject'
 require_relative '../hako_srv_msgs/pdu_type_ServiceRequestHeader'
 require 'json'
 

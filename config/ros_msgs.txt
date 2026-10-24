@@ -240,6 +240,7 @@ hako_srv_msgs/RenderCameraRequest
 hako_srv_msgs/RenderCameraRequestPacket
 hako_srv_msgs/RenderCameraResponse
 hako_srv_msgs/RenderCameraResponsePacket
+hako_srv_msgs/RenderObject
 hako_srv_msgs/RenderCameraFrameRequest
 hako_srv_msgs/RenderCameraFrameRequestPacket
 hako_srv_msgs/RenderCameraFrameResponse

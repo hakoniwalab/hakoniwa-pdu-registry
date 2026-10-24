@@ -2,6 +2,8 @@ import * as PduUtils from '../pdu_utils.js';
 import { RenderCameraFrameRequest } from './pdu_jstype_RenderCameraFrameRequest.js';
 import { Pose } from '../geometry_msgs/pdu_jstype_Pose.js';
 import { binary_read_recursive_Pose, binary_write_recursive_Pose } from '../geometry_msgs/pdu_conv_Pose.js';
+import { RenderObject } from './pdu_jstype_RenderObject.js';
+import { binary_read_recursive_RenderObject, binary_write_recursive_RenderObject } from './pdu_conv_RenderObject.js';
 
 
 /**
@@ -53,6 +55,22 @@ export function binary_read_recursive_RenderCameraFrameRequest(meta, binary_data
     {
         const bin = PduUtils.readBinary(binary_data, base_off + 192, 1);
         js_obj.outputs = PduUtils.binToValue("uint8", bin);
+    }
+    
+    // member: objects, type: RenderObject (struct)
+
+    { // varray
+        const array_size = view.getInt32(base_off + 196, littleEndian);
+        const offset_from_heap = view.getInt32(base_off + 196 + 4, littleEndian);
+        const one_elm_size = 312;
+        const array_value = [];
+        for (let i = 0; i < array_size; i++) {
+            const tmp_obj = new RenderObject();
+            const item_offset = meta.heap_off + offset_from_heap + (i * one_elm_size);
+            binary_read_recursive_RenderObject(meta, binary_data, tmp_obj, item_offset);
+            array_value.push(tmp_obj);
+        }
+        js_obj.objects = array_value;
     }
     
     return js_obj;
@@ -115,6 +133,25 @@ export function binary_write_recursive_RenderCameraFrameRequest(parent_off, bw_c
     {
         const bin = PduUtils.typeToBin("uint8", js_obj.outputs, 1);
         allocator.add(bin, parent_off + 192);
+    }
+    
+    // member: objects, type: RenderObject (struct)
+
+    { // varray
+        const offset_from_heap = bw_container.heap_allocator.size();
+        const array_size = js_obj.objects.length;
+        const one_elm_size = 312;
+        const array_base_offset = bw_container.heap_allocator.add(new ArrayBuffer(one_elm_size * array_size));
+        for (let item_index = 0; item_index < array_size; item_index++) {
+            const item_offset = array_base_offset + (item_index * one_elm_size);
+            binary_write_recursive_RenderObject(item_offset, bw_container, bw_container.heap_allocator, js_obj.objects[item_index]);
+        }
+
+        const ref_buffer = new ArrayBuffer(8);
+        const ref_view = new DataView(ref_buffer);
+        ref_view.setInt32(0, array_size, littleEndian); // array_size
+        ref_view.setInt32(4, offset_from_heap, littleEndian);
+        allocator.add(ref_buffer, parent_off + 196);
     }
     
 }

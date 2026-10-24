@@ -1,6 +1,7 @@
 import { Point } from '../geometry_msgs/pdu_jstype_Point.js';
 import { Pose } from '../geometry_msgs/pdu_jstype_Pose.js';
 import { Quaternion } from '../geometry_msgs/pdu_jstype_Quaternion.js';
+import { RenderObject } from '../hako_srv_msgs/pdu_jstype_RenderObject.js';
 
 
 /**
@@ -16,6 +17,8 @@ export class RenderCameraFrameRequest {
     camera_pose;
 /** @type { number } */
     outputs;
+/** @type { Array<RenderObject> } */
+    objects;
 
 
     constructor() {
@@ -23,6 +26,7 @@ export class RenderCameraFrameRequest {
         this.sim_time_usec = 0n;
         this.camera_pose = new Pose();
         this.outputs = 0;
+        this.objects = [];
     }
 
     /**
@@ -114,6 +118,27 @@ export class RenderCameraFrameRequest {
                 d['outputs'] = field_val;
             }
         }
+        {
+            // handle field 'objects'
+            const field_val = this.objects;
+            if (typeof field_val?.toDict === 'function') {
+                d['objects'] = field_val.toDict();
+            } else if (Array.isArray(field_val)) {
+                d['objects'] = field_val.map(item => {
+                    if (typeof item?.toDict === 'function') {
+                        return item.toDict();
+                    }
+                    if (typeof item === 'bigint') {
+                        return item.toString();
+                    }
+                    return item;
+                });
+            } else if (typeof field_val === 'bigint') {
+                d['objects'] = field_val.toString();
+            } else {
+                d['objects'] = field_val;
+            }
+        }
         return d;
     }
 
@@ -137,6 +162,12 @@ export class RenderCameraFrameRequest {
         }
         if (d.hasOwnProperty('outputs')) {
             obj.outputs = d.outputs;
+        }
+        if (d.hasOwnProperty('objects')) {
+            const item_class = RenderObject;
+            if (Array.isArray(d.objects)) {
+                obj.objects = d.objects.map(item => item_class.fromDict(item));
+            }
         }
         return obj;
     }

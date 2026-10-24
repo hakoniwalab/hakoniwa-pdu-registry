@@ -53,7 +53,7 @@ inline void binary_write_recursive_RenderCameraFrameRequestPacket(
     hako::godot_runtime::DynamicAllocator &allocator,
     const godot::Dictionary &obj)
 {
-    allocator.ensure_size(parent_off + 472);
+    allocator.ensure_size(parent_off + 480);
     if (obj.has("header")) {
         hako::godot_pdu::hako_srv_msgs::binary_write_recursive_ServiceRequestHeader(
             parent_off + 0,

@@ -3,10 +3,12 @@
 # sim_time_usec: 撮るシミュレーション時刻。描画側の時刻で動くものは、この時刻の姿で描く
 # camera_pose: 世界座標でのカメラの位置と姿勢（ROS の決まり：右手系、m。カメラは自身の +x を見る（SDF と同じ））
 # outputs: 撮るもの。1 rgb、2 depth、4 segmentation の足し合わせ
+# objects: 動く物（ほかの車・人など）。描画サーバーは、どの出力にも、この時刻の姿勢で描く（空なら街だけ）
 string camera_name
 uint64 sim_time_usec
 geometry_msgs/Pose camera_pose
 uint8 outputs
+hako_srv_msgs/RenderObject[] objects
 ---
 # Response
 # result_code: hako_srv のほかのサービスと同じ使い方

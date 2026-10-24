@@ -12,6 +12,7 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
         public ulong sim_time_usec { get; set; } = 0;
         public Pose camera_pose { get; set; } = new Pose();
         public byte outputs { get; set; } = 0;
+        public List<RenderObject> objects { get; set; } = new List<RenderObject>();
 
         public Dictionary<string, object?> ToDictionary()
         {
@@ -20,6 +21,7 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
             dict["sim_time_usec"] = ToSerializableValue(sim_time_usec);
             dict["camera_pose"] = ToSerializableValue(camera_pose);
             dict["outputs"] = ToSerializableValue(outputs);
+            dict["objects"] = ToSerializableValue(objects);
             return dict;
         }
 
@@ -41,6 +43,10 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
             if (dict.TryGetValue("outputs", out var outputsValue))
             {
                 obj.outputs = PduRuntime.ConvertValue<byte>(outputsValue);
+            }
+            if (dict.TryGetValue("objects", out var objectsValue))
+            {
+                obj.objects = PduRuntime.ConvertObjectList<RenderObject>(objectsValue, item => RenderObject.FromDictionary(item));
             }
             return obj;
         }

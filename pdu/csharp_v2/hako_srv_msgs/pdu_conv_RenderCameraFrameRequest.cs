@@ -32,6 +32,16 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
             obj.camera_pose = new Pose();
             PoseConverter.BinaryReadRecursive(meta, binaryData, obj.camera_pose, baseOff + 136);
             obj.outputs = PduRuntime.ReadUInt8(binaryData, baseOff + 192);
+            obj.objects = new List<RenderObject>();
+            {
+                var arraySize = PduRuntime.ReadInt32(binaryData, baseOff + 196);
+                var offsetFromHeap = PduRuntime.ReadInt32(binaryData, baseOff + 196 + 4);
+                for (var i = 0; i < arraySize; i++) {
+                    var tmp = new RenderObject();
+                    RenderObjectConverter.BinaryReadRecursive(meta, binaryData, tmp, meta.HeapOff + offsetFromHeap + (i * 312));
+                    obj.objects.Add(tmp);
+                }
+            }
         }
 
         public static void BinaryWriteRecursive(int parentOff, BinaryWriterContainer writer, DynamicAllocator allocator, RenderCameraFrameRequest obj)
@@ -40,6 +50,16 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
             allocator.Add(PduRuntime.GetBinaryForUInt64(obj.sim_time_usec), parentOff + 128);
             PoseConverter.BinaryWriteRecursive(parentOff + 136, writer, allocator, obj.camera_pose);
             allocator.Add(PduRuntime.GetBinaryForUInt8(obj.outputs), parentOff + 192);
+            {
+                var offsetFromHeap = writer.HeapAllocator.Size();
+                var arraySize = obj.objects.Count;
+                allocator.Add(PduRuntime.GetBinaryForInt32(arraySize), parentOff + 196);
+                allocator.Add(PduRuntime.GetBinaryForInt32(offsetFromHeap), parentOff + 196 + 4);
+                writer.HeapAllocator.Add(new byte[arraySize * 312], offsetFromHeap);
+                for (var i = 0; i < arraySize; i++) {
+                    RenderObjectConverter.BinaryWriteRecursive(offsetFromHeap + (i * 312), writer, writer.HeapAllocator, obj.objects[i]);
+                }
+            }
         }
     }
 }

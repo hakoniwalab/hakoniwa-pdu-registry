@@ -36,7 +36,7 @@ def binary_read_recursive_RenderCameraFrameRequestPacket(meta: binary_io.PduMeta
     # data_type: struct 
     # member_name: body 
     # type_name: RenderCameraFrameRequest 
-    # offset: 272 size: 200 
+    # offset: 272 size: 208 
     # array_len: 1
 
     tmp_py_obj = RenderCameraFrameRequest()
@@ -90,7 +90,7 @@ def binary_write_recursive_RenderCameraFrameRequestPacket(parent_off: int, bw_co
     # data_type: struct 
     # member_name: body 
     # type_name: RenderCameraFrameRequest 
-    # offset: 272 size: 200 
+    # offset: 272 size: 208 
     # array_len: 1
     type = "RenderCameraFrameRequest"
     off = 272

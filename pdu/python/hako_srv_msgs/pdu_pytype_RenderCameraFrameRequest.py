@@ -4,6 +4,7 @@ from typing import List
 from ..geometry_msgs.pdu_pytype_Point import Point
 from ..geometry_msgs.pdu_pytype_Pose import Pose
 from ..geometry_msgs.pdu_pytype_Quaternion import Quaternion
+from ..hako_srv_msgs.pdu_pytype_RenderObject import RenderObject
 
 
 # class definition for the ROS message
@@ -17,12 +18,14 @@ class RenderCameraFrameRequest:
     sim_time_usec: int
     camera_pose: Pose
     outputs: int
+    objects: List[RenderObject]
 
     def __init__(self):
         self.camera_name = ""
         self.sim_time_usec = 0
         self.camera_pose = Pose()
         self.outputs = 0
+        self.objects = []
 
     def __str__(self):
         return f"RenderCameraFrameRequest(" + ", ".join([
@@ -30,6 +33,7 @@ class RenderCameraFrameRequest:
             f"sim_time_usec={self.sim_time_usec}"
             f"camera_pose={self.camera_pose}"
             f"outputs={self.outputs}"
+            f"objects={self.objects}"
         ]) + ")"
 
     def __repr__(self):
@@ -80,6 +84,16 @@ class RenderCameraFrameRequest:
             d['outputs'] = [item.to_dict() if hasattr(item, 'to_dict') else item for item in field_val]
         else:
             d['outputs'] = field_val
+        # handle field 'objects'
+        field_val = self.objects
+        if isinstance(field_val, bytearray):
+            d['objects'] = list(field_val)
+        elif hasattr(field_val, 'to_dict'):
+            d['objects'] = field_val.to_dict()
+        elif isinstance(field_val, list):
+            d['objects'] = [item.to_dict() if hasattr(item, 'to_dict') else item for item in field_val]
+        else:
+            d['objects'] = field_val
         return d
 
     @classmethod
@@ -156,6 +170,23 @@ class RenderCameraFrameRequest:
                 obj.outputs = field_type.from_dict(value)
             else:
                 obj.outputs = value
+        # handle field 'objects'
+        if 'objects' in d:
+            field_type = cls.__annotations__.get('objects')
+            value = d['objects']
+            
+            if field_type is bytearray:
+                obj.objects = bytearray(value)
+            elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:
+                list_item_type = field_type.__args__[0]
+                if hasattr(list_item_type, 'from_dict'):
+                    obj.objects = [list_item_type.from_dict(item) for item in value]
+                else:
+                    obj.objects = value
+            elif hasattr(field_type, 'from_dict'):
+                obj.objects = field_type.from_dict(value)
+            else:
+                obj.objects = value
         return obj
 
     def to_json(self, indent=2):

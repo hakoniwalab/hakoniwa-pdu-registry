@@ -6,6 +6,7 @@ from .. import binary_io
 
 # dependencies for the generated Python class
 from ..geometry_msgs.pdu_conv_Pose import *
+from ..hako_srv_msgs.pdu_conv_RenderObject import *
 
 
 
@@ -63,6 +64,25 @@ def binary_read_recursive_RenderCameraFrameRequest(meta: binary_io.PduMetaData, 
     
     bin = binary_io.readBinary(binary_data, base_off + 192, 1)
     py_obj.outputs = binary_io.binTovalue("uint8", bin)
+    
+    # array_type: varray 
+    # data_type: struct 
+    # member_name: objects 
+    # type_name: RenderObject 
+    # offset: 196 size: 312 
+    # array_len: 8
+
+    array_size = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 196, 4))
+    offset_from_heap = binary_io.binTovalue("int32", binary_io.readBinary(binary_data, base_off + 196 + 4, 4))
+    one_elm_size = 312
+    i = 0
+    array_value = []
+    while i < array_size:
+        tmp_py_obj = RenderObject()
+        binary_read_recursive_RenderObject(meta, binary_data, tmp_py_obj, meta.heap_off + offset_from_heap + (i * one_elm_size))
+        array_value.append(tmp_py_obj)
+        i = i + 1
+    py_obj.objects = array_value    
     
     return py_obj
 
@@ -148,6 +168,25 @@ def binary_write_recursive_RenderCameraFrameRequest(parent_off: int, bw_containe
     bin = binary_io.typeTobin(type, py_obj.outputs)
     bin = get_binary(type, bin, 1)
     allocator.add(bin, expected_offset=parent_off + off)
+    
+    # array_type: varray 
+    # data_type: struct 
+    # member_name: objects 
+    # type_name: RenderObject 
+    # offset: 196 size: 312 
+    # array_len: 8
+    type = "RenderObject"
+    off = 196
+
+    offset_from_heap = bw_container.heap_allocator.size()
+    array_size = len(py_obj.objects)
+    a_b = array_size.to_bytes(4, byteorder='little')
+    o_b = offset_from_heap.to_bytes(4, byteorder='little')
+    allocator.add(a_b + o_b, expected_offset=parent_off + off)
+    bw_container.heap_allocator.add(bytearray(array_size * 312), expected_offset=offset_from_heap)
+    for i, elm in enumerate(py_obj.objects):
+        one_elm_size =  312
+        binary_write_recursive_RenderObject((offset_from_heap + i * one_elm_size), bw_container, bw_container.heap_allocator, elm)
     
 
 if __name__ == "__main__":

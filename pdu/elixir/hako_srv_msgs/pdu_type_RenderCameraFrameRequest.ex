@@ -13,7 +13,9 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequest do
 
     camera_pose: HakoPdu.GeometryMsgs.Pose.new(),
 
-    outputs: 0
+    outputs: 0,
+
+    objects: []
 
   ]
 
@@ -30,7 +32,9 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequest do
 
       "camera_pose" => encode_value(msg.camera_pose),
 
-      "outputs" => encode_value(msg.outputs)
+      "outputs" => encode_value(msg.outputs),
+
+      "objects" => encode_value(msg.objects)
 
     }
   end
@@ -44,7 +48,9 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequest do
 
       camera_pose: map |> get_value(:camera_pose, "camera_pose", HakoPdu.GeometryMsgs.Pose.new()) |> decode_camera_pose(),
 
-      outputs: map |> get_value(:outputs, "outputs", 0) |> decode_outputs()
+      outputs: map |> get_value(:outputs, "outputs", 0) |> decode_outputs(),
+
+      objects: map |> get_value(:objects, "objects", []) |> decode_objects()
 
     }
   end
@@ -105,6 +111,11 @@ defmodule HakoPdu.HakoSrvMsgs.RenderCameraFrameRequest do
 
   defp decode_outputs(value) do
     value
+  end
+
+
+  defp decode_objects(value) do
+    Enum.map(value || [], &HakoPdu.HakoSrvMsgs.RenderObject.from_map/1)
   end
 
 end

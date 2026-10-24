@@ -5,6 +5,7 @@ from ..geometry_msgs.pdu_cdr_conv_Point import *
 from ..geometry_msgs.pdu_cdr_conv_Pose import *
 from ..geometry_msgs.pdu_cdr_conv_Quaternion import *
 from ..hako_srv_msgs.pdu_cdr_conv_RenderCameraFrameRequest import *
+from ..hako_srv_msgs.pdu_cdr_conv_RenderObject import *
 from ..hako_srv_msgs.pdu_cdr_conv_ServiceRequestHeader import *
 
 

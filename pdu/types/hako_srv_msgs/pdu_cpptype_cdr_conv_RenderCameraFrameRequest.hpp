@@ -22,6 +22,7 @@
 #include "geometry_msgs/pdu_cpptype_cdr_conv_Point.hpp"
 #include "geometry_msgs/pdu_cpptype_cdr_conv_Pose.hpp"
 #include "geometry_msgs/pdu_cpptype_cdr_conv_Quaternion.hpp"
+#include "hako_srv_msgs/pdu_cpptype_cdr_conv_RenderObject.hpp"
 
 /***************************
  *
@@ -40,6 +41,13 @@ static inline void cpp2cdr_RenderCameraFrameRequest(
     cpp2cdr_Pose(cdr, src.camera_pose);
     // primitive: outputs
     cdr << src.outputs;
+    // struct sequence: objects
+    {
+        hako::pdu::cdr::serialize_sequence_length(cdr, src.objects);
+        for (const auto& elem : src.objects) {
+            cpp2cdr_RenderObject(cdr, elem);
+        }
+    }
 }
 
 /***************************
@@ -59,6 +67,15 @@ static inline void cdr2cpp_RenderCameraFrameRequest(
     cdr2cpp_Pose(cdr, dst.camera_pose);
     // primitive: outputs
     cdr >> dst.outputs;
+    // struct sequence: objects
+    {
+        uint32_t length = 0;
+        cdr >> length;
+        dst.objects.resize(length);
+        for (uint32_t i = 0; i < length; ++i) {
+            cdr2cpp_RenderObject(cdr, dst.objects[i]);
+        }
+    }
 }
 
 /***************************

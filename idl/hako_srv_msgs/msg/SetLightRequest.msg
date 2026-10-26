@@ -1,0 +1,6 @@
+string source
+uint8 mode
+float64 luminous_intensity_scale
+float64 flashing_on_s
+float64 flashing_off_s
+float64 transition_s

@@ -1,0 +1,6 @@
+single:primitive:source:string:0:128
+single:primitive:mode:uint8:128:1
+single:primitive:luminous_intensity_scale:float64:136:8
+single:primitive:flashing_on_s:float64:144:8
+single:primitive:flashing_off_s:float64:152:8
+single:primitive:transition_s:float64:160:8

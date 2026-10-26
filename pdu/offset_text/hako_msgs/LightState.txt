@@ -1,0 +1,4 @@
+single:primitive:source:string:0:128
+single:primitive:mode:uint8:128:1
+single:primitive:luminous_intensity_scale:float64:136:8
+single:primitive:is_lit:bool:144:4

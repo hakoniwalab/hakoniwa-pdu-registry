@@ -245,6 +245,12 @@ hako_srv_msgs/RenderCameraFrameRequest
 hako_srv_msgs/RenderCameraFrameRequestPacket
 hako_srv_msgs/RenderCameraFrameResponse
 hako_srv_msgs/RenderCameraFrameResponsePacket
+hako_msgs/LightState
+hako_msgs/LightStateArray
+hako_srv_msgs/SetLightRequest
+hako_srv_msgs/SetLightRequestPacket
+hako_srv_msgs/SetLightResponse
+hako_srv_msgs/SetLightResponsePacket
 hako_action_msgs/ActionFeedbackHeader
 hako_action_msgs/ActionRequestHeader
 hako_action_msgs/ActionResponseHeader

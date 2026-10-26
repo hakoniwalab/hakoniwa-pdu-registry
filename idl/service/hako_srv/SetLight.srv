@@ -1,0 +1,16 @@
+# Request: switch one light whose owner is the scenario (hakoniwa-scenario-pro memo 016).
+# source: the LightSource name
+# mode: 0 off, 1 on, 2 flashing
+# flashing_on_s / flashing_off_s: visible blink timing when mode is 2
+# transition_s: time to reach the new state
+string source
+uint8 mode
+float64 luminous_intensity_scale
+float64 flashing_on_s
+float64 flashing_off_s
+float64 transition_s
+---
+# Response
+# result_code: 0 ok, 1 no such light, 2 the light's owner is auto (not controllable by the scenario), 3 invalid value
+uint32 result_code
+string message

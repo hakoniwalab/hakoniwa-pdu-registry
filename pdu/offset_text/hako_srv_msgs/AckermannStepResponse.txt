@@ -1,0 +1,5 @@
+single:primitive:step:uint64:0:8
+single:primitive:result_code:uint32:8:4
+single:primitive:sim_time_usec:uint64:16:8
+single:struct:pose:geometry_msgs/Transform:24:56
+single:struct:twist:geometry_msgs/Twist:80:48

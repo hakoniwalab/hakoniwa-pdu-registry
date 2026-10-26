@@ -1,0 +1,4 @@
+single:primitive:step:uint64:0:8
+single:struct:cmd_vel:geometry_msgs/Twist:8:48
+single:primitive:animation:string:56:128
+single:primitive:ride:string:184:128

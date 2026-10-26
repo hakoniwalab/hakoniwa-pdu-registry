@@ -1,0 +1,15 @@
+# Request: step k of one car (hakoniwa-robot-runtime#16, hakoniwa-scenario-pro memo 018).
+# The runtime steps only when every robot's step-k request has arrived.
+# step: step number k; drive: the same command as the AckermannDrive PDU
+uint64 step
+ackermann_msgs/AckermannDrive drive
+---
+# Response: the car after step k was applied and the world stepped once
+# step: the request's k; result_code: 0 ok
+# sim_time_usec: Hakoniwa time after the step
+# pose / twist: world frame, ROS axes (x north, y west, z up)
+uint64 step
+uint32 result_code
+uint64 sim_time_usec
+geometry_msgs/Transform pose
+geometry_msgs/Twist twist

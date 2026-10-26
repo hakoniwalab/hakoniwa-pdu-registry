@@ -1,0 +1,23 @@
+# Request: step k of one person (hakoniwa-robot-runtime#17, hakoniwa-scenario-pro memo 018).
+# The runtime steps only when every robot's step-k request has arrived.
+# step: step number k
+# cmd_vel: walking velocity in the person's own frame, as ROS cmd_vel (base_link):
+#          linear.x forward, linear.y left, angular.z turn rate (rad/s)
+# animation: auto (or empty), stand, talk, sit_talk, ... as the people PDU
+# ride: "<vehicle>/<seat>" to ride, empty to stay on foot
+uint64 step
+geometry_msgs/Twist cmd_vel
+string animation
+string ride
+---
+# Response: the person after step k was applied and the world stepped once
+# step: the request's k; result_code: 0 ok
+# sim_time_usec: Hakoniwa time after the step
+# pose / twist: world frame, ROS axes (x north, y west, z up)
+# joints: shoulder, hip, knee, ... angles (the same names as the people JointState)
+uint64 step
+uint32 result_code
+uint64 sim_time_usec
+geometry_msgs/Transform pose
+geometry_msgs/Twist twist
+sensor_msgs/JointState joints

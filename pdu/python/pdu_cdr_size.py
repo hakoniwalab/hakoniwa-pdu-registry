@@ -2,14 +2,26 @@
 # Sizes include the 4-byte CDR encapsulation header.
 # Variable-length sequences are counted as length 0; strings are counted as empty strings.
 PDU_CDR_SIZE = {
+    "ackermann_msgs/AckermannDrive": 24,
     "builtin_interfaces/Time": 12,
     "geometry_msgs/Point": 28,
     "geometry_msgs/Pose": 60,
     "geometry_msgs/Quaternion": 36,
+    "geometry_msgs/Transform": 60,
+    "geometry_msgs/Twist": 52,
+    "geometry_msgs/Vector3": 28,
     "hako_msgs/ContactEvent": 69,
     "hako_msgs/ContactEventArray": 8,
     "hako_msgs/LightState": 21,
     "hako_msgs/LightStateArray": 24,
+    "hako_srv_msgs/AckermannStepRequest": 32,
+    "hako_srv_msgs/AckermannStepRequestPacket": 56,
+    "hako_srv_msgs/AckermannStepResponse": 132,
+    "hako_srv_msgs/AckermannStepResponsePacket": 156,
+    "hako_srv_msgs/PersonStepRequest": 73,
+    "hako_srv_msgs/PersonStepRequestPacket": 97,
+    "hako_srv_msgs/PersonStepResponse": 164,
+    "hako_srv_msgs/PersonStepResponsePacket": 188,
     "hako_srv_msgs/RenderCameraFrameRequest": 84,
     "hako_srv_msgs/RenderCameraFrameRequestPacket": 108,
     "hako_srv_msgs/RenderCameraFrameResponse": 140,
@@ -26,6 +38,7 @@ PDU_CDR_SIZE = {
     "hako_srv_msgs/SetLightResponse": 13,
     "hako_srv_msgs/SetLightResponsePacket": 37,
     "sensor_msgs/Image": 44,
+    "sensor_msgs/JointState": 36,
     "std_msgs/Header": 17,
 }
 

@@ -31,6 +31,7 @@ add_executable(hakoniwa_pdu_cpp_tests
   joint_state_cpp_interop_test.cpp
   point_cloud2_cpp_interop_test.cpp
   simple_struct_varray_cpp_interop_test.cpp
+  string_varray_alias_compat_test.cpp
 )
 
 add_executable(disturbance_cpp_dump

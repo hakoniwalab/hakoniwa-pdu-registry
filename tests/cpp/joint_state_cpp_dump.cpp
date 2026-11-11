@@ -3,16 +3,6 @@
 
 #include "pdu_primitive_ctypes_conv.hpp"
 
-static inline int hako_convert_pdu2cpp_array_string_varray(const Hako_cstring* src, std::vector<std::string>& dst, int len)
-{
-    return hako_convert_pdu2ros_array_string_varray(src, dst, len);
-}
-
-static inline int hako_convert_cpp2pdu_array_string_varray(const std::vector<std::string>& src, Hako_cstring* dst)
-{
-    return hako_convert_ros2pdu_array_string_varray(src, dst);
-}
-
 #include "sensor_msgs/pdu_cpptype_JointState.hpp"
 #include "sensor_msgs/pdu_cpptype_conv_JointState.hpp"
 #include "sensor_msgs/pdu_ctype_JointState.h"

@@ -148,6 +148,22 @@ static inline int hako_convert_ros2pdu_array_string_varray(const std::vector<std
     return ret;
 }
 
+// The generated C++ converters (template/pdu_cpptypes_conv_cpp.tpl) call the string-array helpers
+// by their *_cpp_* names. They are the same conversions as the *_ros_* helpers above.
+// Users that already map these names with #define keep working: the functions are skipped then.
+#ifndef hako_convert_pdu2cpp_array_string_varray
+static inline int hako_convert_pdu2cpp_array_string_varray(const Hako_cstring* src, std::vector<std::string> &dst, int len)
+{
+    return hako_convert_pdu2ros_array_string_varray(src, dst, len);
+}
+#endif
+#ifndef hako_convert_cpp2pdu_array_string_varray
+static inline int hako_convert_cpp2pdu_array_string_varray(const std::vector<std::string> &src, Hako_cstring *dst)
+{
+    return hako_convert_ros2pdu_array_string_varray(src, dst);
+}
+#endif
+
 template<int _src_len, int _dst_len>
 int hako_convert_ros2pdu_array_string(std::vector<std::string> &src, Hako_cstring dst[])
 {

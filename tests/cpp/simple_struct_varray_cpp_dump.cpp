@@ -15,16 +15,6 @@ static inline int hako_convert_pdu2cpp_array_string(Hako_cstring src[], std::arr
     return hako_convert_pdu2ros_array_string<_src_len, _dst_len>(src, dst);
 }
 
-static inline int hako_convert_pdu2cpp_array_string_varray(const Hako_cstring* src, std::vector<std::string>& dst, int len)
-{
-    return hako_convert_pdu2ros_array_string_varray(src, dst, len);
-}
-
-static inline int hako_convert_cpp2pdu_array_string_varray(const std::vector<std::string>& src, Hako_cstring* dst)
-{
-    return hako_convert_ros2pdu_array_string_varray(src, dst);
-}
-
 #include "hako_msgs/pdu_cpptype_SimpleStructVarray.hpp"
 #include "hako_msgs/pdu_cpptype_conv_SimpleStructVarray.hpp"
 #include "hako_msgs/pdu_ctype_SimpleStructVarray.h"

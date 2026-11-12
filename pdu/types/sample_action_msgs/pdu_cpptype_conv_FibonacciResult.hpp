@@ -66,7 +66,7 @@ static inline int hako_convert_pdu2cpp_FibonacciResult(Hako_FibonacciResult &src
 static inline bool cpp_cpp2pdu_primitive_array_FibonacciResult_sequence(HakoCpp_FibonacciResult &src, Hako_FibonacciResult &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._sequence_len = src.sequence.size();
+    dst._sequence_len = hako_pdu_array_length(src.sequence.size());
     if (dst._sequence_len > 0) {
         dst._sequence_off = dynamic_memory.reference(src.sequence.data(), dst._sequence_len, sizeof(Hako_int32));
     }

@@ -93,7 +93,7 @@ static inline int hako_convert_pdu2ros_JointTrajectory(Hako_JointTrajectory &src
 static inline bool _ros2pdu_string_array_JointTrajectory_joint_names(trajectory_msgs::msg::JointTrajectory &src, Hako_JointTrajectory &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._joint_names_len = src.joint_names.size();
+    dst._joint_names_len = hako_pdu_array_length(src.joint_names.size());
     if (dst._joint_names_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._joint_names_len, sizeof(Hako_cstring));
         (void)hako_convert_ros2pdu_array_string_varray(src.joint_names, temp_ptr);
@@ -107,7 +107,7 @@ static inline bool _ros2pdu_string_array_JointTrajectory_joint_names(trajectory_
 static inline bool _ros2pdu_struct_array_JointTrajectory_points(trajectory_msgs::msg::JointTrajectory &src, Hako_JointTrajectory &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._points_len = src.points.size();
+    dst._points_len = hako_pdu_array_length(src.points.size());
     if (dst._points_len > 0) {
         Hako_JointTrajectoryPoint* temp_struct_ptr = (Hako_JointTrajectoryPoint*)dynamic_memory.allocate(dst._points_len, sizeof(Hako_JointTrajectoryPoint));
         dst._points_off = dynamic_memory.get_offset(temp_struct_ptr);

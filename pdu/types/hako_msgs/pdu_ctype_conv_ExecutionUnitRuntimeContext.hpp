@@ -73,7 +73,7 @@ static inline int hako_convert_pdu2ros_ExecutionUnitRuntimeContext(Hako_Executio
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeContext_context(hako_msgs::msg::ExecutionUnitRuntimeContext &src, Hako_ExecutionUnitRuntimeContext &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._context_len = src.context.size();
+    dst._context_len = hako_pdu_array_length(src.context.size());
     if (dst._context_len > 0) {
         dst._context_off = dynamic_memory.reference(src.context.data(), dst._context_len, sizeof(Hako_uint8));
     }

@@ -79,7 +79,7 @@ static inline int hako_convert_pdu2cpp_GridCells(Hako_GridCells &src, HakoCpp_Gr
 static inline bool cpp_cpp2pdu_struct_array_GridCells_cells(HakoCpp_GridCells &src, Hako_GridCells &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._cells_len = src.cells.size();
+    dst._cells_len = hako_pdu_array_length(src.cells.size());
     if (dst._cells_len > 0) {
         Hako_Point* temp_struct_ptr = (Hako_Point*)dynamic_memory.allocate(dst._cells_len, sizeof(Hako_Point));
         dst._cells_off = dynamic_memory.get_offset(temp_struct_ptr);

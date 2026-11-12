@@ -119,7 +119,7 @@ static inline int hako_convert_pdu2ros_ExecutionUnitRuntimeStatus(Hako_Execution
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_status(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._status_len = src.status.size();
+    dst._status_len = hako_pdu_array_length(src.status.size());
     if (dst._status_len > 0) {
         dst._status_off = dynamic_memory.reference(src.status.data(), dst._status_len, sizeof(Hako_uint8));
     }
@@ -131,7 +131,7 @@ static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_status(ha
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_epoch(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._epoch_len = src.epoch.size();
+    dst._epoch_len = hako_pdu_array_length(src.epoch.size());
     if (dst._epoch_len > 0) {
         dst._epoch_off = dynamic_memory.reference(src.epoch.data(), dst._epoch_len, sizeof(Hako_uint8));
     }
@@ -143,7 +143,7 @@ static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_epoch(hak
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_curr_owner_node_id(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._curr_owner_node_id_len = src.curr_owner_node_id.size();
+    dst._curr_owner_node_id_len = hako_pdu_array_length(src.curr_owner_node_id.size());
     if (dst._curr_owner_node_id_len > 0) {
         dst._curr_owner_node_id_off = dynamic_memory.reference(src.curr_owner_node_id.data(), dst._curr_owner_node_id_len, sizeof(Hako_uint8));
     }
@@ -155,7 +155,7 @@ static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_curr_owne
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_next_owner_node_id(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._next_owner_node_id_len = src.next_owner_node_id.size();
+    dst._next_owner_node_id_len = hako_pdu_array_length(src.next_owner_node_id.size());
     if (dst._next_owner_node_id_len > 0) {
         dst._next_owner_node_id_off = dynamic_memory.reference(src.next_owner_node_id.data(), dst._next_owner_node_id_len, sizeof(Hako_uint8));
     }

@@ -78,7 +78,7 @@ static inline int hako_convert_pdu2cpp_Path(Hako_Path &src, HakoCpp_Path &dst)
 static inline bool cpp_cpp2pdu_struct_array_Path_poses(HakoCpp_Path &src, Hako_Path &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._poses_len = src.poses.size();
+    dst._poses_len = hako_pdu_array_length(src.poses.size());
     if (dst._poses_len > 0) {
         Hako_PoseStamped* temp_struct_ptr = (Hako_PoseStamped*)dynamic_memory.allocate(dst._poses_len, sizeof(Hako_PoseStamped));
         dst._poses_off = dynamic_memory.get_offset(temp_struct_ptr);

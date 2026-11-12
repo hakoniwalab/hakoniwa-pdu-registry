@@ -146,6 +146,16 @@ private:
     int current_offset;
 };
 
+// The length of a message array as the PDU's int length field: checked before
+// it is narrowed (a longer array throws, which fails the conversion).
+static inline int hako_pdu_array_length(size_t length)
+{
+    if (length > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        throw std::overflow_error("PDU array length exceeds the int length field");
+    }
+    return static_cast<int>(length);
+}
+
 // Builds a PDU into buffer, byte for byte as hako_create_empty_pdu() plus the
 // base and heap copies lay it out: metadata, the base struct (base_size bytes
 // at base), padding, the heap, padding. The buffer needs no alignment and must

@@ -117,7 +117,7 @@ static inline int hako_convert_pdu2cpp_JointTrajectoryPoint(Hako_JointTrajectory
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_positions(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._positions_len = src.positions.size();
+    dst._positions_len = hako_pdu_array_length(src.positions.size());
     if (dst._positions_len > 0) {
         dst._positions_off = dynamic_memory.reference(src.positions.data(), dst._positions_len, sizeof(Hako_float64));
     }
@@ -129,7 +129,7 @@ static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_positions(Ha
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_velocities(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._velocities_len = src.velocities.size();
+    dst._velocities_len = hako_pdu_array_length(src.velocities.size());
     if (dst._velocities_len > 0) {
         dst._velocities_off = dynamic_memory.reference(src.velocities.data(), dst._velocities_len, sizeof(Hako_float64));
     }
@@ -141,7 +141,7 @@ static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_velocities(H
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_accelerations(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._accelerations_len = src.accelerations.size();
+    dst._accelerations_len = hako_pdu_array_length(src.accelerations.size());
     if (dst._accelerations_len > 0) {
         dst._accelerations_off = dynamic_memory.reference(src.accelerations.data(), dst._accelerations_len, sizeof(Hako_float64));
     }
@@ -153,7 +153,7 @@ static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_acceleration
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_effort(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._effort_len = src.effort.size();
+    dst._effort_len = hako_pdu_array_length(src.effort.size());
     if (dst._effort_len > 0) {
         dst._effort_off = dynamic_memory.reference(src.effort.data(), dst._effort_len, sizeof(Hako_float64));
     }

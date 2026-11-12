@@ -85,7 +85,7 @@ static inline int hako_convert_pdu2cpp_Disturbance(Hako_Disturbance &src, HakoCp
 static inline bool cpp_cpp2pdu_struct_array_Disturbance_d_user_custom(HakoCpp_Disturbance &src, Hako_Disturbance &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._d_user_custom_len = src.d_user_custom.size();
+    dst._d_user_custom_len = hako_pdu_array_length(src.d_user_custom.size());
     if (dst._d_user_custom_len > 0) {
         Hako_DisturbanceUserCustom* temp_struct_ptr = (Hako_DisturbanceUserCustom*)dynamic_memory.allocate(dst._d_user_custom_len, sizeof(Hako_DisturbanceUserCustom));
         dst._d_user_custom_off = dynamic_memory.get_offset(temp_struct_ptr);

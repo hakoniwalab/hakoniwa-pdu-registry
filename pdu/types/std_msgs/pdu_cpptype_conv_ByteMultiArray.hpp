@@ -70,7 +70,7 @@ static inline int hako_convert_pdu2cpp_ByteMultiArray(Hako_ByteMultiArray &src, 
 static inline bool cpp_cpp2pdu_primitive_array_ByteMultiArray_data(HakoCpp_ByteMultiArray &src, Hako_ByteMultiArray &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._data_len = src.data.size();
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
         dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_byte));
     }

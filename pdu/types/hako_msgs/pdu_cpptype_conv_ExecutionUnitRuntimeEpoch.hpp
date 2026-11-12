@@ -66,7 +66,7 @@ static inline int hako_convert_pdu2cpp_ExecutionUnitRuntimeEpoch(Hako_ExecutionU
 static inline bool cpp_cpp2pdu_primitive_array_ExecutionUnitRuntimeEpoch_epoch(HakoCpp_ExecutionUnitRuntimeEpoch &src, Hako_ExecutionUnitRuntimeEpoch &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._epoch_len = src.epoch.size();
+    dst._epoch_len = hako_pdu_array_length(src.epoch.size());
     if (dst._epoch_len > 0) {
         dst._epoch_off = dynamic_memory.reference(src.epoch.data(), dst._epoch_len, sizeof(Hako_uint8));
     }

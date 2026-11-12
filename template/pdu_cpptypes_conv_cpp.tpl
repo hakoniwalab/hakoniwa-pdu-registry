@@ -155,7 +155,7 @@ static inline bool cpp_cpp2pdu_primitive_array_{{container.msg_type_name}}_{{ite
 {%-     set array_size = container.get_array_size(item["name"], item["type"]) %}
 {%-     if array_size is none %}
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._{{item["name"]}}_len = src.{{item["name"]}}.size();
+    dst._{{item["name"]}}_len = hako_pdu_array_length(src.{{item["name"]}}.size());
     if (dst._{{item["name"]}}_len > 0) {
         dst._{{item["name"]}}_off = dynamic_memory.reference(src.{{item["name"]}}.data(), dst._{{item["name"]}}_len, sizeof(Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}));
     }
@@ -177,7 +177,7 @@ static inline bool cpp_cpp2pdu_string_array_{{container.msg_type_name}}_{{item["
 {%-     set array_size = container.get_array_size(item["name"], item["type"]) %}
 {%-     if array_size is none %}
     //Copy varray string
-    dst._{{item["name"]}}_len = src.{{item["name"]}}.size();
+    dst._{{item["name"]}}_len = hako_pdu_array_length(src.{{item["name"]}}.size());
     if (dst._{{item["name"]}}_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._{{item["name"]}}_len, sizeof(Hako_cstring));
         (void)hako_convert_cpp2pdu_array_string_varray(src.{{item["name"]}}, temp_ptr);
@@ -201,7 +201,7 @@ static inline bool cpp_cpp2pdu_struct_array_{{container.msg_type_name}}_{{item["
     // array struct
 {%-     set array_size = container.get_array_size(item["name"], item["type"]) %}
 {%-     if array_size is none %}
-    dst._{{item["name"]}}_len = src.{{item["name"]}}.size();
+    dst._{{item["name"]}}_len = hako_pdu_array_length(src.{{item["name"]}}.size());
     if (dst._{{item["name"]}}_len > 0) {
         Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}* temp_struct_ptr = (Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}*)dynamic_memory.allocate(dst._{{item["name"]}}_len, sizeof(Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}));
         dst._{{item["name"]}}_off = dynamic_memory.get_offset(temp_struct_ptr);

@@ -66,7 +66,7 @@ static inline int hako_convert_pdu2cpp_LaserEcho(Hako_LaserEcho &src, HakoCpp_La
 static inline bool cpp_cpp2pdu_primitive_array_LaserEcho_echoes(HakoCpp_LaserEcho &src, Hako_LaserEcho &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._echoes_len = src.echoes.size();
+    dst._echoes_len = hako_pdu_array_length(src.echoes.size());
     if (dst._echoes_len > 0) {
         dst._echoes_off = dynamic_memory.reference(src.echoes.data(), dst._echoes_len, sizeof(Hako_float32));
     }

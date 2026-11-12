@@ -101,7 +101,7 @@ static inline int hako_convert_pdu2ros_LaserScan(Hako_LaserScan &src, sensor_msg
 static inline bool _ros2pdu_primitive_array_LaserScan_ranges(sensor_msgs::msg::LaserScan &src, Hako_LaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._ranges_len = src.ranges.size();
+    dst._ranges_len = hako_pdu_array_length(src.ranges.size());
     if (dst._ranges_len > 0) {
         dst._ranges_off = dynamic_memory.reference(src.ranges.data(), dst._ranges_len, sizeof(Hako_float32));
     }
@@ -113,7 +113,7 @@ static inline bool _ros2pdu_primitive_array_LaserScan_ranges(sensor_msgs::msg::L
 static inline bool _ros2pdu_primitive_array_LaserScan_intensities(sensor_msgs::msg::LaserScan &src, Hako_LaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._intensities_len = src.intensities.size();
+    dst._intensities_len = hako_pdu_array_length(src.intensities.size());
     if (dst._intensities_len > 0) {
         dst._intensities_off = dynamic_memory.reference(src.intensities.data(), dst._intensities_len, sizeof(Hako_float32));
     }

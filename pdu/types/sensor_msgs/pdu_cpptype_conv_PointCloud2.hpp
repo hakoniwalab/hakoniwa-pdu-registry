@@ -103,7 +103,7 @@ static inline int hako_convert_pdu2cpp_PointCloud2(Hako_PointCloud2 &src, HakoCp
 static inline bool cpp_cpp2pdu_struct_array_PointCloud2_fields(HakoCpp_PointCloud2 &src, Hako_PointCloud2 &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._fields_len = src.fields.size();
+    dst._fields_len = hako_pdu_array_length(src.fields.size());
     if (dst._fields_len > 0) {
         Hako_PointField* temp_struct_ptr = (Hako_PointField*)dynamic_memory.allocate(dst._fields_len, sizeof(Hako_PointField));
         dst._fields_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -122,7 +122,7 @@ static inline bool cpp_cpp2pdu_struct_array_PointCloud2_fields(HakoCpp_PointClou
 static inline bool cpp_cpp2pdu_primitive_array_PointCloud2_data(HakoCpp_PointCloud2 &src, Hako_PointCloud2 &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._data_len = src.data.size();
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
         dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_uint8));
     }

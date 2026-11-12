@@ -74,7 +74,7 @@ static inline int hako_convert_pdu2ros_ContactEventArray(Hako_ContactEventArray 
 static inline bool _ros2pdu_struct_array_ContactEventArray_events(hako_msgs::msg::ContactEventArray &src, Hako_ContactEventArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._events_len = src.events.size();
+    dst._events_len = hako_pdu_array_length(src.events.size());
     if (dst._events_len > 0) {
         Hako_ContactEvent* temp_struct_ptr = (Hako_ContactEvent*)dynamic_memory.allocate(dst._events_len, sizeof(Hako_ContactEvent));
         dst._events_off = dynamic_memory.get_offset(temp_struct_ptr);

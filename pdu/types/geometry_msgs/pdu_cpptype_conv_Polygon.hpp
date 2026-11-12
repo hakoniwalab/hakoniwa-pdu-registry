@@ -71,7 +71,7 @@ static inline int hako_convert_pdu2cpp_Polygon(Hako_Polygon &src, HakoCpp_Polygo
 static inline bool cpp_cpp2pdu_struct_array_Polygon_points(HakoCpp_Polygon &src, Hako_Polygon &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._points_len = src.points.size();
+    dst._points_len = hako_pdu_array_length(src.points.size());
     if (dst._points_len > 0) {
         Hako_Point32* temp_struct_ptr = (Hako_Point32*)dynamic_memory.allocate(dst._points_len, sizeof(Hako_Point32));
         dst._points_off = dynamic_memory.get_offset(temp_struct_ptr);

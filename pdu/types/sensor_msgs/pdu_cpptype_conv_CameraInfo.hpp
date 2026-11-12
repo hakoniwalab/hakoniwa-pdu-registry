@@ -116,7 +116,7 @@ static inline int hako_convert_pdu2cpp_CameraInfo(Hako_CameraInfo &src, HakoCpp_
 static inline bool cpp_cpp2pdu_primitive_array_CameraInfo_d(HakoCpp_CameraInfo &src, Hako_CameraInfo &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._d_len = src.d.size();
+    dst._d_len = hako_pdu_array_length(src.d.size());
     if (dst._d_len > 0) {
         dst._d_off = dynamic_memory.reference(src.d.data(), dst._d_len, sizeof(Hako_float64));
     }

@@ -76,7 +76,7 @@ static inline int hako_convert_pdu2cpp_OccupancyGrid(Hako_OccupancyGrid &src, Ha
 static inline bool cpp_cpp2pdu_primitive_array_OccupancyGrid_data(HakoCpp_OccupancyGrid &src, Hako_OccupancyGrid &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._data_len = src.data.size();
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
         dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_int8));
     }

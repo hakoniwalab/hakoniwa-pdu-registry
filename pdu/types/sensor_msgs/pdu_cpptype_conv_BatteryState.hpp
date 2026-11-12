@@ -112,7 +112,7 @@ static inline int hako_convert_pdu2cpp_BatteryState(Hako_BatteryState &src, Hako
 static inline bool cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(HakoCpp_BatteryState &src, Hako_BatteryState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._cell_voltage_len = src.cell_voltage.size();
+    dst._cell_voltage_len = hako_pdu_array_length(src.cell_voltage.size());
     if (dst._cell_voltage_len > 0) {
         dst._cell_voltage_off = dynamic_memory.reference(src.cell_voltage.data(), dst._cell_voltage_len, sizeof(Hako_float32));
     }
@@ -124,7 +124,7 @@ static inline bool cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(HakoCpp
 static inline bool cpp_cpp2pdu_primitive_array_BatteryState_cell_temperature(HakoCpp_BatteryState &src, Hako_BatteryState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._cell_temperature_len = src.cell_temperature.size();
+    dst._cell_temperature_len = hako_pdu_array_length(src.cell_temperature.size());
     if (dst._cell_temperature_len > 0) {
         dst._cell_temperature_off = dynamic_memory.reference(src.cell_temperature.data(), dst._cell_temperature_len, sizeof(Hako_float32));
     }

@@ -117,7 +117,7 @@ static inline bool cpp_cpp2pdu_string_array_SimpleStructVarray_fixed_str(HakoCpp
 static inline bool cpp_cpp2pdu_string_array_SimpleStructVarray_varray_str(HakoCpp_SimpleStructVarray &src, Hako_SimpleStructVarray &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._varray_str_len = src.varray_str.size();
+    dst._varray_str_len = hako_pdu_array_length(src.varray_str.size());
     if (dst._varray_str_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._varray_str_len, sizeof(Hako_cstring));
         (void)hako_convert_cpp2pdu_array_string_varray(src.varray_str, temp_ptr);
@@ -142,7 +142,7 @@ static inline bool cpp_cpp2pdu_struct_array_SimpleStructVarray_fixed_array(HakoC
 static inline bool cpp_cpp2pdu_struct_array_SimpleStructVarray_data(HakoCpp_SimpleStructVarray &src, Hako_SimpleStructVarray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._data_len = src.data.size();
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
         Hako_SimpleVarray* temp_struct_ptr = (Hako_SimpleVarray*)dynamic_memory.allocate(dst._data_len, sizeof(Hako_SimpleVarray));
         dst._data_off = dynamic_memory.get_offset(temp_struct_ptr);

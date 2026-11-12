@@ -82,7 +82,7 @@ static inline int hako_convert_pdu2cpp_RenderCameraFrameRequest(Hako_RenderCamer
 static inline bool cpp_cpp2pdu_struct_array_RenderCameraFrameRequest_objects(HakoCpp_RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._objects_len = src.objects.size();
+    dst._objects_len = hako_pdu_array_length(src.objects.size());
     if (dst._objects_len > 0) {
         Hako_RenderObject* temp_struct_ptr = (Hako_RenderObject*)dynamic_memory.allocate(dst._objects_len, sizeof(Hako_RenderObject));
         dst._objects_off = dynamic_memory.get_offset(temp_struct_ptr);

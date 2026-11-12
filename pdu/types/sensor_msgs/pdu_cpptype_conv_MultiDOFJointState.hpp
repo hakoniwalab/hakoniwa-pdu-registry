@@ -135,7 +135,7 @@ static inline int hako_convert_pdu2cpp_MultiDOFJointState(Hako_MultiDOFJointStat
 static inline bool cpp_cpp2pdu_string_array_MultiDOFJointState_joint_names(HakoCpp_MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._joint_names_len = src.joint_names.size();
+    dst._joint_names_len = hako_pdu_array_length(src.joint_names.size());
     if (dst._joint_names_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._joint_names_len, sizeof(Hako_cstring));
         (void)hako_convert_cpp2pdu_array_string_varray(src.joint_names, temp_ptr);
@@ -149,7 +149,7 @@ static inline bool cpp_cpp2pdu_string_array_MultiDOFJointState_joint_names(HakoC
 static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointState_transforms(HakoCpp_MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._transforms_len = src.transforms.size();
+    dst._transforms_len = hako_pdu_array_length(src.transforms.size());
     if (dst._transforms_len > 0) {
         Hako_Transform* temp_struct_ptr = (Hako_Transform*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_Transform));
         dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -168,7 +168,7 @@ static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointState_transforms(HakoCp
 static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointState_twist(HakoCpp_MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._twist_len = src.twist.size();
+    dst._twist_len = hako_pdu_array_length(src.twist.size());
     if (dst._twist_len > 0) {
         Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._twist_len, sizeof(Hako_Twist));
         dst._twist_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -187,7 +187,7 @@ static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointState_twist(HakoCpp_Mul
 static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointState_wrench(HakoCpp_MultiDOFJointState &src, Hako_MultiDOFJointState &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._wrench_len = src.wrench.size();
+    dst._wrench_len = hako_pdu_array_length(src.wrench.size());
     if (dst._wrench_len > 0) {
         Hako_Wrench* temp_struct_ptr = (Hako_Wrench*)dynamic_memory.allocate(dst._wrench_len, sizeof(Hako_Wrench));
         dst._wrench_off = dynamic_memory.get_offset(temp_struct_ptr);

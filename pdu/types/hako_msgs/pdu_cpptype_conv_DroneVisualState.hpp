@@ -78,7 +78,7 @@ static inline int hako_convert_pdu2cpp_DroneVisualState(Hako_DroneVisualState &s
 static inline bool cpp_cpp2pdu_primitive_array_DroneVisualState_pwm_duty(HakoCpp_DroneVisualState &src, Hako_DroneVisualState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._pwm_duty_len = src.pwm_duty.size();
+    dst._pwm_duty_len = hako_pdu_array_length(src.pwm_duty.size());
     if (dst._pwm_duty_len > 0) {
         dst._pwm_duty_off = dynamic_memory.reference(src.pwm_duty.data(), dst._pwm_duty_len, sizeof(Hako_float32));
     }

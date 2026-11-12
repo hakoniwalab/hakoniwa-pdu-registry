@@ -77,7 +77,7 @@ static inline int hako_convert_pdu2ros_TFMessage(Hako_TFMessage &src, tf2_msgs::
 static inline bool _ros2pdu_struct_array_TFMessage_transforms(tf2_msgs::msg::TFMessage &src, Hako_TFMessage &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._transforms_len = src.transforms.size();
+    dst._transforms_len = hako_pdu_array_length(src.transforms.size());
     if (dst._transforms_len > 0) {
         Hako_TransformStamped* temp_struct_ptr = (Hako_TransformStamped*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_TransformStamped));
         dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);

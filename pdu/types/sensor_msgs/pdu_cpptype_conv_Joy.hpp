@@ -86,7 +86,7 @@ static inline int hako_convert_pdu2cpp_Joy(Hako_Joy &src, HakoCpp_Joy &dst)
 static inline bool cpp_cpp2pdu_primitive_array_Joy_axes(HakoCpp_Joy &src, Hako_Joy &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._axes_len = src.axes.size();
+    dst._axes_len = hako_pdu_array_length(src.axes.size());
     if (dst._axes_len > 0) {
         dst._axes_off = dynamic_memory.reference(src.axes.data(), dst._axes_len, sizeof(Hako_float32));
     }
@@ -98,7 +98,7 @@ static inline bool cpp_cpp2pdu_primitive_array_Joy_axes(HakoCpp_Joy &src, Hako_J
 static inline bool cpp_cpp2pdu_primitive_array_Joy_buttons(HakoCpp_Joy &src, Hako_Joy &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._buttons_len = src.buttons.size();
+    dst._buttons_len = hako_pdu_array_length(src.buttons.size());
     if (dst._buttons_len > 0) {
         dst._buttons_off = dynamic_memory.reference(src.buttons.data(), dst._buttons_len, sizeof(Hako_int32));
     }

@@ -76,7 +76,7 @@ static inline int hako_convert_pdu2ros_LightStateArray(Hako_LightStateArray &src
 static inline bool _ros2pdu_struct_array_LightStateArray_lights(hako_msgs::msg::LightStateArray &src, Hako_LightStateArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._lights_len = src.lights.size();
+    dst._lights_len = hako_pdu_array_length(src.lights.size());
     if (dst._lights_len > 0) {
         Hako_LightState* temp_struct_ptr = (Hako_LightState*)dynamic_memory.allocate(dst._lights_len, sizeof(Hako_LightState));
         dst._lights_off = dynamic_memory.get_offset(temp_struct_ptr);

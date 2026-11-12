@@ -110,7 +110,7 @@ static inline int hako_convert_pdu2ros_MultiEchoLaserScan(Hako_MultiEchoLaserSca
 static inline bool _ros2pdu_struct_array_MultiEchoLaserScan_ranges(sensor_msgs::msg::MultiEchoLaserScan &src, Hako_MultiEchoLaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._ranges_len = src.ranges.size();
+    dst._ranges_len = hako_pdu_array_length(src.ranges.size());
     if (dst._ranges_len > 0) {
         Hako_LaserEcho* temp_struct_ptr = (Hako_LaserEcho*)dynamic_memory.allocate(dst._ranges_len, sizeof(Hako_LaserEcho));
         dst._ranges_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -129,7 +129,7 @@ static inline bool _ros2pdu_struct_array_MultiEchoLaserScan_ranges(sensor_msgs::
 static inline bool _ros2pdu_struct_array_MultiEchoLaserScan_intensities(sensor_msgs::msg::MultiEchoLaserScan &src, Hako_MultiEchoLaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._intensities_len = src.intensities.size();
+    dst._intensities_len = hako_pdu_array_length(src.intensities.size());
     if (dst._intensities_len > 0) {
         Hako_LaserEcho* temp_struct_ptr = (Hako_LaserEcho*)dynamic_memory.allocate(dst._intensities_len, sizeof(Hako_LaserEcho));
         dst._intensities_off = dynamic_memory.get_offset(temp_struct_ptr);

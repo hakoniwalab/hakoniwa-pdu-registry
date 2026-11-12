@@ -80,7 +80,7 @@ static inline int hako_convert_pdu2ros_GridCells(Hako_GridCells &src, nav_msgs::
 static inline bool _ros2pdu_struct_array_GridCells_cells(nav_msgs::msg::GridCells &src, Hako_GridCells &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._cells_len = src.cells.size();
+    dst._cells_len = hako_pdu_array_length(src.cells.size());
     if (dst._cells_len > 0) {
         Hako_Point* temp_struct_ptr = (Hako_Point*)dynamic_memory.allocate(dst._cells_len, sizeof(Hako_Point));
         dst._cells_off = dynamic_memory.get_offset(temp_struct_ptr);

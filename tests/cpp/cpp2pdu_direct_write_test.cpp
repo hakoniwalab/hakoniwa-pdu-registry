@@ -242,6 +242,17 @@ TEST(Cpp2PduDirectWriteTest, ReusedDestinationEqualsFresh)
     }
 }
 
+TEST(Cpp2PduDirectWriteTest, ArrayLengthIsCheckedBeforeNarrowing)
+{
+    // A message array's size_t length goes into the PDU's int length field only
+    // after it is checked: up to INT_MAX passes, beyond it the conversion fails.
+    const size_t int_max = static_cast<size_t>(std::numeric_limits<int>::max());
+    EXPECT_EQ(0, hako_pdu_array_length(0));
+    EXPECT_EQ(std::numeric_limits<int>::max(), hako_pdu_array_length(int_max));
+    EXPECT_THROW(hako_pdu_array_length(int_max + 1), std::overflow_error);
+    EXPECT_THROW(hako_pdu_array_length(std::numeric_limits<size_t>::max()), std::overflow_error);
+}
+
 TEST(Cpp2PduDirectWriteTest, NegativeLengthIsRefused)
 {
     HakoCpp_PointCloud2 cloud = MakeCloud(12);

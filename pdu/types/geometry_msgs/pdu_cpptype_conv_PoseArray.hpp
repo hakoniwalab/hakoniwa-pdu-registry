@@ -77,7 +77,7 @@ static inline int hako_convert_pdu2cpp_PoseArray(Hako_PoseArray &src, HakoCpp_Po
 static inline bool cpp_cpp2pdu_struct_array_PoseArray_poses(HakoCpp_PoseArray &src, Hako_PoseArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._poses_len = src.poses.size();
+    dst._poses_len = hako_pdu_array_length(src.poses.size());
     if (dst._poses_len > 0) {
         Hako_Pose* temp_struct_ptr = (Hako_Pose*)dynamic_memory.allocate(dst._poses_len, sizeof(Hako_Pose));
         dst._poses_off = dynamic_memory.get_offset(temp_struct_ptr);

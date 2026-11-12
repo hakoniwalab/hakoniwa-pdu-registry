@@ -72,7 +72,7 @@ static inline int hako_convert_pdu2ros_JoyFeedbackArray(Hako_JoyFeedbackArray &s
 static inline bool _ros2pdu_struct_array_JoyFeedbackArray_array(sensor_msgs::msg::JoyFeedbackArray &src, Hako_JoyFeedbackArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._array_len = src.array.size();
+    dst._array_len = hako_pdu_array_length(src.array.size());
     if (dst._array_len > 0) {
         Hako_JoyFeedback* temp_struct_ptr = (Hako_JoyFeedback*)dynamic_memory.allocate(dst._array_len, sizeof(Hako_JoyFeedback));
         dst._array_off = dynamic_memory.get_offset(temp_struct_ptr);

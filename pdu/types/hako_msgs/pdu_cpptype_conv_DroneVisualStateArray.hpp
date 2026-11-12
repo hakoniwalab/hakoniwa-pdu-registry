@@ -81,7 +81,7 @@ static inline int hako_convert_pdu2cpp_DroneVisualStateArray(Hako_DroneVisualSta
 static inline bool cpp_cpp2pdu_struct_array_DroneVisualStateArray_drones(HakoCpp_DroneVisualStateArray &src, Hako_DroneVisualStateArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._drones_len = src.drones.size();
+    dst._drones_len = hako_pdu_array_length(src.drones.size());
     if (dst._drones_len > 0) {
         Hako_DroneVisualState* temp_struct_ptr = (Hako_DroneVisualState*)dynamic_memory.allocate(dst._drones_len, sizeof(Hako_DroneVisualState));
         dst._drones_off = dynamic_memory.get_offset(temp_struct_ptr);

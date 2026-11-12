@@ -67,7 +67,7 @@ static inline int hako_convert_pdu2ros_LaserEcho(Hako_LaserEcho &src, sensor_msg
 static inline bool _ros2pdu_primitive_array_LaserEcho_echoes(sensor_msgs::msg::LaserEcho &src, Hako_LaserEcho &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._echoes_len = src.echoes.size();
+    dst._echoes_len = hako_pdu_array_length(src.echoes.size());
     if (dst._echoes_len > 0) {
         dst._echoes_off = dynamic_memory.reference(src.echoes.data(), dst._echoes_len, sizeof(Hako_float32));
     }

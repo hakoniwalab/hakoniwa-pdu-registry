@@ -69,7 +69,7 @@ static inline int hako_convert_pdu2ros_ChannelFloat32(Hako_ChannelFloat32 &src, 
 static inline bool _ros2pdu_primitive_array_ChannelFloat32_values(sensor_msgs::msg::ChannelFloat32 &src, Hako_ChannelFloat32 &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._values_len = src.values.size();
+    dst._values_len = hako_pdu_array_length(src.values.size());
     if (dst._values_len > 0) {
         dst._values_off = dynamic_memory.reference(src.values.data(), dst._values_len, sizeof(Hako_float32));
     }

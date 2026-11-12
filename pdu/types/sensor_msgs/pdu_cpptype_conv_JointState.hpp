@@ -118,7 +118,7 @@ static inline int hako_convert_pdu2cpp_JointState(Hako_JointState &src, HakoCpp_
 static inline bool cpp_cpp2pdu_string_array_JointState_name(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._name_len = src.name.size();
+    dst._name_len = hako_pdu_array_length(src.name.size());
     if (dst._name_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._name_len, sizeof(Hako_cstring));
         (void)hako_convert_cpp2pdu_array_string_varray(src.name, temp_ptr);
@@ -132,7 +132,7 @@ static inline bool cpp_cpp2pdu_string_array_JointState_name(HakoCpp_JointState &
 static inline bool cpp_cpp2pdu_primitive_array_JointState_position(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._position_len = src.position.size();
+    dst._position_len = hako_pdu_array_length(src.position.size());
     if (dst._position_len > 0) {
         dst._position_off = dynamic_memory.reference(src.position.data(), dst._position_len, sizeof(Hako_float64));
     }
@@ -144,7 +144,7 @@ static inline bool cpp_cpp2pdu_primitive_array_JointState_position(HakoCpp_Joint
 static inline bool cpp_cpp2pdu_primitive_array_JointState_velocity(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._velocity_len = src.velocity.size();
+    dst._velocity_len = hako_pdu_array_length(src.velocity.size());
     if (dst._velocity_len > 0) {
         dst._velocity_off = dynamic_memory.reference(src.velocity.data(), dst._velocity_len, sizeof(Hako_float64));
     }
@@ -156,7 +156,7 @@ static inline bool cpp_cpp2pdu_primitive_array_JointState_velocity(HakoCpp_Joint
 static inline bool cpp_cpp2pdu_primitive_array_JointState_effort(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray (the source's bytes are copied once, straight into the PDU)
-    dst._effort_len = src.effort.size();
+    dst._effort_len = hako_pdu_array_length(src.effort.size());
     if (dst._effort_len > 0) {
         dst._effort_off = dynamic_memory.reference(src.effort.data(), dst._effort_len, sizeof(Hako_float64));
     }

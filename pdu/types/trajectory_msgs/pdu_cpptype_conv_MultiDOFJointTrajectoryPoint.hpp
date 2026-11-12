@@ -117,7 +117,7 @@ static inline int hako_convert_pdu2cpp_MultiDOFJointTrajectoryPoint(Hako_MultiDO
 static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointTrajectoryPoint_transforms(HakoCpp_MultiDOFJointTrajectoryPoint &src, Hako_MultiDOFJointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._transforms_len = src.transforms.size();
+    dst._transforms_len = hako_pdu_array_length(src.transforms.size());
     if (dst._transforms_len > 0) {
         Hako_Transform* temp_struct_ptr = (Hako_Transform*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_Transform));
         dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -136,7 +136,7 @@ static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointTrajectoryPoint_transfo
 static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointTrajectoryPoint_velocities(HakoCpp_MultiDOFJointTrajectoryPoint &src, Hako_MultiDOFJointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._velocities_len = src.velocities.size();
+    dst._velocities_len = hako_pdu_array_length(src.velocities.size());
     if (dst._velocities_len > 0) {
         Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._velocities_len, sizeof(Hako_Twist));
         dst._velocities_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -155,7 +155,7 @@ static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointTrajectoryPoint_velocit
 static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointTrajectoryPoint_accelerations(HakoCpp_MultiDOFJointTrajectoryPoint &src, Hako_MultiDOFJointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._accelerations_len = src.accelerations.size();
+    dst._accelerations_len = hako_pdu_array_length(src.accelerations.size());
     if (dst._accelerations_len > 0) {
         Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._accelerations_len, sizeof(Hako_Twist));
         dst._accelerations_off = dynamic_memory.get_offset(temp_struct_ptr);

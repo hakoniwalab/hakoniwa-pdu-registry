@@ -97,7 +97,7 @@ static inline int hako_convert_pdu2ros_PointCloud(Hako_PointCloud &src, sensor_m
 static inline bool _ros2pdu_struct_array_PointCloud_points(sensor_msgs::msg::PointCloud &src, Hako_PointCloud &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._points_len = src.points.size();
+    dst._points_len = hako_pdu_array_length(src.points.size());
     if (dst._points_len > 0) {
         Hako_Point32* temp_struct_ptr = (Hako_Point32*)dynamic_memory.allocate(dst._points_len, sizeof(Hako_Point32));
         dst._points_off = dynamic_memory.get_offset(temp_struct_ptr);
@@ -116,7 +116,7 @@ static inline bool _ros2pdu_struct_array_PointCloud_points(sensor_msgs::msg::Poi
 static inline bool _ros2pdu_struct_array_PointCloud_channels(sensor_msgs::msg::PointCloud &src, Hako_PointCloud &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._channels_len = src.channels.size();
+    dst._channels_len = hako_pdu_array_length(src.channels.size());
     if (dst._channels_len > 0) {
         Hako_ChannelFloat32* temp_struct_ptr = (Hako_ChannelFloat32*)dynamic_memory.allocate(dst._channels_len, sizeof(Hako_ChannelFloat32));
         dst._channels_off = dynamic_memory.get_offset(temp_struct_ptr);

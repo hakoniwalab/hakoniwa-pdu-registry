@@ -73,7 +73,7 @@ static inline int hako_convert_pdu2cpp_MultiArrayLayout(Hako_MultiArrayLayout &s
 static inline bool cpp_cpp2pdu_struct_array_MultiArrayLayout_dim(HakoCpp_MultiArrayLayout &src, Hako_MultiArrayLayout &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._dim_len = src.dim.size();
+    dst._dim_len = hako_pdu_array_length(src.dim.size());
     if (dst._dim_len > 0) {
         Hako_MultiArrayDimension* temp_struct_ptr = (Hako_MultiArrayDimension*)dynamic_memory.allocate(dst._dim_len, sizeof(Hako_MultiArrayDimension));
         dst._dim_off = dynamic_memory.get_offset(temp_struct_ptr);

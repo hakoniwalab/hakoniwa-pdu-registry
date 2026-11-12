@@ -15,15 +15,21 @@ public:
         int length;
         int offset;
         void* data;
+        bool owned;  // false: data is the caller's (reference()), never freed here
 
-        Allocation(int len, int off, void* ptr) : length(len), offset(off), data(ptr) {}
+        Allocation(int len, int off, void* ptr, bool own = true)
+            : length(len), offset(off), data(ptr), owned(own) {}
     };
 
     PduDynamicMemory() : current_offset(0) {}
+    PduDynamicMemory(const PduDynamicMemory&) = delete;
+    PduDynamicMemory& operator=(const PduDynamicMemory&) = delete;
 
     ~PduDynamicMemory() {
         for (auto& alloc : allocations) {
-            free(alloc.data);
+            if (alloc.owned) {
+                free(alloc.data);
+            }
         }
     }
 
@@ -34,6 +40,30 @@ public:
     // that they fit in the 32-bit-compatible PDU offset domain, then convert
     // explicitly so platform compilers cannot silently narrow the value.
     void* allocate(int length, size_t elem_size) {
+        const int allocation_size = checked_size(length, elem_size);
+        void* ptr = malloc(static_cast<size_t>(allocation_size));
+        if (ptr == nullptr) {
+            throw std::runtime_error("Memory allocation failed");
+        }
+        allocations.emplace_back(allocation_size, current_offset, ptr);
+        current_offset += allocation_size;
+        return ptr;
+    }
+
+    // Place the caller's bytes in the heap without copying them now: they are
+    // copied once, by copy_to_pdu(). The data must stay unchanged and alive until
+    // then (the converters pass the source message's own arrays). Returns the
+    // offset, as get_offset() would for an allocate()d block.
+    int reference(const void* data, int length, size_t elem_size) {
+        const int allocation_size = checked_size(length, elem_size);
+        const int offset = current_offset;
+        allocations.emplace_back(allocation_size, offset, const_cast<void*>(data), false);
+        current_offset += allocation_size;
+        return offset;
+    }
+
+private:
+    int checked_size(int length, size_t elem_size) const {
         if (length < 0) {
             throw std::invalid_argument("PDU dynamic allocation length must be non-negative");
         }
@@ -53,15 +83,10 @@ public:
         if (current_offset > std::numeric_limits<int>::max() - allocation_size) {
             throw std::overflow_error("PDU dynamic allocation exceeds int-sized offset range");
         }
-
-        void* ptr = malloc(byte_size);
-        if (ptr == nullptr) {
-            throw std::runtime_error("Memory allocation failed");
-        }
-        allocations.emplace_back(allocation_size, current_offset, ptr);
-        current_offset += allocation_size;
-        return ptr;
+        return allocation_size;
     }
+
+public:
 
     // Get total size of all allocations
     int get_total_size() const {

@@ -73,7 +73,7 @@ static inline bool cpp_cpp2pdu_TF2Error(HakoCpp_TF2Error &src, Hako_TF2Error &ds
 static inline int hako_convert_cpp2pdu_TF2Error(HakoCpp_TF2Error &src, Hako_TF2Error** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_TF2Error out;
+    Hako_TF2Error out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_TF2Error(src, out, dynamic_memory)) {
         return -1;
     }
@@ -125,25 +125,39 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_TF2Error() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
     int cpp2pdu(HakoCpp_TF2Error& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_TF2Error(cppData, (Hako_TF2Error**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "TF2Error" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_TF2Error out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_TF2Error(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "TF2Error" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
+        const int meta_size = (int)HAKO_PDU_META_DATA_SIZE();
+        const int base_size = (int)HAKO_ALIGN_SIZE(sizeof(Hako_TF2Error), HAKO_ALIGNMENT_SIZE);
+        const int heap_used = dynamic_memory.get_total_size();
+        const int heap_size = (int)HAKO_ALIGN_SIZE(heap_used, HAKO_ALIGNMENT_SIZE);
+        const int pdu_size = meta_size + base_size + heap_size;
+        if (pdu_buffer == nullptr || pdu_size > buffer_len) {
             std::cerr << "[ConvertorError][" << "TF2Error" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
             return -1;
         }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "TF2Error" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
+        memset(pdu_buffer, 0, meta_size);
+        HakoPduMetaDataType* meta = (HakoPduMetaDataType*)pdu_buffer;
+        meta->magicno = HAKO_PDU_META_DATA_MAGICNO;
+        meta->version = HAKO_PDU_META_DATA_VERSION;
+        meta->base_off = meta_size;
+        meta->heap_off = meta_size + base_size;
+        meta->total_size = pdu_size;
+        char* base_ptr = pdu_buffer + meta_size;
+        memcpy(base_ptr, (void*)&out, sizeof(Hako_TF2Error));
+        memset(base_ptr + sizeof(Hako_TF2Error), 0, base_size - sizeof(Hako_TF2Error));
+        char* heap_ptr = base_ptr + base_size;
+        dynamic_memory.copy_to_pdu(heap_ptr);
+        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
         return pdu_size;
     }
 

@@ -112,12 +112,10 @@ static inline int hako_convert_pdu2cpp_CameraInfo(Hako_CameraInfo &src, HakoCpp_
  ***************************/
 static inline bool cpp_cpp2pdu_primitive_array_CameraInfo_d(HakoCpp_CameraInfo &src, Hako_CameraInfo &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._d_len = src.d.size();
     if (dst._d_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._d_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.d.data(), dst._d_len * sizeof(Hako_float64));
-        dst._d_off = dynamic_memory.get_offset(temp_ptr);
+        dst._d_off = dynamic_memory.reference(src.d.data(), dst._d_len, sizeof(Hako_float64));
     }
     else {
         dst._d_off = dynamic_memory.get_total_size();
@@ -191,7 +189,7 @@ static inline bool cpp_cpp2pdu_CameraInfo(HakoCpp_CameraInfo &src, Hako_CameraIn
 static inline int hako_convert_cpp2pdu_CameraInfo(HakoCpp_CameraInfo &src, Hako_CameraInfo** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_CameraInfo out;
+    Hako_CameraInfo out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_CameraInfo(src, out, dynamic_memory)) {
         return -1;
     }
@@ -243,25 +241,39 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_CameraInfo() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
     int cpp2pdu(HakoCpp_CameraInfo& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_CameraInfo(cppData, (Hako_CameraInfo**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "CameraInfo" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_CameraInfo out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_CameraInfo(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "CameraInfo" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
+        const int meta_size = (int)HAKO_PDU_META_DATA_SIZE();
+        const int base_size = (int)HAKO_ALIGN_SIZE(sizeof(Hako_CameraInfo), HAKO_ALIGNMENT_SIZE);
+        const int heap_used = dynamic_memory.get_total_size();
+        const int heap_size = (int)HAKO_ALIGN_SIZE(heap_used, HAKO_ALIGNMENT_SIZE);
+        const int pdu_size = meta_size + base_size + heap_size;
+        if (pdu_buffer == nullptr || pdu_size > buffer_len) {
             std::cerr << "[ConvertorError][" << "CameraInfo" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
             return -1;
         }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "CameraInfo" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
+        memset(pdu_buffer, 0, meta_size);
+        HakoPduMetaDataType* meta = (HakoPduMetaDataType*)pdu_buffer;
+        meta->magicno = HAKO_PDU_META_DATA_MAGICNO;
+        meta->version = HAKO_PDU_META_DATA_VERSION;
+        meta->base_off = meta_size;
+        meta->heap_off = meta_size + base_size;
+        meta->total_size = pdu_size;
+        char* base_ptr = pdu_buffer + meta_size;
+        memcpy(base_ptr, (void*)&out, sizeof(Hako_CameraInfo));
+        memset(base_ptr + sizeof(Hako_CameraInfo), 0, base_size - sizeof(Hako_CameraInfo));
+        char* heap_ptr = base_ptr + base_size;
+        dynamic_memory.copy_to_pdu(heap_ptr);
+        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
         return pdu_size;
     }
 

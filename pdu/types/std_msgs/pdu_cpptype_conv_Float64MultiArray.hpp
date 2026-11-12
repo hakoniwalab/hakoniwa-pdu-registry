@@ -66,12 +66,10 @@ static inline int hako_convert_pdu2cpp_Float64MultiArray(Hako_Float64MultiArray 
  ***************************/
 static inline bool cpp_cpp2pdu_primitive_array_Float64MultiArray_data(HakoCpp_Float64MultiArray &src, Hako_Float64MultiArray &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._data_len = src.data.size();
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_float64));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_float64));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -97,7 +95,7 @@ static inline bool cpp_cpp2pdu_Float64MultiArray(HakoCpp_Float64MultiArray &src,
 static inline int hako_convert_cpp2pdu_Float64MultiArray(HakoCpp_Float64MultiArray &src, Hako_Float64MultiArray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Float64MultiArray out;
+    Hako_Float64MultiArray out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_Float64MultiArray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -149,25 +147,39 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_Float64MultiArray() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
     int cpp2pdu(HakoCpp_Float64MultiArray& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_Float64MultiArray(cppData, (Hako_Float64MultiArray**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "Float64MultiArray" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_Float64MultiArray out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_Float64MultiArray(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "Float64MultiArray" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
+        const int meta_size = (int)HAKO_PDU_META_DATA_SIZE();
+        const int base_size = (int)HAKO_ALIGN_SIZE(sizeof(Hako_Float64MultiArray), HAKO_ALIGNMENT_SIZE);
+        const int heap_used = dynamic_memory.get_total_size();
+        const int heap_size = (int)HAKO_ALIGN_SIZE(heap_used, HAKO_ALIGNMENT_SIZE);
+        const int pdu_size = meta_size + base_size + heap_size;
+        if (pdu_buffer == nullptr || pdu_size > buffer_len) {
             std::cerr << "[ConvertorError][" << "Float64MultiArray" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
             return -1;
         }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "Float64MultiArray" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
+        memset(pdu_buffer, 0, meta_size);
+        HakoPduMetaDataType* meta = (HakoPduMetaDataType*)pdu_buffer;
+        meta->magicno = HAKO_PDU_META_DATA_MAGICNO;
+        meta->version = HAKO_PDU_META_DATA_VERSION;
+        meta->base_off = meta_size;
+        meta->heap_off = meta_size + base_size;
+        meta->total_size = pdu_size;
+        char* base_ptr = pdu_buffer + meta_size;
+        memcpy(base_ptr, (void*)&out, sizeof(Hako_Float64MultiArray));
+        memset(base_ptr + sizeof(Hako_Float64MultiArray), 0, base_size - sizeof(Hako_Float64MultiArray));
+        char* heap_ptr = base_ptr + base_size;
+        dynamic_memory.copy_to_pdu(heap_ptr);
+        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
         return pdu_size;
     }
 

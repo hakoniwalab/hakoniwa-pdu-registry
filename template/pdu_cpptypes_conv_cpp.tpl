@@ -145,12 +145,10 @@ static inline bool cpp_cpp2pdu_primitive_array_{{container.msg_type_name}}_{{ite
 {
 {%-     set array_size = container.get_array_size(item["name"], item["type"]) %}
 {%-     if array_size is none %}
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._{{item["name"]}}_len = src.{{item["name"]}}.size();
     if (dst._{{item["name"]}}_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._{{item["name"]}}_len, sizeof(Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}));
-        memcpy(temp_ptr, src.{{item["name"]}}.data(), dst._{{item["name"]}}_len * sizeof(Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}));
-        dst._{{item["name"]}}_off = dynamic_memory.get_offset(temp_ptr);
+        dst._{{item["name"]}}_off = dynamic_memory.reference(src.{{item["name"]}}.data(), dst._{{item["name"]}}_len, sizeof(Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}));
     }
     else {
         dst._{{item["name"]}}_off = dynamic_memory.get_total_size();
@@ -255,7 +253,7 @@ static inline bool cpp_cpp2pdu_{{container.msg_type_name}}(HakoCpp_{{container.m
 static inline int hako_convert_cpp2pdu_{{container.msg_type_name}}(HakoCpp_{{container.msg_type_name}} &src, Hako_{{container.msg_type_name}}** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_{{container.msg_type_name}} out;
+    Hako_{{container.msg_type_name}} out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_{{container.msg_type_name}}(src, out, dynamic_memory)) {
         return -1;
     }
@@ -307,25 +305,39 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_{{container.msg_type_name}}() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
     int cpp2pdu(HakoCpp_{{container.msg_type_name}}& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_{{container.msg_type_name}}(cppData, (Hako_{{container.msg_type_name}}**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "{{container.msg_type_name}}" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_{{container.msg_type_name}} out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_{{container.msg_type_name}}(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "{{container.msg_type_name}}" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
+        const int meta_size = (int)HAKO_PDU_META_DATA_SIZE();
+        const int base_size = (int)HAKO_ALIGN_SIZE(sizeof(Hako_{{container.msg_type_name}}), HAKO_ALIGNMENT_SIZE);
+        const int heap_used = dynamic_memory.get_total_size();
+        const int heap_size = (int)HAKO_ALIGN_SIZE(heap_used, HAKO_ALIGNMENT_SIZE);
+        const int pdu_size = meta_size + base_size + heap_size;
+        if (pdu_buffer == nullptr || pdu_size > buffer_len) {
             std::cerr << "[ConvertorError][" << "{{container.msg_type_name}}" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
             return -1;
         }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "{{container.msg_type_name}}" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
+        memset(pdu_buffer, 0, meta_size);
+        HakoPduMetaDataType* meta = (HakoPduMetaDataType*)pdu_buffer;
+        meta->magicno = HAKO_PDU_META_DATA_MAGICNO;
+        meta->version = HAKO_PDU_META_DATA_VERSION;
+        meta->base_off = meta_size;
+        meta->heap_off = meta_size + base_size;
+        meta->total_size = pdu_size;
+        char* base_ptr = pdu_buffer + meta_size;
+        memcpy(base_ptr, (void*)&out, sizeof(Hako_{{container.msg_type_name}}));
+        memset(base_ptr + sizeof(Hako_{{container.msg_type_name}}), 0, base_size - sizeof(Hako_{{container.msg_type_name}}));
+        char* heap_ptr = base_ptr + base_size;
+        dynamic_memory.copy_to_pdu(heap_ptr);
+        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
         return pdu_size;
     }
 

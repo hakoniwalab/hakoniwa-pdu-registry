@@ -33,6 +33,18 @@ add_executable(hakoniwa_pdu_cpp_tests
   simple_struct_varray_cpp_interop_test.cpp
   string_varray_alias_compat_test.cpp
   cpp2pdu_direct_write_test.cpp
+  cpp2pdu_golden_test.cpp
+)
+target_compile_definitions(hakoniwa_pdu_cpp_tests PRIVATE
+  CPP2PDU_GOLDEN_DIR="${PROJECT_SOURCE_DIR}/../fixtures/cpp2pdu_golden"
+)
+
+# Writes the cpp2pdu golden files (see cpp2pdu_golden_dump.cpp).
+add_executable(cpp2pdu_golden_dump
+  cpp2pdu_golden_dump.cpp
+)
+target_include_directories(cpp2pdu_golden_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
 )
 
 add_executable(disturbance_cpp_dump

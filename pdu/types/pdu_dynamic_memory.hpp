@@ -41,7 +41,9 @@ public:
     // explicitly so platform compilers cannot silently narrow the value.
     void* allocate(int length, size_t elem_size) {
         const int allocation_size = checked_size(length, elem_size);
-        void* ptr = malloc(static_cast<size_t>(allocation_size));
+        // Zeroed: struct and string slots the converter leaves partly unset
+        // (padding, the rest of a fixed string) go into the PDU as zeros.
+        void* ptr = calloc(1, allocation_size > 0 ? static_cast<size_t>(allocation_size) : 1);
         if (ptr == nullptr) {
             throw std::runtime_error("Memory allocation failed");
         }
@@ -101,6 +103,22 @@ public:
             //std::cout << "length: " << alloc.length << std::endl;
             memcpy(dest + alloc.offset, alloc.data, alloc.length);
         }
+    }
+
+    // True when a referenced (caller's) block shares bytes with [begin, begin + length).
+    bool references_overlap(const void* begin, size_t length) const {
+        const char* lo = static_cast<const char*>(begin);
+        const char* hi = lo + length;
+        for (const auto& alloc : allocations) {
+            if (alloc.owned || alloc.length == 0) {
+                continue;
+            }
+            const char* a = static_cast<const char*>(alloc.data);
+            if (a < hi && lo < a + alloc.length) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Get the offset of a specific allocation

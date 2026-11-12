@@ -128,6 +128,8 @@ public:
     // Builds the PDU straight into pdu_buffer, byte for byte as
     // hako_convert_cpp2pdu_SimControlRequest() lays it out (metadata, base, heap), without
     // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_SimControlRequest& cppData, char* pdu_buffer, int buffer_len)
     {
         PduDynamicMemory dynamic_memory;
@@ -136,29 +138,40 @@ public:
             std::cerr << "[ConvertorError][" << "SimControlRequest" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        const int meta_size = (int)HAKO_PDU_META_DATA_SIZE();
-        const int base_size = (int)HAKO_ALIGN_SIZE(sizeof(Hako_SimControlRequest), HAKO_ALIGNMENT_SIZE);
-        const int heap_used = dynamic_memory.get_total_size();
-        const int heap_size = (int)HAKO_ALIGN_SIZE(heap_used, HAKO_ALIGNMENT_SIZE);
-        const int pdu_size = meta_size + base_size + heap_size;
-        if (pdu_buffer == nullptr || pdu_size > buffer_len) {
+        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
+        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
+        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_SimControlRequest), HAKO_ALIGNMENT_SIZE);
+        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
+        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
+        const size_t pdu_size = meta_size + base_size + heap_size;
+        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
+            std::cerr << "[ConvertorError][" << "SimControlRequest" << "] PDU too large. heap=" << heap_used << std::endl;
+            return -1;
+        }
+        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
             std::cerr << "[ConvertorError][" << "SimControlRequest" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
             return -1;
         }
+        if (dynamic_memory.references_overlap(pdu_buffer, pdu_size)) {
+            std::cerr << "[ConvertorError][" << "SimControlRequest" << "] pdu_buffer overlaps the message's arrays" << std::endl;
+            return -1;
+        }
+        HakoPduMetaDataType meta;
+        memset(&meta, 0, sizeof(meta));
+        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
+        meta.version = HAKO_PDU_META_DATA_VERSION;
+        meta.base_off = static_cast<uint32_t>(meta_size);
+        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
+        meta.total_size = static_cast<uint32_t>(pdu_size);
         memset(pdu_buffer, 0, meta_size);
-        HakoPduMetaDataType* meta = (HakoPduMetaDataType*)pdu_buffer;
-        meta->magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta->version = HAKO_PDU_META_DATA_VERSION;
-        meta->base_off = meta_size;
-        meta->heap_off = meta_size + base_size;
-        meta->total_size = pdu_size;
+        memcpy(pdu_buffer, &meta, sizeof(meta));
         char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (void*)&out, sizeof(Hako_SimControlRequest));
+        memcpy(base_ptr, (const void*)&out, sizeof(Hako_SimControlRequest));
         memset(base_ptr + sizeof(Hako_SimControlRequest), 0, base_size - sizeof(Hako_SimControlRequest));
         char* heap_ptr = base_ptr + base_size;
         dynamic_memory.copy_to_pdu(heap_ptr);
         memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return pdu_size;
+        return static_cast<int>(pdu_size);
     }
 
 private:

@@ -152,4 +152,43 @@ TEST(Cpp2PduDirectWriteTest, TooSmallBufferIsRefusedUntouched)
     }
 }
 
+TEST(Cpp2PduDirectWriteTest, UnalignedExactSizeBuffer)
+{
+    // The output needs no alignment and no room beyond the PDU itself.
+    HakoCpp_PointCloud2 cloud = MakeCloud(1001);
+    const std::vector<char> reference =
+        ReferencePdu<HakoCpp_PointCloud2, Hako_PointCloud2>(cloud, hako_convert_cpp2pdu_PointCloud2);
+    for (std::size_t shift : {std::size_t{1}, std::size_t{3}, std::size_t{5}}) {
+        std::vector<char> storage(reference.size() + shift + 1, static_cast<char>(0x5a));
+        char* out = storage.data() + shift;
+        hako::pdu::msgs::sensor_msgs::PointCloud2 conv;
+        ASSERT_EQ(static_cast<int>(reference.size()),
+                  conv.cpp2pdu(cloud, out, static_cast<int>(reference.size())));
+        EXPECT_EQ(0, std::memcmp(out, reference.data(), reference.size())) << "shift=" << shift;
+        EXPECT_EQ(static_cast<char>(0x5a), storage[shift - 1]);
+        EXPECT_EQ(static_cast<char>(0x5a), storage[shift + reference.size()]);
+    }
+}
+
+TEST(Cpp2PduDirectWriteTest, BufferOverlappingTheSourceIsRefused)
+{
+    // The source's arrays are read while the PDU is written: writing over them
+    // is refused, and the source is left as it was.
+    HakoCpp_PointCloud2 cloud = MakeCloud(8192);
+    const std::vector<Hako_uint8> before = cloud.data;
+    hako::pdu::msgs::sensor_msgs::PointCloud2 conv;
+    char* inside = reinterpret_cast<char*>(cloud.data.data());
+    EXPECT_EQ(-1, conv.cpp2pdu(cloud, inside, static_cast<int>(cloud.data.size())));
+    EXPECT_EQ(before, cloud.data);
+}
+
+TEST(Cpp2PduDirectWriteTest, NegativeLengthIsRefused)
+{
+    HakoCpp_PointCloud2 cloud = MakeCloud(12);
+    std::vector<char> buffer(4096);
+    hako::pdu::msgs::sensor_msgs::PointCloud2 conv;
+    EXPECT_EQ(-1, conv.cpp2pdu(cloud, buffer.data(), -1));
+    EXPECT_EQ(-1, conv.cpp2pdu(cloud, nullptr, 4096));
+}
+
 }  // namespace

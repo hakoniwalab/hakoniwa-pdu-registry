@@ -172,14 +172,39 @@ TEST(Cpp2PduDirectWriteTest, UnalignedExactSizeBuffer)
 
 TEST(Cpp2PduDirectWriteTest, BufferOverlappingTheSourceIsRefused)
 {
-    // The source's arrays are read while the PDU is written: writing over them
-    // is refused, and the source is left as it was.
+    // The source's arrays are read while the PDU is written: a buffer over them
+    // is refused by the overlap check (not by the size check: it runs first,
+    // over the whole buffer given), and the source is left as it was.
     HakoCpp_PointCloud2 cloud = MakeCloud(8192);
     const std::vector<Hako_uint8> before = cloud.data;
     hako::pdu::msgs::sensor_msgs::PointCloud2 conv;
-    char* inside = reinterpret_cast<char*>(cloud.data.data());
-    EXPECT_EQ(-1, conv.cpp2pdu(cloud, inside, static_cast<int>(cloud.data.size())));
+    char* inside = reinterpret_cast<char*>(cloud.data.data()) + 100;
+    testing::internal::CaptureStderr();
+    const int result = conv.cpp2pdu(cloud, inside, 1000);
+    const std::string errors = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(-1, result);
+    EXPECT_NE(std::string::npos, errors.find("overlaps")) << errors;
     EXPECT_EQ(before, cloud.data);
+}
+
+TEST(Cpp2PduDirectWriteTest, ReferencesOverlapBoundaries)
+{
+    // PduDynamicMemory::references_overlap() on one referenced block [base+16, base+48).
+    std::vector<char> arena(64);
+    char* base = arena.data();
+    PduDynamicMemory memory;
+    memory.reference(base + 16, 32, 1);
+    (void)memory.allocate(8, 1);  // an owned block is never the caller's
+    EXPECT_FALSE(memory.references_overlap(base, 16));        // ends where it starts
+    EXPECT_TRUE(memory.references_overlap(base, 17));         // one byte in
+    EXPECT_TRUE(memory.references_overlap(base + 20, 4));     // inside
+    EXPECT_TRUE(memory.references_overlap(base + 47, 10));    // its last byte
+    EXPECT_FALSE(memory.references_overlap(base + 48, 16));   // starts where it ends
+    EXPECT_TRUE(memory.references_overlap(base, 64));         // covers it
+    EXPECT_FALSE(memory.references_overlap(base + 20, 0));    // empty range
+    EXPECT_FALSE(memory.references_overlap(nullptr, 64));
+    std::vector<char> elsewhere(64);
+    EXPECT_FALSE(memory.references_overlap(elsewhere.data(), elsewhere.size()));
 }
 
 TEST(Cpp2PduDirectWriteTest, ReusedDestinationEqualsFresh)

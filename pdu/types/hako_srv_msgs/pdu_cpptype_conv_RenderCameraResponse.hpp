@@ -152,12 +152,14 @@ public:
             std::cerr << "[ConvertorError][" << "RenderCameraResponse" << "] PDU too large. heap=" << heap_used << std::endl;
             return -1;
         }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "RenderCameraResponse" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
+        // The whole buffer the caller gave must be clear of the message's arrays.
+        if (pdu_buffer != nullptr && buffer_len > 0 &&
+            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
+            std::cerr << "[ConvertorError][" << "RenderCameraResponse" << "] pdu_buffer overlaps the message's arrays" << std::endl;
             return -1;
         }
-        if (dynamic_memory.references_overlap(pdu_buffer, pdu_size)) {
-            std::cerr << "[ConvertorError][" << "RenderCameraResponse" << "] pdu_buffer overlaps the message's arrays" << std::endl;
+        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
+            std::cerr << "[ConvertorError][" << "RenderCameraResponse" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
             return -1;
         }
         HakoPduMetaDataType meta;

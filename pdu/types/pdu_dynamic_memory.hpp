@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstdlib>
+#include <functional>
 #include <cstring>
 #include <iostream>
 #include <limits>
@@ -106,7 +107,13 @@ public:
     }
 
     // True when a referenced (caller's) block shares bytes with [begin, begin + length).
+    // std::less gives a total order over pointers into different objects, where
+    // the built-in < does not.
     bool references_overlap(const void* begin, size_t length) const {
+        if (begin == nullptr || length == 0) {
+            return false;
+        }
+        const std::less<const char*> before;
         const char* lo = static_cast<const char*>(begin);
         const char* hi = lo + length;
         for (const auto& alloc : allocations) {
@@ -114,7 +121,8 @@ public:
                 continue;
             }
             const char* a = static_cast<const char*>(alloc.data);
-            if (a < hi && lo < a + alloc.length) {
+            const char* a_end = a + alloc.length;
+            if (before(a, hi) && before(lo, a_end)) {
                 return true;
             }
         }

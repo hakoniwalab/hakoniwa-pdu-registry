@@ -1,6 +1,8 @@
 // The converters must keep producing, byte for byte, the PDUs the converters
 // made before the PDU was built straight into the caller's buffer (the golden
-// files, see cpp2pdu_golden_dump.cpp for how they were made).
+// files, see cpp2pdu_golden_dump.cpp for how they were made). Strictly, the
+// match is with the old converters whose unset bytes (struct padding, the rest
+// of a fixed string) are made zero: those bytes were never defined before.
 #include <gtest/gtest.h>
 
 #include <fstream>

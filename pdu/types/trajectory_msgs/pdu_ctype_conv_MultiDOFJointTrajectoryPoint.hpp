@@ -41,6 +41,9 @@ static inline int _pdu2ros_struct_array_MultiDOFJointTrajectoryPoint_transforms(
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.transforms.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_MultiDOFJointTrajectoryPoint_velocities(const char* heap_ptr, Hako_MultiDOFJointTrajectoryPoint &src, trajectory_msgs::msg::MultiDOFJointTrajectoryPoint &dst)
@@ -56,6 +59,9 @@ static inline int _pdu2ros_struct_array_MultiDOFJointTrajectoryPoint_velocities(
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.velocities.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_MultiDOFJointTrajectoryPoint_accelerations(const char* heap_ptr, Hako_MultiDOFJointTrajectoryPoint &src, trajectory_msgs::msg::MultiDOFJointTrajectoryPoint &dst)
@@ -70,6 +76,9 @@ static inline int _pdu2ros_struct_array_MultiDOFJointTrajectoryPoint_acceleratio
             _pdu2ros_Twist(heap_ptr, *temp_struct_ptr, dst.accelerations[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.accelerations.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -114,7 +123,9 @@ static inline bool _ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_transforms
         Hako_Transform* temp_struct_ptr = (Hako_Transform*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_Transform));
         dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._transforms_len; ++i) {
-            _ros2pdu_Transform(src.transforms[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Transform(src.transforms[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -131,7 +142,9 @@ static inline bool _ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_velocities
         Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._velocities_len, sizeof(Hako_Twist));
         dst._velocities_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._velocities_len; ++i) {
-            _ros2pdu_Twist(src.velocities[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Twist(src.velocities[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -148,7 +161,9 @@ static inline bool _ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_accelerati
         Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._accelerations_len, sizeof(Hako_Twist));
         dst._accelerations_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._accelerations_len; ++i) {
-            _ros2pdu_Twist(src.accelerations[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Twist(src.accelerations[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -162,14 +177,22 @@ static inline bool _ros2pdu_MultiDOFJointTrajectoryPoint(trajectory_msgs::msg::M
 {
     try {
         //struct array convert
-        _ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_transforms(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_transforms(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_velocities(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_velocities(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_accelerations(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_MultiDOFJointTrajectoryPoint_accelerations(src, dst, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Duration(src.time_from_start, dst.time_from_start, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_Duration(src.time_from_start, dst.time_from_start, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -180,7 +203,7 @@ static inline bool _ros2pdu_MultiDOFJointTrajectoryPoint(trajectory_msgs::msg::M
 static inline int hako_convert_ros2pdu_MultiDOFJointTrajectoryPoint(trajectory_msgs::msg::MultiDOFJointTrajectoryPoint &src, Hako_MultiDOFJointTrajectoryPoint** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MultiDOFJointTrajectoryPoint out;
+    Hako_MultiDOFJointTrajectoryPoint out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_MultiDOFJointTrajectoryPoint(src, out, dynamic_memory)) {
         return -1;
     }
@@ -198,6 +221,22 @@ static inline int hako_convert_ros2pdu_MultiDOFJointTrajectoryPoint(trajectory_m
 
     *dst = (Hako_MultiDOFJointTrajectoryPoint*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_MultiDOFJointTrajectoryPoint() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_MultiDOFJointTrajectoryPoint(trajectory_msgs::msg::MultiDOFJointTrajectoryPoint &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MultiDOFJointTrajectoryPoint out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_MultiDOFJointTrajectoryPoint(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "MultiDOFJointTrajectoryPoint" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("MultiDOFJointTrajectoryPoint", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_MultiDOFJointTrajectoryPoint* hako_create_empty_pdu_MultiDOFJointTrajectoryPoint(int heap_size)

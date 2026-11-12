@@ -34,6 +34,9 @@ static inline int _pdu2ros_primitive_array_Joy_axes(const char* heap_ptr, Hako_J
         dst.axes.resize(length);
         memcpy(dst.axes.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.axes.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_Joy_buttons(const char* heap_ptr, Hako_Joy &src, sensor_msgs::msg::Joy &dst)
@@ -44,6 +47,9 @@ static inline int _pdu2ros_primitive_array_Joy_buttons(const char* heap_ptr, Hak
     if (length > 0) {
         dst.buttons.resize(length);
         memcpy(dst.buttons.data(), heap_ptr + offset, length * sizeof(Hako_int32));
+    }
+    else {
+        dst.buttons.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -80,12 +86,10 @@ static inline int hako_convert_pdu2ros_Joy(Hako_Joy &src, sensor_msgs::msg::Joy 
  ***************************/
 static inline bool _ros2pdu_primitive_array_Joy_axes(sensor_msgs::msg::Joy &src, Hako_Joy &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._axes_len = src.axes.size();
     if (dst._axes_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._axes_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.axes.data(), dst._axes_len * sizeof(Hako_float32));
-        dst._axes_off = dynamic_memory.get_offset(temp_ptr);
+        dst._axes_off = dynamic_memory.reference(src.axes.data(), dst._axes_len, sizeof(Hako_float32));
     }
     else {
         dst._axes_off = dynamic_memory.get_total_size();
@@ -94,12 +98,10 @@ static inline bool _ros2pdu_primitive_array_Joy_axes(sensor_msgs::msg::Joy &src,
 }
 static inline bool _ros2pdu_primitive_array_Joy_buttons(sensor_msgs::msg::Joy &src, Hako_Joy &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._buttons_len = src.buttons.size();
     if (dst._buttons_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._buttons_len, sizeof(Hako_int32));
-        memcpy(temp_ptr, src.buttons.data(), dst._buttons_len * sizeof(Hako_int32));
-        dst._buttons_off = dynamic_memory.get_offset(temp_ptr);
+        dst._buttons_off = dynamic_memory.reference(src.buttons.data(), dst._buttons_len, sizeof(Hako_int32));
     }
     else {
         dst._buttons_off = dynamic_memory.get_total_size();
@@ -111,12 +113,18 @@ static inline bool _ros2pdu_Joy(sensor_msgs::msg::Joy &src, Hako_Joy &dst, PduDy
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Joy_axes(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_Joy_axes(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Joy_buttons(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_Joy_buttons(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -127,7 +135,7 @@ static inline bool _ros2pdu_Joy(sensor_msgs::msg::Joy &src, Hako_Joy &dst, PduDy
 static inline int hako_convert_ros2pdu_Joy(sensor_msgs::msg::Joy &src, Hako_Joy** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Joy out;
+    Hako_Joy out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Joy(src, out, dynamic_memory)) {
         return -1;
     }
@@ -145,6 +153,22 @@ static inline int hako_convert_ros2pdu_Joy(sensor_msgs::msg::Joy &src, Hako_Joy*
 
     *dst = (Hako_Joy*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Joy() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Joy(sensor_msgs::msg::Joy &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Joy out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Joy(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Joy" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Joy", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Joy* hako_create_empty_pdu_Joy(int heap_size)

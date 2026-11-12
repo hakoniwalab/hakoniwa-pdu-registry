@@ -93,10 +93,14 @@ static inline bool _ros2pdu_GameControllerOperation(hako_msgs::msg::GameControll
 {
     try {
         //primitive array copy
-        _ros2pdu_primitive_array_GameControllerOperation_axis(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_GameControllerOperation_axis(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_GameControllerOperation_button(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_GameControllerOperation_button(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -107,7 +111,7 @@ static inline bool _ros2pdu_GameControllerOperation(hako_msgs::msg::GameControll
 static inline int hako_convert_ros2pdu_GameControllerOperation(hako_msgs::msg::GameControllerOperation &src, Hako_GameControllerOperation** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_GameControllerOperation out;
+    Hako_GameControllerOperation out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_GameControllerOperation(src, out, dynamic_memory)) {
         return -1;
     }
@@ -125,6 +129,22 @@ static inline int hako_convert_ros2pdu_GameControllerOperation(hako_msgs::msg::G
 
     *dst = (Hako_GameControllerOperation*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_GameControllerOperation() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_GameControllerOperation(hako_msgs::msg::GameControllerOperation &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_GameControllerOperation out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_GameControllerOperation(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "GameControllerOperation" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("GameControllerOperation", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_GameControllerOperation* hako_create_empty_pdu_GameControllerOperation(int heap_size)

@@ -89,7 +89,9 @@ static inline bool _ros2pdu_struct_array_Ev3PduActuator_motors(ev3_msgs::msg::Ev
     // array struct
     //array size is fixed
     for (int i = 0; i < 3; ++i) {
-        _ros2pdu_Ev3PduMotor(src.motors[i], dst.motors[i], dynamic_memory);
+        if (!_ros2pdu_Ev3PduMotor(src.motors[i], dst.motors[i], dynamic_memory)) {
+            return false;
+        }
     }
     return true;
 }
@@ -98,14 +100,20 @@ static inline bool _ros2pdu_Ev3PduActuator(ev3_msgs::msg::Ev3PduActuator &src, H
 {
     try {
         // struct convert
-        _ros2pdu_Ev3PduActuatorHeader(src.head, dst.head, dynamic_memory);
+        if (!_ros2pdu_Ev3PduActuatorHeader(src.head, dst.head, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Ev3PduActuator_leds(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_Ev3PduActuator_leds(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_Ev3PduActuator_motors(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_Ev3PduActuator_motors(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.gyro_reset, dst.gyro_reset);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -116,7 +124,7 @@ static inline bool _ros2pdu_Ev3PduActuator(ev3_msgs::msg::Ev3PduActuator &src, H
 static inline int hako_convert_ros2pdu_Ev3PduActuator(ev3_msgs::msg::Ev3PduActuator &src, Hako_Ev3PduActuator** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Ev3PduActuator out;
+    Hako_Ev3PduActuator out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Ev3PduActuator(src, out, dynamic_memory)) {
         return -1;
     }
@@ -134,6 +142,22 @@ static inline int hako_convert_ros2pdu_Ev3PduActuator(ev3_msgs::msg::Ev3PduActua
 
     *dst = (Hako_Ev3PduActuator*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Ev3PduActuator() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Ev3PduActuator(ev3_msgs::msg::Ev3PduActuator &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Ev3PduActuator out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Ev3PduActuator(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Ev3PduActuator" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Ev3PduActuator", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Ev3PduActuator* hako_create_empty_pdu_Ev3PduActuator(int heap_size)

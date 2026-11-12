@@ -39,6 +39,9 @@ static inline int _pdu2ros_struct_array_MultiEchoLaserScan_ranges(const char* he
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.ranges.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_MultiEchoLaserScan_intensities(const char* heap_ptr, Hako_MultiEchoLaserScan &src, sensor_msgs::msg::MultiEchoLaserScan &dst)
@@ -53,6 +56,9 @@ static inline int _pdu2ros_struct_array_MultiEchoLaserScan_intensities(const cha
             _pdu2ros_LaserEcho(heap_ptr, *temp_struct_ptr, dst.intensities[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.intensities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -109,7 +115,9 @@ static inline bool _ros2pdu_struct_array_MultiEchoLaserScan_ranges(sensor_msgs::
         Hako_LaserEcho* temp_struct_ptr = (Hako_LaserEcho*)dynamic_memory.allocate(dst._ranges_len, sizeof(Hako_LaserEcho));
         dst._ranges_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._ranges_len; ++i) {
-            _ros2pdu_LaserEcho(src.ranges[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_LaserEcho(src.ranges[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -126,7 +134,9 @@ static inline bool _ros2pdu_struct_array_MultiEchoLaserScan_intensities(sensor_m
         Hako_LaserEcho* temp_struct_ptr = (Hako_LaserEcho*)dynamic_memory.allocate(dst._intensities_len, sizeof(Hako_LaserEcho));
         dst._intensities_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._intensities_len; ++i) {
-            _ros2pdu_LaserEcho(src.intensities[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_LaserEcho(src.intensities[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -140,7 +150,9 @@ static inline bool _ros2pdu_MultiEchoLaserScan(sensor_msgs::msg::MultiEchoLaserS
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.angle_min, dst.angle_min);
         // primitive convert
@@ -156,10 +168,14 @@ static inline bool _ros2pdu_MultiEchoLaserScan(sensor_msgs::msg::MultiEchoLaserS
         // primitive convert
         hako_convert_ros2pdu(src.range_max, dst.range_max);
         //struct array convert
-        _ros2pdu_struct_array_MultiEchoLaserScan_ranges(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_MultiEchoLaserScan_ranges(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_MultiEchoLaserScan_intensities(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_MultiEchoLaserScan_intensities(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -170,7 +186,7 @@ static inline bool _ros2pdu_MultiEchoLaserScan(sensor_msgs::msg::MultiEchoLaserS
 static inline int hako_convert_ros2pdu_MultiEchoLaserScan(sensor_msgs::msg::MultiEchoLaserScan &src, Hako_MultiEchoLaserScan** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MultiEchoLaserScan out;
+    Hako_MultiEchoLaserScan out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_MultiEchoLaserScan(src, out, dynamic_memory)) {
         return -1;
     }
@@ -188,6 +204,22 @@ static inline int hako_convert_ros2pdu_MultiEchoLaserScan(sensor_msgs::msg::Mult
 
     *dst = (Hako_MultiEchoLaserScan*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_MultiEchoLaserScan() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_MultiEchoLaserScan(sensor_msgs::msg::MultiEchoLaserScan &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MultiEchoLaserScan out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_MultiEchoLaserScan(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "MultiEchoLaserScan" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("MultiEchoLaserScan", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_MultiEchoLaserScan* hako_create_empty_pdu_MultiEchoLaserScan(int heap_size)

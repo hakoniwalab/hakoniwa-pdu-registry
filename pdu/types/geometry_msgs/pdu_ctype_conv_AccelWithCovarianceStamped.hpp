@@ -62,10 +62,14 @@ static inline bool _ros2pdu_AccelWithCovarianceStamped(geometry_msgs::msg::Accel
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_AccelWithCovariance(src.accel, dst.accel, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_AccelWithCovariance(src.accel, dst.accel, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -76,7 +80,7 @@ static inline bool _ros2pdu_AccelWithCovarianceStamped(geometry_msgs::msg::Accel
 static inline int hako_convert_ros2pdu_AccelWithCovarianceStamped(geometry_msgs::msg::AccelWithCovarianceStamped &src, Hako_AccelWithCovarianceStamped** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_AccelWithCovarianceStamped out;
+    Hako_AccelWithCovarianceStamped out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_AccelWithCovarianceStamped(src, out, dynamic_memory)) {
         return -1;
     }
@@ -94,6 +98,22 @@ static inline int hako_convert_ros2pdu_AccelWithCovarianceStamped(geometry_msgs:
 
     *dst = (Hako_AccelWithCovarianceStamped*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_AccelWithCovarianceStamped() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_AccelWithCovarianceStamped(geometry_msgs::msg::AccelWithCovarianceStamped &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_AccelWithCovarianceStamped out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_AccelWithCovarianceStamped(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "AccelWithCovarianceStamped" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("AccelWithCovarianceStamped", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_AccelWithCovarianceStamped* hako_create_empty_pdu_AccelWithCovarianceStamped(int heap_size)

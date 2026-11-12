@@ -32,7 +32,7 @@ static inline int cpp_pdu2cpp_TimeReference(const char* heap_ptr, Hako_TimeRefer
     // Struct convert
     cpp_pdu2cpp_Time(heap_ptr, src.time_ref, dst.time_ref);
     // string convertor
-    dst.source = (const char*)src.source;
+    dst.source = hako_convert_string_from_pdu(src.source, M_SIZE(Hako_TimeReference, source));
     (void)heap_ptr;
     return 0;
 }
@@ -60,15 +60,16 @@ static inline bool cpp_cpp2pdu_TimeReference(HakoCpp_TimeReference &src, Hako_Ti
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        cpp_cpp2pdu_Time(src.time_ref, dst.time_ref, dynamic_memory);
+        if (!cpp_cpp2pdu_Time(src.time_ref, dst.time_ref, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.source, src.source.length(),
-            dst.source, M_ARRAY_SIZE(Hako_TimeReference, char, source));
-        dst.source[src.source.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.source, dst.source, M_SIZE(Hako_TimeReference, source));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -144,42 +145,7 @@ public:
             std::cerr << "[ConvertorError][" << "TimeReference" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_TimeReference), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "TimeReference" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "TimeReference" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "TimeReference" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_TimeReference));
-        memset(base_ptr + sizeof(Hako_TimeReference), 0, base_size - sizeof(Hako_TimeReference));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("TimeReference", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

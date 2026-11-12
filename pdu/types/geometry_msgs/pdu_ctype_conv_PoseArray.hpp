@@ -41,6 +41,9 @@ static inline int _pdu2ros_struct_array_PoseArray_poses(const char* heap_ptr, Ha
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.poses.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -80,7 +83,9 @@ static inline bool _ros2pdu_struct_array_PoseArray_poses(geometry_msgs::msg::Pos
         Hako_Pose* temp_struct_ptr = (Hako_Pose*)dynamic_memory.allocate(dst._poses_len, sizeof(Hako_Pose));
         dst._poses_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._poses_len; ++i) {
-            _ros2pdu_Pose(src.poses[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Pose(src.poses[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -94,10 +99,14 @@ static inline bool _ros2pdu_PoseArray(geometry_msgs::msg::PoseArray &src, Hako_P
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_PoseArray_poses(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_PoseArray_poses(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -108,7 +117,7 @@ static inline bool _ros2pdu_PoseArray(geometry_msgs::msg::PoseArray &src, Hako_P
 static inline int hako_convert_ros2pdu_PoseArray(geometry_msgs::msg::PoseArray &src, Hako_PoseArray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_PoseArray out;
+    Hako_PoseArray out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_PoseArray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -126,6 +135,22 @@ static inline int hako_convert_ros2pdu_PoseArray(geometry_msgs::msg::PoseArray &
 
     *dst = (Hako_PoseArray*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_PoseArray() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_PoseArray(geometry_msgs::msg::PoseArray &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_PoseArray out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_PoseArray(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "PoseArray" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("PoseArray", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_PoseArray* hako_create_empty_pdu_PoseArray(int heap_size)

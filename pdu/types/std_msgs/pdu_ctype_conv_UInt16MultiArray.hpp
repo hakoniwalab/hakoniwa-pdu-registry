@@ -34,6 +34,9 @@ static inline int _pdu2ros_primitive_array_UInt16MultiArray_data(const char* hea
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_uint16));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -67,12 +70,10 @@ static inline int hako_convert_pdu2ros_UInt16MultiArray(Hako_UInt16MultiArray &s
  ***************************/
 static inline bool _ros2pdu_primitive_array_UInt16MultiArray_data(std_msgs::msg::UInt16MultiArray &src, Hako_UInt16MultiArray &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._data_len = src.data.size();
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_uint16));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_uint16));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_uint16));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -84,10 +85,14 @@ static inline bool _ros2pdu_UInt16MultiArray(std_msgs::msg::UInt16MultiArray &sr
 {
     try {
         // struct convert
-        _ros2pdu_MultiArrayLayout(src.layout, dst.layout, dynamic_memory);
+        if (!_ros2pdu_MultiArrayLayout(src.layout, dst.layout, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_UInt16MultiArray_data(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_UInt16MultiArray_data(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -98,7 +103,7 @@ static inline bool _ros2pdu_UInt16MultiArray(std_msgs::msg::UInt16MultiArray &sr
 static inline int hako_convert_ros2pdu_UInt16MultiArray(std_msgs::msg::UInt16MultiArray &src, Hako_UInt16MultiArray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_UInt16MultiArray out;
+    Hako_UInt16MultiArray out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_UInt16MultiArray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -116,6 +121,22 @@ static inline int hako_convert_ros2pdu_UInt16MultiArray(std_msgs::msg::UInt16Mul
 
     *dst = (Hako_UInt16MultiArray*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_UInt16MultiArray() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_UInt16MultiArray(std_msgs::msg::UInt16MultiArray &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_UInt16MultiArray out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_UInt16MultiArray(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "UInt16MultiArray" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("UInt16MultiArray", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_UInt16MultiArray* hako_create_empty_pdu_UInt16MultiArray(int heap_size)

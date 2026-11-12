@@ -34,6 +34,9 @@ static inline int _pdu2ros_primitive_array_Image_data(const char* heap_ptr, Hako
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -46,7 +49,7 @@ static inline int _pdu2ros_Image(const char* heap_ptr, Hako_Image &src, sensor_m
     // primitive convert
     hako_convert_pdu2ros(src.width, dst.width);
     // string convertor
-    dst.encoding = (const char*)src.encoding;
+    dst.encoding = hako_convert_string_from_pdu(src.encoding, M_SIZE(Hako_Image, encoding));
     // primitive convert
     hako_convert_pdu2ros(src.is_bigendian, dst.is_bigendian);
     // primitive convert
@@ -77,12 +80,10 @@ static inline int hako_convert_pdu2ros_Image(Hako_Image &src, sensor_msgs::msg::
  ***************************/
 static inline bool _ros2pdu_primitive_array_Image_data(sensor_msgs::msg::Image &src, Hako_Image &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._data_len = src.data.size();
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_uint8));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_uint8));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -94,23 +95,24 @@ static inline bool _ros2pdu_Image(sensor_msgs::msg::Image &src, Hako_Image &dst,
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.height, dst.height);
         // primitive convert
         hako_convert_ros2pdu(src.width, dst.width);
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.encoding, src.encoding.length(),
-            dst.encoding, M_ARRAY_SIZE(Hako_Image, char, encoding));
-        dst.encoding[src.encoding.length()] = '\0';
+        hako_convert_string_to_pdu(src.encoding, dst.encoding, M_SIZE(Hako_Image, encoding));
         // primitive convert
         hako_convert_ros2pdu(src.is_bigendian, dst.is_bigendian);
         // primitive convert
         hako_convert_ros2pdu(src.step, dst.step);
         //primitive array copy
-        _ros2pdu_primitive_array_Image_data(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_Image_data(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -121,7 +123,7 @@ static inline bool _ros2pdu_Image(sensor_msgs::msg::Image &src, Hako_Image &dst,
 static inline int hako_convert_ros2pdu_Image(sensor_msgs::msg::Image &src, Hako_Image** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Image out;
+    Hako_Image out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Image(src, out, dynamic_memory)) {
         return -1;
     }
@@ -139,6 +141,22 @@ static inline int hako_convert_ros2pdu_Image(sensor_msgs::msg::Image &src, Hako_
 
     *dst = (Hako_Image*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Image() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Image(sensor_msgs::msg::Image &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Image out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Image(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Image" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Image", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Image* hako_create_empty_pdu_Image(int heap_size)

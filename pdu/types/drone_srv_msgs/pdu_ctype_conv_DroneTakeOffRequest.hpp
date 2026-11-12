@@ -29,7 +29,7 @@ static inline int _pdu2ros_DroneTakeOffRequest(const char* heap_ptr, Hako_DroneT
     // primitive convert
     hako_convert_pdu2ros(src.alt_m, dst.alt_m);
     // string convertor
-    dst.drone_name = (const char*)src.drone_name;
+    dst.drone_name = hako_convert_string_from_pdu(src.drone_name, M_SIZE(Hako_DroneTakeOffRequest, drone_name));
     (void)heap_ptr;
     return 0;
 }
@@ -59,11 +59,8 @@ static inline bool _ros2pdu_DroneTakeOffRequest(drone_srv_msgs::msg::DroneTakeOf
         // primitive convert
         hako_convert_ros2pdu(src.alt_m, dst.alt_m);
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.drone_name, src.drone_name.length(),
-            dst.drone_name, M_ARRAY_SIZE(Hako_DroneTakeOffRequest, char, drone_name));
-        dst.drone_name[src.drone_name.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.drone_name, dst.drone_name, M_SIZE(Hako_DroneTakeOffRequest, drone_name));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -74,7 +71,7 @@ static inline bool _ros2pdu_DroneTakeOffRequest(drone_srv_msgs::msg::DroneTakeOf
 static inline int hako_convert_ros2pdu_DroneTakeOffRequest(drone_srv_msgs::msg::DroneTakeOffRequest &src, Hako_DroneTakeOffRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_DroneTakeOffRequest out;
+    Hako_DroneTakeOffRequest out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_DroneTakeOffRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -92,6 +89,22 @@ static inline int hako_convert_ros2pdu_DroneTakeOffRequest(drone_srv_msgs::msg::
 
     *dst = (Hako_DroneTakeOffRequest*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_DroneTakeOffRequest() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_DroneTakeOffRequest(drone_srv_msgs::msg::DroneTakeOffRequest &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_DroneTakeOffRequest out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_DroneTakeOffRequest(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "DroneTakeOffRequest" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("DroneTakeOffRequest", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_DroneTakeOffRequest* hako_create_empty_pdu_DroneTakeOffRequest(int heap_size)

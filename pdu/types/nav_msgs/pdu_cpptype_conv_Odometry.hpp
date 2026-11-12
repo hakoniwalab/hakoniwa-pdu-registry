@@ -37,7 +37,7 @@ static inline int cpp_pdu2cpp_Odometry(const char* heap_ptr, Hako_Odometry &src,
     // Struct convert
     cpp_pdu2cpp_Header(heap_ptr, src.header, dst.header);
     // string convertor
-    dst.child_frame_id = (const char*)src.child_frame_id;
+    dst.child_frame_id = hako_convert_string_from_pdu(src.child_frame_id, M_SIZE(Hako_Odometry, child_frame_id));
     // Struct convert
     cpp_pdu2cpp_PoseWithCovariance(heap_ptr, src.pose, dst.pose);
     // Struct convert
@@ -69,17 +69,20 @@ static inline bool cpp_cpp2pdu_Odometry(HakoCpp_Odometry &src, Hako_Odometry &ds
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.child_frame_id, src.child_frame_id.length(),
-            dst.child_frame_id, M_ARRAY_SIZE(Hako_Odometry, char, child_frame_id));
-        dst.child_frame_id[src.child_frame_id.length()] = '\0';
+        hako_convert_string_to_pdu(src.child_frame_id, dst.child_frame_id, M_SIZE(Hako_Odometry, child_frame_id));
         // struct convert
-        cpp_cpp2pdu_PoseWithCovariance(src.pose, dst.pose, dynamic_memory);
+        if (!cpp_cpp2pdu_PoseWithCovariance(src.pose, dst.pose, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        cpp_cpp2pdu_TwistWithCovariance(src.twist, dst.twist, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_TwistWithCovariance(src.twist, dst.twist, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -155,42 +158,7 @@ public:
             std::cerr << "[ConvertorError][" << "Odometry" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_Odometry), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "Odometry" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "Odometry" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "Odometry" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_Odometry));
-        memset(base_ptr + sizeof(Hako_Odometry), 0, base_size - sizeof(Hako_Odometry));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("Odometry", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

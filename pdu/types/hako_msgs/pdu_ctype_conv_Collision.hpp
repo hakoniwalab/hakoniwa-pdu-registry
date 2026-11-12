@@ -73,7 +73,9 @@ static inline bool _ros2pdu_struct_array_Collision_contact_position(hako_msgs::m
     // array struct
     //array size is fixed
     for (int i = 0; i < 10; ++i) {
-        _ros2pdu_Point(src.contact_position[i], dst.contact_position[i], dynamic_memory);
+        if (!_ros2pdu_Point(src.contact_position[i], dst.contact_position[i], dynamic_memory)) {
+            return false;
+        }
     }
     return true;
 }
@@ -86,12 +88,16 @@ static inline bool _ros2pdu_Collision(hako_msgs::msg::Collision &src, Hako_Colli
         // primitive convert
         hako_convert_ros2pdu(src.contact_num, dst.contact_num);
         // struct convert
-        _ros2pdu_Vector3(src.relative_velocity, dst.relative_velocity, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.relative_velocity, dst.relative_velocity, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_Collision_contact_position(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_Collision_contact_position(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.restitution_coefficient, dst.restitution_coefficient);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -102,7 +108,7 @@ static inline bool _ros2pdu_Collision(hako_msgs::msg::Collision &src, Hako_Colli
 static inline int hako_convert_ros2pdu_Collision(hako_msgs::msg::Collision &src, Hako_Collision** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Collision out;
+    Hako_Collision out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Collision(src, out, dynamic_memory)) {
         return -1;
     }
@@ -120,6 +126,22 @@ static inline int hako_convert_ros2pdu_Collision(hako_msgs::msg::Collision &src,
 
     *dst = (Hako_Collision*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Collision() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Collision(hako_msgs::msg::Collision &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Collision out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Collision(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Collision" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Collision", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Collision* hako_create_empty_pdu_Collision(int heap_size)

@@ -30,11 +30,11 @@ static inline int cpp_pdu2cpp_ContactEvent(const char* heap_ptr, Hako_ContactEve
     // Struct convert
     cpp_pdu2cpp_Time(heap_ptr, src.stamp, dst.stamp);
     // string convertor
-    dst.self_name = (const char*)src.self_name;
+    dst.self_name = hako_convert_string_from_pdu(src.self_name, M_SIZE(Hako_ContactEvent, self_name));
     // string convertor
-    dst.other_name = (const char*)src.other_name;
+    dst.other_name = hako_convert_string_from_pdu(src.other_name, M_SIZE(Hako_ContactEvent, other_name));
     // string convertor
-    dst.other_kind = (const char*)src.other_kind;
+    dst.other_kind = hako_convert_string_from_pdu(src.other_kind, M_SIZE(Hako_ContactEvent, other_kind));
     // Struct convert
     cpp_pdu2cpp_Point(heap_ptr, src.position, dst.position);
     // primitive convert
@@ -68,29 +68,24 @@ static inline bool cpp_cpp2pdu_ContactEvent(HakoCpp_ContactEvent &src, Hako_Cont
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Time(src.stamp, dst.stamp, dynamic_memory);
+        if (!cpp_cpp2pdu_Time(src.stamp, dst.stamp, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.self_name, src.self_name.length(),
-            dst.self_name, M_ARRAY_SIZE(Hako_ContactEvent, char, self_name));
-        dst.self_name[src.self_name.length()] = '\0';
+        hako_convert_string_to_pdu(src.self_name, dst.self_name, M_SIZE(Hako_ContactEvent, self_name));
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.other_name, src.other_name.length(),
-            dst.other_name, M_ARRAY_SIZE(Hako_ContactEvent, char, other_name));
-        dst.other_name[src.other_name.length()] = '\0';
+        hako_convert_string_to_pdu(src.other_name, dst.other_name, M_SIZE(Hako_ContactEvent, other_name));
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.other_kind, src.other_kind.length(),
-            dst.other_kind, M_ARRAY_SIZE(Hako_ContactEvent, char, other_kind));
-        dst.other_kind[src.other_kind.length()] = '\0';
+        hako_convert_string_to_pdu(src.other_kind, dst.other_kind, M_SIZE(Hako_ContactEvent, other_kind));
         // struct convert
-        cpp_cpp2pdu_Point(src.position, dst.position, dynamic_memory);
+        if (!cpp_cpp2pdu_Point(src.position, dst.position, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.relative_speed, dst.relative_speed);
         // primitive convert
         hako_convert_cpp2pdu(src.started, dst.started);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -166,42 +161,7 @@ public:
             std::cerr << "[ConvertorError][" << "ContactEvent" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_ContactEvent), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "ContactEvent" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "ContactEvent" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "ContactEvent" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_ContactEvent));
-        memset(base_ptr + sizeof(Hako_ContactEvent), 0, base_size - sizeof(Hako_ContactEvent));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("ContactEvent", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

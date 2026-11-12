@@ -62,10 +62,14 @@ static inline bool _ros2pdu_TwistWithCovarianceStamped(geometry_msgs::msg::Twist
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_TwistWithCovariance(src.twist, dst.twist, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_TwistWithCovariance(src.twist, dst.twist, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -76,7 +80,7 @@ static inline bool _ros2pdu_TwistWithCovarianceStamped(geometry_msgs::msg::Twist
 static inline int hako_convert_ros2pdu_TwistWithCovarianceStamped(geometry_msgs::msg::TwistWithCovarianceStamped &src, Hako_TwistWithCovarianceStamped** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_TwistWithCovarianceStamped out;
+    Hako_TwistWithCovarianceStamped out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_TwistWithCovarianceStamped(src, out, dynamic_memory)) {
         return -1;
     }
@@ -94,6 +98,22 @@ static inline int hako_convert_ros2pdu_TwistWithCovarianceStamped(geometry_msgs:
 
     *dst = (Hako_TwistWithCovarianceStamped*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_TwistWithCovarianceStamped() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_TwistWithCovarianceStamped(geometry_msgs::msg::TwistWithCovarianceStamped &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_TwistWithCovarianceStamped out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_TwistWithCovarianceStamped(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "TwistWithCovarianceStamped" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("TwistWithCovarianceStamped", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_TwistWithCovarianceStamped* hako_create_empty_pdu_TwistWithCovarianceStamped(int heap_size)

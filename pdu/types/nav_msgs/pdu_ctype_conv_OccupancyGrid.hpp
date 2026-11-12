@@ -38,6 +38,9 @@ static inline int _pdu2ros_primitive_array_OccupancyGrid_data(const char* heap_p
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_int8));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -73,12 +76,10 @@ static inline int hako_convert_pdu2ros_OccupancyGrid(Hako_OccupancyGrid &src, na
  ***************************/
 static inline bool _ros2pdu_primitive_array_OccupancyGrid_data(nav_msgs::msg::OccupancyGrid &src, Hako_OccupancyGrid &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._data_len = src.data.size();
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_int8));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_int8));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_int8));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -90,12 +91,18 @@ static inline bool _ros2pdu_OccupancyGrid(nav_msgs::msg::OccupancyGrid &src, Hak
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_MapMetaData(src.info, dst.info, dynamic_memory);
+        if (!_ros2pdu_MapMetaData(src.info, dst.info, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_OccupancyGrid_data(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_OccupancyGrid_data(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -106,7 +113,7 @@ static inline bool _ros2pdu_OccupancyGrid(nav_msgs::msg::OccupancyGrid &src, Hak
 static inline int hako_convert_ros2pdu_OccupancyGrid(nav_msgs::msg::OccupancyGrid &src, Hako_OccupancyGrid** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_OccupancyGrid out;
+    Hako_OccupancyGrid out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_OccupancyGrid(src, out, dynamic_memory)) {
         return -1;
     }
@@ -124,6 +131,22 @@ static inline int hako_convert_ros2pdu_OccupancyGrid(nav_msgs::msg::OccupancyGri
 
     *dst = (Hako_OccupancyGrid*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_OccupancyGrid() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_OccupancyGrid(nav_msgs::msg::OccupancyGrid &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_OccupancyGrid out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_OccupancyGrid(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "OccupancyGrid" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("OccupancyGrid", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_OccupancyGrid* hako_create_empty_pdu_OccupancyGrid(int heap_size)

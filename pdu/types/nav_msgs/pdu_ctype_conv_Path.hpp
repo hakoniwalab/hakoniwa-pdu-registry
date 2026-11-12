@@ -42,6 +42,9 @@ static inline int _pdu2ros_struct_array_Path_poses(const char* heap_ptr, Hako_Pa
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.poses.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -81,7 +84,9 @@ static inline bool _ros2pdu_struct_array_Path_poses(nav_msgs::msg::Path &src, Ha
         Hako_PoseStamped* temp_struct_ptr = (Hako_PoseStamped*)dynamic_memory.allocate(dst._poses_len, sizeof(Hako_PoseStamped));
         dst._poses_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._poses_len; ++i) {
-            _ros2pdu_PoseStamped(src.poses[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_PoseStamped(src.poses[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -95,10 +100,14 @@ static inline bool _ros2pdu_Path(nav_msgs::msg::Path &src, Hako_Path &dst, PduDy
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_Path_poses(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_Path_poses(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -109,7 +118,7 @@ static inline bool _ros2pdu_Path(nav_msgs::msg::Path &src, Hako_Path &dst, PduDy
 static inline int hako_convert_ros2pdu_Path(nav_msgs::msg::Path &src, Hako_Path** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Path out;
+    Hako_Path out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Path(src, out, dynamic_memory)) {
         return -1;
     }
@@ -127,6 +136,22 @@ static inline int hako_convert_ros2pdu_Path(nav_msgs::msg::Path &src, Hako_Path*
 
     *dst = (Hako_Path*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Path() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Path(nav_msgs::msg::Path &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Path out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Path(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Path" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Path", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Path* hako_create_empty_pdu_Path(int heap_size)

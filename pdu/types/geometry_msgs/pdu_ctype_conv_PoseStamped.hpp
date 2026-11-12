@@ -62,10 +62,14 @@ static inline bool _ros2pdu_PoseStamped(geometry_msgs::msg::PoseStamped &src, Ha
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Pose(src.pose, dst.pose, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_Pose(src.pose, dst.pose, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -76,7 +80,7 @@ static inline bool _ros2pdu_PoseStamped(geometry_msgs::msg::PoseStamped &src, Ha
 static inline int hako_convert_ros2pdu_PoseStamped(geometry_msgs::msg::PoseStamped &src, Hako_PoseStamped** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_PoseStamped out;
+    Hako_PoseStamped out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_PoseStamped(src, out, dynamic_memory)) {
         return -1;
     }
@@ -94,6 +98,22 @@ static inline int hako_convert_ros2pdu_PoseStamped(geometry_msgs::msg::PoseStamp
 
     *dst = (Hako_PoseStamped*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_PoseStamped() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_PoseStamped(geometry_msgs::msg::PoseStamped &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_PoseStamped out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_PoseStamped(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "PoseStamped" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("PoseStamped", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_PoseStamped* hako_create_empty_pdu_PoseStamped(int heap_size)

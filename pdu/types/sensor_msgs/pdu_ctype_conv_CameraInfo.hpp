@@ -35,6 +35,9 @@ static inline int _pdu2ros_primitive_array_CameraInfo_d(const char* heap_ptr, Ha
         dst.d.resize(length);
         memcpy(dst.d.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.d.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_CameraInfo_k(const char* heap_ptr, Hako_CameraInfo &src, sensor_msgs::msg::CameraInfo &dst)
@@ -74,7 +77,7 @@ static inline int _pdu2ros_CameraInfo(const char* heap_ptr, Hako_CameraInfo &src
     // primitive convert
     hako_convert_pdu2ros(src.width, dst.width);
     // string convertor
-    dst.distortion_model = (const char*)src.distortion_model;
+    dst.distortion_model = hako_convert_string_from_pdu(src.distortion_model, M_SIZE(Hako_CameraInfo, distortion_model));
     // primitive array convertor
     _pdu2ros_primitive_array_CameraInfo_d(heap_ptr, src, dst);
     // primitive array convertor
@@ -113,12 +116,10 @@ static inline int hako_convert_pdu2ros_CameraInfo(Hako_CameraInfo &src, sensor_m
  ***************************/
 static inline bool _ros2pdu_primitive_array_CameraInfo_d(sensor_msgs::msg::CameraInfo &src, Hako_CameraInfo &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
     dst._d_len = src.d.size();
     if (dst._d_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._d_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.d.data(), dst._d_len * sizeof(Hako_float64));
-        dst._d_off = dynamic_memory.get_offset(temp_ptr);
+        dst._d_off = dynamic_memory.reference(src.d.data(), dst._d_len, sizeof(Hako_float64));
     }
     else {
         dst._d_off = dynamic_memory.get_total_size();
@@ -157,31 +158,40 @@ static inline bool _ros2pdu_CameraInfo(sensor_msgs::msg::CameraInfo &src, Hako_C
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.height, dst.height);
         // primitive convert
         hako_convert_ros2pdu(src.width, dst.width);
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.distortion_model, src.distortion_model.length(),
-            dst.distortion_model, M_ARRAY_SIZE(Hako_CameraInfo, char, distortion_model));
-        dst.distortion_model[src.distortion_model.length()] = '\0';
+        hako_convert_string_to_pdu(src.distortion_model, dst.distortion_model, M_SIZE(Hako_CameraInfo, distortion_model));
         //primitive array copy
-        _ros2pdu_primitive_array_CameraInfo_d(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_CameraInfo_d(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_CameraInfo_k(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_CameraInfo_k(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_CameraInfo_r(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_CameraInfo_r(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_CameraInfo_p(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_CameraInfo_p(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.binning_x, dst.binning_x);
         // primitive convert
         hako_convert_ros2pdu(src.binning_y, dst.binning_y);
         // struct convert
-        _ros2pdu_RegionOfInterest(src.roi, dst.roi, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_RegionOfInterest(src.roi, dst.roi, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -192,7 +202,7 @@ static inline bool _ros2pdu_CameraInfo(sensor_msgs::msg::CameraInfo &src, Hako_C
 static inline int hako_convert_ros2pdu_CameraInfo(sensor_msgs::msg::CameraInfo &src, Hako_CameraInfo** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_CameraInfo out;
+    Hako_CameraInfo out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_CameraInfo(src, out, dynamic_memory)) {
         return -1;
     }
@@ -210,6 +220,22 @@ static inline int hako_convert_ros2pdu_CameraInfo(sensor_msgs::msg::CameraInfo &
 
     *dst = (Hako_CameraInfo*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_CameraInfo() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_CameraInfo(sensor_msgs::msg::CameraInfo &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_CameraInfo out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_CameraInfo(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "CameraInfo" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("CameraInfo", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_CameraInfo* hako_create_empty_pdu_CameraInfo(int heap_size)

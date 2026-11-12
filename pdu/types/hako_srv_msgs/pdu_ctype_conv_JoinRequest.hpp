@@ -27,7 +27,7 @@
 static inline int _pdu2ros_JoinRequest(const char* heap_ptr, Hako_JoinRequest &src, hako_srv_msgs::msg::JoinRequest &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_JoinRequest, name));
     (void)heap_ptr;
     return 0;
 }
@@ -55,11 +55,8 @@ static inline bool _ros2pdu_JoinRequest(hako_srv_msgs::msg::JoinRequest &src, Ha
 {
     try {
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_JoinRequest, char, name));
-        dst.name[src.name.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_JoinRequest, name));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -70,7 +67,7 @@ static inline bool _ros2pdu_JoinRequest(hako_srv_msgs::msg::JoinRequest &src, Ha
 static inline int hako_convert_ros2pdu_JoinRequest(hako_srv_msgs::msg::JoinRequest &src, Hako_JoinRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_JoinRequest out;
+    Hako_JoinRequest out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_JoinRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -88,6 +85,22 @@ static inline int hako_convert_ros2pdu_JoinRequest(hako_srv_msgs::msg::JoinReque
 
     *dst = (Hako_JoinRequest*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_JoinRequest() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_JoinRequest(hako_srv_msgs::msg::JoinRequest &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_JoinRequest out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_JoinRequest(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "JoinRequest" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("JoinRequest", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_JoinRequest* hako_create_empty_pdu_JoinRequest(int heap_size)

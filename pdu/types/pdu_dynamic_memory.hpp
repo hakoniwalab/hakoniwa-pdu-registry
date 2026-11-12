@@ -9,6 +9,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include "pdu_primitive_ctypes.h"
+
 // Class to manage dynamic memory for PDU
 class PduDynamicMemory {
 public:
@@ -143,5 +145,51 @@ private:
     std::vector<Allocation> allocations;
     int current_offset;
 };
+
+// Builds a PDU into buffer, byte for byte as hako_create_empty_pdu() plus the
+// base and heap copies lay it out: metadata, the base struct (base_size bytes
+// at base), padding, the heap, padding. The buffer needs no alignment and must
+// not overlap the heap's referenced blocks. Returns the PDU size, or -1 (with a
+// message naming type_name) when it does not fit an int, the buffer is too small
+// or null, or overlaps them; nothing is written then.
+static inline int hako_pdu_build_into(const char* type_name, const void* base, size_t base_struct_size,
+                                      const PduDynamicMemory& heap, char* buffer, int buffer_len)
+{
+    const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
+    const size_t base_size = HAKO_ALIGN_SIZE(base_struct_size, HAKO_ALIGNMENT_SIZE);
+    const size_t heap_used = static_cast<size_t>(heap.get_total_size());
+    const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
+    const size_t pdu_size = meta_size + base_size + heap_size;
+    if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        std::cerr << "[ConvertorError][" << type_name << "] PDU too large. heap=" << heap_used << std::endl;
+        return -1;
+    }
+    // The whole buffer the caller gave must be clear of the message's arrays.
+    if (buffer != nullptr && buffer_len > 0 &&
+        heap.references_overlap(buffer, static_cast<size_t>(buffer_len))) {
+        std::cerr << "[ConvertorError][" << type_name << "] pdu_buffer overlaps the message's arrays" << std::endl;
+        return -1;
+    }
+    if (buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
+        std::cerr << "[ConvertorError][" << type_name << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
+        return -1;
+    }
+    HakoPduMetaDataType meta;
+    memset(&meta, 0, sizeof(meta));
+    meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
+    meta.version = HAKO_PDU_META_DATA_VERSION;
+    meta.base_off = static_cast<uint32_t>(meta_size);
+    meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
+    meta.total_size = static_cast<uint32_t>(pdu_size);
+    memset(buffer, 0, meta_size);
+    memcpy(buffer, &meta, sizeof(meta));
+    char* base_ptr = buffer + meta_size;
+    memcpy(base_ptr, base, base_struct_size);
+    memset(base_ptr + base_struct_size, 0, base_size - base_struct_size);
+    char* heap_ptr = base_ptr + base_size;
+    heap.copy_to_pdu(heap_ptr);
+    memset(heap_ptr + heap_used, 0, heap_size - heap_used);
+    return static_cast<int>(pdu_size);
+}
 
 #endif /* _PDU_DYNAMIC_MEMORY_HPP_ */

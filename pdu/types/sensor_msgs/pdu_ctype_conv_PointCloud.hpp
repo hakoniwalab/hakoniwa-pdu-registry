@@ -40,6 +40,9 @@ static inline int _pdu2ros_struct_array_PointCloud_points(const char* heap_ptr, 
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.points.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_PointCloud_channels(const char* heap_ptr, Hako_PointCloud &src, sensor_msgs::msg::PointCloud &dst)
@@ -54,6 +57,9 @@ static inline int _pdu2ros_struct_array_PointCloud_channels(const char* heap_ptr
             _pdu2ros_ChannelFloat32(heap_ptr, *temp_struct_ptr, dst.channels[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.channels.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -96,7 +102,9 @@ static inline bool _ros2pdu_struct_array_PointCloud_points(sensor_msgs::msg::Poi
         Hako_Point32* temp_struct_ptr = (Hako_Point32*)dynamic_memory.allocate(dst._points_len, sizeof(Hako_Point32));
         dst._points_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._points_len; ++i) {
-            _ros2pdu_Point32(src.points[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Point32(src.points[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -113,7 +121,9 @@ static inline bool _ros2pdu_struct_array_PointCloud_channels(sensor_msgs::msg::P
         Hako_ChannelFloat32* temp_struct_ptr = (Hako_ChannelFloat32*)dynamic_memory.allocate(dst._channels_len, sizeof(Hako_ChannelFloat32));
         dst._channels_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._channels_len; ++i) {
-            _ros2pdu_ChannelFloat32(src.channels[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_ChannelFloat32(src.channels[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -127,12 +137,18 @@ static inline bool _ros2pdu_PointCloud(sensor_msgs::msg::PointCloud &src, Hako_P
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_PointCloud_points(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_PointCloud_points(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_PointCloud_channels(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_PointCloud_channels(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -143,7 +159,7 @@ static inline bool _ros2pdu_PointCloud(sensor_msgs::msg::PointCloud &src, Hako_P
 static inline int hako_convert_ros2pdu_PointCloud(sensor_msgs::msg::PointCloud &src, Hako_PointCloud** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_PointCloud out;
+    Hako_PointCloud out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_PointCloud(src, out, dynamic_memory)) {
         return -1;
     }
@@ -161,6 +177,22 @@ static inline int hako_convert_ros2pdu_PointCloud(sensor_msgs::msg::PointCloud &
 
     *dst = (Hako_PointCloud*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_PointCloud() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_PointCloud(sensor_msgs::msg::PointCloud &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_PointCloud out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_PointCloud(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "PointCloud" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("PointCloud", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_PointCloud* hako_create_empty_pdu_PointCloud(int heap_size)

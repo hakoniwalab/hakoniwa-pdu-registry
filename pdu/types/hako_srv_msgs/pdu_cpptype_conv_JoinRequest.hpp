@@ -26,7 +26,7 @@
 static inline int cpp_pdu2cpp_JoinRequest(const char* heap_ptr, Hako_JoinRequest &src, HakoCpp_JoinRequest &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_JoinRequest, name));
     (void)heap_ptr;
     return 0;
 }
@@ -54,11 +54,8 @@ static inline bool cpp_cpp2pdu_JoinRequest(HakoCpp_JoinRequest &src, Hako_JoinRe
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_JoinRequest, char, name));
-        dst.name[src.name.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_JoinRequest, name));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -134,42 +131,7 @@ public:
             std::cerr << "[ConvertorError][" << "JoinRequest" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_JoinRequest), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "JoinRequest" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "JoinRequest" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "JoinRequest" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_JoinRequest));
-        memset(base_ptr + sizeof(Hako_JoinRequest), 0, base_size - sizeof(Hako_JoinRequest));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("JoinRequest", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

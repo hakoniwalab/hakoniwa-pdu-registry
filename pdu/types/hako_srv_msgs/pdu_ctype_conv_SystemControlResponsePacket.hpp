@@ -59,10 +59,14 @@ static inline bool _ros2pdu_SystemControlResponsePacket(hako_srv_msgs::msg::Syst
 {
     try {
         // struct convert
-        _ros2pdu_ServiceResponseHeader(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_ServiceResponseHeader(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_SystemControlResponse(src.body, dst.body, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_SystemControlResponse(src.body, dst.body, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -73,7 +77,7 @@ static inline bool _ros2pdu_SystemControlResponsePacket(hako_srv_msgs::msg::Syst
 static inline int hako_convert_ros2pdu_SystemControlResponsePacket(hako_srv_msgs::msg::SystemControlResponsePacket &src, Hako_SystemControlResponsePacket** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_SystemControlResponsePacket out;
+    Hako_SystemControlResponsePacket out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_SystemControlResponsePacket(src, out, dynamic_memory)) {
         return -1;
     }
@@ -91,6 +95,22 @@ static inline int hako_convert_ros2pdu_SystemControlResponsePacket(hako_srv_msgs
 
     *dst = (Hako_SystemControlResponsePacket*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_SystemControlResponsePacket() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_SystemControlResponsePacket(hako_srv_msgs::msg::SystemControlResponsePacket &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_SystemControlResponsePacket out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_SystemControlResponsePacket(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "SystemControlResponsePacket" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("SystemControlResponsePacket", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_SystemControlResponsePacket* hako_create_empty_pdu_SystemControlResponsePacket(int heap_size)

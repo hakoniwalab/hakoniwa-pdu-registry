@@ -30,9 +30,9 @@
 static inline int _pdu2ros_RenderObject(const char* heap_ptr, Hako_RenderObject &src, hako_srv_msgs::msg::RenderObject &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_RenderObject, name));
     // string convertor
-    dst.model = (const char*)src.model;
+    dst.model = hako_convert_string_from_pdu(src.model, M_SIZE(Hako_RenderObject, model));
     // Struct convert
     _pdu2ros_Pose(heap_ptr, src.pose, dst.pose);
     (void)heap_ptr;
@@ -62,18 +62,14 @@ static inline bool _ros2pdu_RenderObject(hako_srv_msgs::msg::RenderObject &src, 
 {
     try {
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_RenderObject, char, name));
-        dst.name[src.name.length()] = '\0';
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_RenderObject, name));
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.model, src.model.length(),
-            dst.model, M_ARRAY_SIZE(Hako_RenderObject, char, model));
-        dst.model[src.model.length()] = '\0';
+        hako_convert_string_to_pdu(src.model, dst.model, M_SIZE(Hako_RenderObject, model));
         // struct convert
-        _ros2pdu_Pose(src.pose, dst.pose, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_Pose(src.pose, dst.pose, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -84,7 +80,7 @@ static inline bool _ros2pdu_RenderObject(hako_srv_msgs::msg::RenderObject &src, 
 static inline int hako_convert_ros2pdu_RenderObject(hako_srv_msgs::msg::RenderObject &src, Hako_RenderObject** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_RenderObject out;
+    Hako_RenderObject out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_RenderObject(src, out, dynamic_memory)) {
         return -1;
     }
@@ -102,6 +98,22 @@ static inline int hako_convert_ros2pdu_RenderObject(hako_srv_msgs::msg::RenderOb
 
     *dst = (Hako_RenderObject*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_RenderObject() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_RenderObject(hako_srv_msgs::msg::RenderObject &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_RenderObject out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_RenderObject(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "RenderObject" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("RenderObject", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_RenderObject* hako_create_empty_pdu_RenderObject(int heap_size)

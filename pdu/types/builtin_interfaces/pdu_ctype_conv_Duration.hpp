@@ -60,7 +60,7 @@ static inline bool _ros2pdu_Duration(builtin_interfaces::msg::Duration &src, Hak
         hako_convert_ros2pdu(src.sec, dst.sec);
         // primitive convert
         hako_convert_ros2pdu(src.nanosec, dst.nanosec);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -71,7 +71,7 @@ static inline bool _ros2pdu_Duration(builtin_interfaces::msg::Duration &src, Hak
 static inline int hako_convert_ros2pdu_Duration(builtin_interfaces::msg::Duration &src, Hako_Duration** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Duration out;
+    Hako_Duration out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Duration(src, out, dynamic_memory)) {
         return -1;
     }
@@ -89,6 +89,22 @@ static inline int hako_convert_ros2pdu_Duration(builtin_interfaces::msg::Duratio
 
     *dst = (Hako_Duration*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Duration() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Duration(builtin_interfaces::msg::Duration &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Duration out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Duration(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Duration" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Duration", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Duration* hako_create_empty_pdu_Duration(int heap_size)

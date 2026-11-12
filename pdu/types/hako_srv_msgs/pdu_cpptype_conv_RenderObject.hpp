@@ -29,9 +29,9 @@
 static inline int cpp_pdu2cpp_RenderObject(const char* heap_ptr, Hako_RenderObject &src, HakoCpp_RenderObject &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_RenderObject, name));
     // string convertor
-    dst.model = (const char*)src.model;
+    dst.model = hako_convert_string_from_pdu(src.model, M_SIZE(Hako_RenderObject, model));
     // Struct convert
     cpp_pdu2cpp_Pose(heap_ptr, src.pose, dst.pose);
     (void)heap_ptr;
@@ -61,18 +61,14 @@ static inline bool cpp_cpp2pdu_RenderObject(HakoCpp_RenderObject &src, Hako_Rend
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_RenderObject, char, name));
-        dst.name[src.name.length()] = '\0';
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_RenderObject, name));
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.model, src.model.length(),
-            dst.model, M_ARRAY_SIZE(Hako_RenderObject, char, model));
-        dst.model[src.model.length()] = '\0';
+        hako_convert_string_to_pdu(src.model, dst.model, M_SIZE(Hako_RenderObject, model));
         // struct convert
-        cpp_cpp2pdu_Pose(src.pose, dst.pose, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_Pose(src.pose, dst.pose, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -148,42 +144,7 @@ public:
             std::cerr << "[ConvertorError][" << "RenderObject" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_RenderObject), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "RenderObject" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "RenderObject" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "RenderObject" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_RenderObject));
-        memset(base_ptr + sizeof(Hako_RenderObject), 0, base_size - sizeof(Hako_RenderObject));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("RenderObject", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

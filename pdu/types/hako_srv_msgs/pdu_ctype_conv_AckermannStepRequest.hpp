@@ -60,8 +60,10 @@ static inline bool _ros2pdu_AckermannStepRequest(hako_srv_msgs::msg::AckermannSt
         // primitive convert
         hako_convert_ros2pdu(src.step, dst.step);
         // struct convert
-        _ros2pdu_AckermannDrive(src.drive, dst.drive, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_AckermannDrive(src.drive, dst.drive, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -72,7 +74,7 @@ static inline bool _ros2pdu_AckermannStepRequest(hako_srv_msgs::msg::AckermannSt
 static inline int hako_convert_ros2pdu_AckermannStepRequest(hako_srv_msgs::msg::AckermannStepRequest &src, Hako_AckermannStepRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_AckermannStepRequest out;
+    Hako_AckermannStepRequest out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_AckermannStepRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -90,6 +92,22 @@ static inline int hako_convert_ros2pdu_AckermannStepRequest(hako_srv_msgs::msg::
 
     *dst = (Hako_AckermannStepRequest*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_AckermannStepRequest() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_AckermannStepRequest(hako_srv_msgs::msg::AckermannStepRequest &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_AckermannStepRequest out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_AckermannStepRequest(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "AckermannStepRequest" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("AckermannStepRequest", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_AckermannStepRequest* hako_create_empty_pdu_AckermannStepRequest(int heap_size)

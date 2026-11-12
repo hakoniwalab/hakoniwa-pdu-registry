@@ -39,6 +39,9 @@ static inline int _pdu2ros_string_array_MultiDOFJointState_joint_names(const cha
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2ros_array_string_varray(temp_struct_ptr, dst.joint_names, length);
     }
+    else {
+        dst.joint_names.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_MultiDOFJointState_transforms(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
@@ -53,6 +56,9 @@ static inline int _pdu2ros_struct_array_MultiDOFJointState_transforms(const char
             _pdu2ros_Transform(heap_ptr, *temp_struct_ptr, dst.transforms[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.transforms.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -69,6 +75,9 @@ static inline int _pdu2ros_struct_array_MultiDOFJointState_twist(const char* hea
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.twist.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_MultiDOFJointState_wrench(const char* heap_ptr, Hako_MultiDOFJointState &src, sensor_msgs::msg::MultiDOFJointState &dst)
@@ -83,6 +92,9 @@ static inline int _pdu2ros_struct_array_MultiDOFJointState_wrench(const char* he
             _pdu2ros_Wrench(heap_ptr, *temp_struct_ptr, dst.wrench[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.wrench.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -143,7 +155,9 @@ static inline bool _ros2pdu_struct_array_MultiDOFJointState_transforms(sensor_ms
         Hako_Transform* temp_struct_ptr = (Hako_Transform*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_Transform));
         dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._transforms_len; ++i) {
-            _ros2pdu_Transform(src.transforms[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Transform(src.transforms[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -160,7 +174,9 @@ static inline bool _ros2pdu_struct_array_MultiDOFJointState_twist(sensor_msgs::m
         Hako_Twist* temp_struct_ptr = (Hako_Twist*)dynamic_memory.allocate(dst._twist_len, sizeof(Hako_Twist));
         dst._twist_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._twist_len; ++i) {
-            _ros2pdu_Twist(src.twist[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Twist(src.twist[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -177,7 +193,9 @@ static inline bool _ros2pdu_struct_array_MultiDOFJointState_wrench(sensor_msgs::
         Hako_Wrench* temp_struct_ptr = (Hako_Wrench*)dynamic_memory.allocate(dst._wrench_len, sizeof(Hako_Wrench));
         dst._wrench_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._wrench_len; ++i) {
-            _ros2pdu_Wrench(src.wrench[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_Wrench(src.wrench[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -191,16 +209,26 @@ static inline bool _ros2pdu_MultiDOFJointState(sensor_msgs::msg::MultiDOFJointSt
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string array convert
-        _ros2pdu_string_array_MultiDOFJointState_joint_names(src, dst, dynamic_memory);
+        if (!_ros2pdu_string_array_MultiDOFJointState_joint_names(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_MultiDOFJointState_transforms(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_MultiDOFJointState_transforms(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_MultiDOFJointState_twist(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_MultiDOFJointState_twist(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_MultiDOFJointState_wrench(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_MultiDOFJointState_wrench(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -211,7 +239,7 @@ static inline bool _ros2pdu_MultiDOFJointState(sensor_msgs::msg::MultiDOFJointSt
 static inline int hako_convert_ros2pdu_MultiDOFJointState(sensor_msgs::msg::MultiDOFJointState &src, Hako_MultiDOFJointState** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MultiDOFJointState out;
+    Hako_MultiDOFJointState out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_MultiDOFJointState(src, out, dynamic_memory)) {
         return -1;
     }
@@ -229,6 +257,22 @@ static inline int hako_convert_ros2pdu_MultiDOFJointState(sensor_msgs::msg::Mult
 
     *dst = (Hako_MultiDOFJointState*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_MultiDOFJointState() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_MultiDOFJointState(sensor_msgs::msg::MultiDOFJointState &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MultiDOFJointState out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_MultiDOFJointState(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "MultiDOFJointState" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("MultiDOFJointState", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_MultiDOFJointState* hako_create_empty_pdu_MultiDOFJointState(int heap_size)

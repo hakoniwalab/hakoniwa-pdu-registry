@@ -84,9 +84,9 @@ static inline int cpp_pdu2cpp_BatteryState(const char* heap_ptr, Hako_BatterySta
     // primitive array convertor
     cpp_pdu2cpp_primitive_array_BatteryState_cell_temperature(heap_ptr, src, dst);
     // string convertor
-    dst.location = (const char*)src.location;
+    dst.location = hako_convert_string_from_pdu(src.location, M_SIZE(Hako_BatteryState, location));
     // string convertor
-    dst.serial_number = (const char*)src.serial_number;
+    dst.serial_number = hako_convert_string_from_pdu(src.serial_number, M_SIZE(Hako_BatteryState, serial_number));
     (void)heap_ptr;
     return 0;
 }
@@ -138,7 +138,9 @@ static inline bool cpp_cpp2pdu_BatteryState(HakoCpp_BatteryState &src, Hako_Batt
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.voltage, dst.voltage);
         // primitive convert
@@ -162,20 +164,18 @@ static inline bool cpp_cpp2pdu_BatteryState(HakoCpp_BatteryState &src, Hako_Batt
         // primitive convert
         hako_convert_cpp2pdu(src.present, dst.present);
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_BatteryState_cell_temperature(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_BatteryState_cell_temperature(src, dst, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.location, src.location.length(),
-            dst.location, M_ARRAY_SIZE(Hako_BatteryState, char, location));
-        dst.location[src.location.length()] = '\0';
+        hako_convert_string_to_pdu(src.location, dst.location, M_SIZE(Hako_BatteryState, location));
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.serial_number, src.serial_number.length(),
-            dst.serial_number, M_ARRAY_SIZE(Hako_BatteryState, char, serial_number));
-        dst.serial_number[src.serial_number.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.serial_number, dst.serial_number, M_SIZE(Hako_BatteryState, serial_number));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -251,42 +251,7 @@ public:
             std::cerr << "[ConvertorError][" << "BatteryState" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_BatteryState), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "BatteryState" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "BatteryState" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "BatteryState" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_BatteryState));
-        memset(base_ptr + sizeof(Hako_BatteryState), 0, base_size - sizeof(Hako_BatteryState));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("BatteryState", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

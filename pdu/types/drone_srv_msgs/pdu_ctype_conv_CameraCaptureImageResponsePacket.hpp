@@ -59,10 +59,14 @@ static inline bool _ros2pdu_CameraCaptureImageResponsePacket(drone_srv_msgs::msg
 {
     try {
         // struct convert
-        _ros2pdu_ServiceResponseHeader(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_ServiceResponseHeader(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_CameraCaptureImageResponse(src.body, dst.body, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_CameraCaptureImageResponse(src.body, dst.body, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -73,7 +77,7 @@ static inline bool _ros2pdu_CameraCaptureImageResponsePacket(drone_srv_msgs::msg
 static inline int hako_convert_ros2pdu_CameraCaptureImageResponsePacket(drone_srv_msgs::msg::CameraCaptureImageResponsePacket &src, Hako_CameraCaptureImageResponsePacket** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_CameraCaptureImageResponsePacket out;
+    Hako_CameraCaptureImageResponsePacket out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_CameraCaptureImageResponsePacket(src, out, dynamic_memory)) {
         return -1;
     }
@@ -91,6 +95,22 @@ static inline int hako_convert_ros2pdu_CameraCaptureImageResponsePacket(drone_sr
 
     *dst = (Hako_CameraCaptureImageResponsePacket*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_CameraCaptureImageResponsePacket() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_CameraCaptureImageResponsePacket(drone_srv_msgs::msg::CameraCaptureImageResponsePacket &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_CameraCaptureImageResponsePacket out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_CameraCaptureImageResponsePacket(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "CameraCaptureImageResponsePacket" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("CameraCaptureImageResponsePacket", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_CameraCaptureImageResponsePacket* hako_create_empty_pdu_CameraCaptureImageResponsePacket(int heap_size)

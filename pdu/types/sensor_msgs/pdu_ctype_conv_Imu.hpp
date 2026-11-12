@@ -125,20 +125,34 @@ static inline bool _ros2pdu_Imu(sensor_msgs::msg::Imu &src, Hako_Imu &dst, PduDy
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Quaternion(src.orientation, dst.orientation, dynamic_memory);
+        if (!_ros2pdu_Quaternion(src.orientation, dst.orientation, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Imu_orientation_covariance(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_Imu_orientation_covariance(src, dst, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.angular_velocity, dst.angular_velocity, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.angular_velocity, dst.angular_velocity, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Imu_angular_velocity_covariance(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_Imu_angular_velocity_covariance(src, dst, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.linear_acceleration, dst.linear_acceleration, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.linear_acceleration, dst.linear_acceleration, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Imu_linear_acceleration_covariance(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_Imu_linear_acceleration_covariance(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -149,7 +163,7 @@ static inline bool _ros2pdu_Imu(sensor_msgs::msg::Imu &src, Hako_Imu &dst, PduDy
 static inline int hako_convert_ros2pdu_Imu(sensor_msgs::msg::Imu &src, Hako_Imu** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Imu out;
+    Hako_Imu out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Imu(src, out, dynamic_memory)) {
         return -1;
     }
@@ -167,6 +181,22 @@ static inline int hako_convert_ros2pdu_Imu(sensor_msgs::msg::Imu &src, Hako_Imu*
 
     *dst = (Hako_Imu*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Imu() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Imu(sensor_msgs::msg::Imu &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Imu out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Imu(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Imu" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Imu", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Imu* hako_create_empty_pdu_Imu(int heap_size)

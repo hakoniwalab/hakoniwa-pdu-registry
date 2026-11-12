@@ -64,7 +64,7 @@ static inline bool _ros2pdu_Pose2D(geometry_msgs::msg::Pose2D &src, Hako_Pose2D 
         hako_convert_ros2pdu(src.y, dst.y);
         // primitive convert
         hako_convert_ros2pdu(src.theta, dst.theta);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -75,7 +75,7 @@ static inline bool _ros2pdu_Pose2D(geometry_msgs::msg::Pose2D &src, Hako_Pose2D 
 static inline int hako_convert_ros2pdu_Pose2D(geometry_msgs::msg::Pose2D &src, Hako_Pose2D** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Pose2D out;
+    Hako_Pose2D out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Pose2D(src, out, dynamic_memory)) {
         return -1;
     }
@@ -93,6 +93,22 @@ static inline int hako_convert_ros2pdu_Pose2D(geometry_msgs::msg::Pose2D &src, H
 
     *dst = (Hako_Pose2D*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Pose2D() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Pose2D(geometry_msgs::msg::Pose2D &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Pose2D out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Pose2D(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Pose2D" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Pose2D", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Pose2D* hako_create_empty_pdu_Pose2D(int heap_size)

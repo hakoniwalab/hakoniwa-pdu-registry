@@ -6,6 +6,27 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <algorithm>
+#include <cstring>
+
+// A string into a fixed char array of dst_size bytes: at most dst_size - 1
+// characters, the terminating '\0' always inside the array (a longer string is
+// cut). The rest of the array is left as it is.
+static inline void hako_convert_string_to_pdu(const std::string &src, char *dst, size_t dst_size)
+{
+    if (dst_size == 0) {
+        return;
+    }
+    const size_t len = std::min(src.length(), dst_size - 1);
+    memcpy(dst, src.data(), len);
+    dst[len] = '\0';
+}
+// A fixed char array of src_size bytes as a string: up to its first '\0', or
+// all of it when it has none (another writer may fill it to the end).
+static inline std::string hako_convert_string_from_pdu(const char *src, size_t src_size)
+{
+    return std::string(src, strnlen(src, src_size));
+}
 
 #define M_SIZE(type, mem)   sizeof(((type *)0)->mem)
 #define M_ARRAY_SIZE(type, mem_type, mem)       (M_SIZE(type, mem) / sizeof(mem_type))
@@ -74,7 +95,7 @@ int hako_convert_pdu2ros_array_string(Hako_cstring src[], std::array<std::string
         ret = -1;
     }
     for (int i = 0; i < len; i++) {
-        dst[i] = std::string(src[i].data);
+        dst[i] = hako_convert_string_from_pdu(src[i].data, sizeof(src[i].data));
     }
     return ret;
 }
@@ -89,7 +110,7 @@ int hako_convert_pdu2ros_array_string(Hako_cstring src[], std::vector<std::strin
     }
     dst.resize(len);
     for (int i = 0; i < len; i++) {
-        dst[i] = std::string(src[i].data);
+        dst[i] = hako_convert_string_from_pdu(src[i].data, sizeof(src[i].data));
     }
     return ret;
 }
@@ -98,7 +119,7 @@ static inline int hako_convert_pdu2ros_array_string_varray(const Hako_cstring* s
     int ret = 0;
     dst.resize(len);
     for (int i = 0; i < len; i++) {
-        dst[i] = std::string(src[i].data);
+        dst[i] = hako_convert_string_from_pdu(src[i].data, sizeof(src[i].data));
     }
     return ret;
 }
@@ -171,6 +192,10 @@ int hako_convert_ros2pdu_array_string(std::vector<std::string> &src, Hako_cstrin
     int len = _dst_len;
     if (_dst_len > _src_len) {
         len = _src_len;
+        ret = -1;
+    }
+    if (static_cast<int>(src.size()) < len) {  // never read past the vector
+        len = static_cast<int>(src.size());
         ret = -1;
     }
     for (int i = 0; i < len; i++) {

@@ -67,7 +67,9 @@ static inline bool _ros2pdu_MapMetaData(nav_msgs::msg::MapMetaData &src, Hako_Ma
 {
     try {
         // struct convert
-        _ros2pdu_Time(src.map_load_time, dst.map_load_time, dynamic_memory);
+        if (!_ros2pdu_Time(src.map_load_time, dst.map_load_time, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.resolution, dst.resolution);
         // primitive convert
@@ -75,8 +77,10 @@ static inline bool _ros2pdu_MapMetaData(nav_msgs::msg::MapMetaData &src, Hako_Ma
         // primitive convert
         hako_convert_ros2pdu(src.height, dst.height);
         // struct convert
-        _ros2pdu_Pose(src.origin, dst.origin, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_Pose(src.origin, dst.origin, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -87,7 +91,7 @@ static inline bool _ros2pdu_MapMetaData(nav_msgs::msg::MapMetaData &src, Hako_Ma
 static inline int hako_convert_ros2pdu_MapMetaData(nav_msgs::msg::MapMetaData &src, Hako_MapMetaData** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MapMetaData out;
+    Hako_MapMetaData out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_MapMetaData(src, out, dynamic_memory)) {
         return -1;
     }
@@ -105,6 +109,22 @@ static inline int hako_convert_ros2pdu_MapMetaData(nav_msgs::msg::MapMetaData &s
 
     *dst = (Hako_MapMetaData*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_MapMetaData() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_MapMetaData(nav_msgs::msg::MapMetaData &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MapMetaData out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_MapMetaData(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "MapMetaData" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("MapMetaData", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_MapMetaData* hako_create_empty_pdu_MapMetaData(int heap_size)

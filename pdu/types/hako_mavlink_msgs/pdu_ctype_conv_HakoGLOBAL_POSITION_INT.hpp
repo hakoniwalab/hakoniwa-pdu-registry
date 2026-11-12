@@ -88,7 +88,7 @@ static inline bool _ros2pdu_HakoGLOBAL_POSITION_INT(hako_mavlink_msgs::msg::Hako
         hako_convert_ros2pdu(src.vz, dst.vz);
         // primitive convert
         hako_convert_ros2pdu(src.hdg, dst.hdg);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -99,7 +99,7 @@ static inline bool _ros2pdu_HakoGLOBAL_POSITION_INT(hako_mavlink_msgs::msg::Hako
 static inline int hako_convert_ros2pdu_HakoGLOBAL_POSITION_INT(hako_mavlink_msgs::msg::HakoGLOBAL_POSITION_INT &src, Hako_HakoGLOBAL_POSITION_INT** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoGLOBAL_POSITION_INT out;
+    Hako_HakoGLOBAL_POSITION_INT out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoGLOBAL_POSITION_INT(src, out, dynamic_memory)) {
         return -1;
     }
@@ -117,6 +117,22 @@ static inline int hako_convert_ros2pdu_HakoGLOBAL_POSITION_INT(hako_mavlink_msgs
 
     *dst = (Hako_HakoGLOBAL_POSITION_INT*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoGLOBAL_POSITION_INT() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoGLOBAL_POSITION_INT(hako_mavlink_msgs::msg::HakoGLOBAL_POSITION_INT &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoGLOBAL_POSITION_INT out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoGLOBAL_POSITION_INT(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoGLOBAL_POSITION_INT" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoGLOBAL_POSITION_INT", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoGLOBAL_POSITION_INT* hako_create_empty_pdu_HakoGLOBAL_POSITION_INT(int heap_size)

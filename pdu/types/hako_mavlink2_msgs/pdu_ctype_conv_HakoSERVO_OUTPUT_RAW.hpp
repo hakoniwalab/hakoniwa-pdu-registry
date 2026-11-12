@@ -124,7 +124,7 @@ static inline bool _ros2pdu_HakoSERVO_OUTPUT_RAW(hako_mavlink2_msgs::msg::HakoSE
         hako_convert_ros2pdu(src.servo15_raw, dst.servo15_raw);
         // primitive convert
         hako_convert_ros2pdu(src.servo16_raw, dst.servo16_raw);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -135,7 +135,7 @@ static inline bool _ros2pdu_HakoSERVO_OUTPUT_RAW(hako_mavlink2_msgs::msg::HakoSE
 static inline int hako_convert_ros2pdu_HakoSERVO_OUTPUT_RAW(hako_mavlink2_msgs::msg::HakoSERVO_OUTPUT_RAW &src, Hako_HakoSERVO_OUTPUT_RAW** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoSERVO_OUTPUT_RAW out;
+    Hako_HakoSERVO_OUTPUT_RAW out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoSERVO_OUTPUT_RAW(src, out, dynamic_memory)) {
         return -1;
     }
@@ -153,6 +153,22 @@ static inline int hako_convert_ros2pdu_HakoSERVO_OUTPUT_RAW(hako_mavlink2_msgs::
 
     *dst = (Hako_HakoSERVO_OUTPUT_RAW*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoSERVO_OUTPUT_RAW() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoSERVO_OUTPUT_RAW(hako_mavlink2_msgs::msg::HakoSERVO_OUTPUT_RAW &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoSERVO_OUTPUT_RAW out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoSERVO_OUTPUT_RAW(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoSERVO_OUTPUT_RAW" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoSERVO_OUTPUT_RAW", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoSERVO_OUTPUT_RAW* hako_create_empty_pdu_HakoSERVO_OUTPUT_RAW(int heap_size)

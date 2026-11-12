@@ -33,7 +33,7 @@ static inline int _pdu2ros_TimeReference(const char* heap_ptr, Hako_TimeReferenc
     // Struct convert
     _pdu2ros_Time(heap_ptr, src.time_ref, dst.time_ref);
     // string convertor
-    dst.source = (const char*)src.source;
+    dst.source = hako_convert_string_from_pdu(src.source, M_SIZE(Hako_TimeReference, source));
     (void)heap_ptr;
     return 0;
 }
@@ -61,15 +61,16 @@ static inline bool _ros2pdu_TimeReference(sensor_msgs::msg::TimeReference &src, 
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Time(src.time_ref, dst.time_ref, dynamic_memory);
+        if (!_ros2pdu_Time(src.time_ref, dst.time_ref, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.source, src.source.length(),
-            dst.source, M_ARRAY_SIZE(Hako_TimeReference, char, source));
-        dst.source[src.source.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.source, dst.source, M_SIZE(Hako_TimeReference, source));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -80,7 +81,7 @@ static inline bool _ros2pdu_TimeReference(sensor_msgs::msg::TimeReference &src, 
 static inline int hako_convert_ros2pdu_TimeReference(sensor_msgs::msg::TimeReference &src, Hako_TimeReference** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_TimeReference out;
+    Hako_TimeReference out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_TimeReference(src, out, dynamic_memory)) {
         return -1;
     }
@@ -98,6 +99,22 @@ static inline int hako_convert_ros2pdu_TimeReference(sensor_msgs::msg::TimeRefer
 
     *dst = (Hako_TimeReference*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_TimeReference() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_TimeReference(sensor_msgs::msg::TimeReference &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_TimeReference out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_TimeReference(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "TimeReference" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("TimeReference", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_TimeReference* hako_create_empty_pdu_TimeReference(int heap_size)

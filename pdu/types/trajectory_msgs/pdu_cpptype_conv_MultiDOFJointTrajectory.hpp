@@ -115,7 +115,9 @@ static inline bool cpp_cpp2pdu_struct_array_MultiDOFJointTrajectory_points(HakoC
         Hako_MultiDOFJointTrajectoryPoint* temp_struct_ptr = (Hako_MultiDOFJointTrajectoryPoint*)dynamic_memory.allocate(dst._points_len, sizeof(Hako_MultiDOFJointTrajectoryPoint));
         dst._points_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._points_len; ++i) {
-            cpp_cpp2pdu_MultiDOFJointTrajectoryPoint(src.points[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_MultiDOFJointTrajectoryPoint(src.points[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -129,12 +131,18 @@ static inline bool cpp_cpp2pdu_MultiDOFJointTrajectory(HakoCpp_MultiDOFJointTraj
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string array convert
-        cpp_cpp2pdu_string_array_MultiDOFJointTrajectory_joint_names(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_string_array_MultiDOFJointTrajectory_joint_names(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        cpp_cpp2pdu_struct_array_MultiDOFJointTrajectory_points(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_struct_array_MultiDOFJointTrajectory_points(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -210,42 +218,7 @@ public:
             std::cerr << "[ConvertorError][" << "MultiDOFJointTrajectory" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        // Sizes in size_t, checked against the int-sized PDU fields and the buffer.
-        const size_t meta_size = HAKO_PDU_META_DATA_SIZE();
-        const size_t base_size = HAKO_ALIGN_SIZE(sizeof(Hako_MultiDOFJointTrajectory), HAKO_ALIGNMENT_SIZE);
-        const size_t heap_used = static_cast<size_t>(dynamic_memory.get_total_size());
-        const size_t heap_size = HAKO_ALIGN_SIZE(heap_used, static_cast<size_t>(HAKO_ALIGNMENT_SIZE));
-        const size_t pdu_size = meta_size + base_size + heap_size;
-        if (heap_size < heap_used || pdu_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            std::cerr << "[ConvertorError][" << "MultiDOFJointTrajectory" << "] PDU too large. heap=" << heap_used << std::endl;
-            return -1;
-        }
-        // The whole buffer the caller gave must be clear of the message's arrays.
-        if (pdu_buffer != nullptr && buffer_len > 0 &&
-            dynamic_memory.references_overlap(pdu_buffer, static_cast<size_t>(buffer_len))) {
-            std::cerr << "[ConvertorError][" << "MultiDOFJointTrajectory" << "] pdu_buffer overlaps the message's arrays" << std::endl;
-            return -1;
-        }
-        if (pdu_buffer == nullptr || buffer_len < 0 || pdu_size > static_cast<size_t>(buffer_len)) {
-            std::cerr << "[ConvertorError][" << "MultiDOFJointTrajectory" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        HakoPduMetaDataType meta;
-        memset(&meta, 0, sizeof(meta));
-        meta.magicno = HAKO_PDU_META_DATA_MAGICNO;
-        meta.version = HAKO_PDU_META_DATA_VERSION;
-        meta.base_off = static_cast<uint32_t>(meta_size);
-        meta.heap_off = static_cast<uint32_t>(meta_size + base_size);
-        meta.total_size = static_cast<uint32_t>(pdu_size);
-        memset(pdu_buffer, 0, meta_size);
-        memcpy(pdu_buffer, &meta, sizeof(meta));
-        char* base_ptr = pdu_buffer + meta_size;
-        memcpy(base_ptr, (const void*)&out, sizeof(Hako_MultiDOFJointTrajectory));
-        memset(base_ptr + sizeof(Hako_MultiDOFJointTrajectory), 0, base_size - sizeof(Hako_MultiDOFJointTrajectory));
-        char* heap_ptr = base_ptr + base_size;
-        dynamic_memory.copy_to_pdu(heap_ptr);
-        memset(heap_ptr + heap_used, 0, heap_size - heap_used);
-        return static_cast<int>(pdu_size);
+        return hako_pdu_build_into("MultiDOFJointTrajectory", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

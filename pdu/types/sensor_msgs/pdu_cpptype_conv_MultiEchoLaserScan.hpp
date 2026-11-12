@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiEchoLaserScan_ranges(const char*
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.ranges.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_MultiEchoLaserScan_intensities(const char* heap_ptr, Hako_MultiEchoLaserScan &src, HakoCpp_MultiEchoLaserScan &dst)
@@ -52,6 +55,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiEchoLaserScan_intensities(const 
             cpp_pdu2cpp_LaserEcho(heap_ptr, *temp_struct_ptr, dst.intensities[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.intensities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

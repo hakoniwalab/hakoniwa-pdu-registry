@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_struct_array_GridCells_cells(const char* heap_ptr,
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.cells.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

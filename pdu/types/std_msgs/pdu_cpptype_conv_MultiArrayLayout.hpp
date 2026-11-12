@@ -36,6 +36,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiArrayLayout_dim(const char* heap
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.dim.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

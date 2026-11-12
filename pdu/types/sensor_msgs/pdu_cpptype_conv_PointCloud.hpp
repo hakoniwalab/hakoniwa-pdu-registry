@@ -39,6 +39,9 @@ static inline int cpp_pdu2cpp_struct_array_PointCloud_points(const char* heap_pt
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.points.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_PointCloud_channels(const char* heap_ptr, Hako_PointCloud &src, HakoCpp_PointCloud &dst)
@@ -53,6 +56,9 @@ static inline int cpp_pdu2cpp_struct_array_PointCloud_channels(const char* heap_
             cpp_pdu2cpp_ChannelFloat32(heap_ptr, *temp_struct_ptr, dst.channels[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.channels.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

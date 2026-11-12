@@ -182,6 +182,41 @@ TEST(Cpp2PduDirectWriteTest, BufferOverlappingTheSourceIsRefused)
     EXPECT_EQ(before, cloud.data);
 }
 
+TEST(Cpp2PduDirectWriteTest, ReusedDestinationEqualsFresh)
+{
+    // pdu2cpp into one reused destination (no new arrays each message) must give
+    // what a fresh destination gives, also when an array goes from full to empty.
+    hako::pdu::msgs::sensor_msgs::PointCloud2 conv;
+    HakoCpp_PointCloud2 reused{};
+    for (std::size_t bytes : {std::size_t{1200}, std::size_t{0}, std::size_t{36}, std::size_t{1200}}) {
+        HakoCpp_PointCloud2 cloud = MakeCloud(bytes);
+        if (bytes == 0) {
+            cloud.fields.clear();
+            cloud.header.frame_id.clear();
+        }
+        std::vector<char> pdu = DirectPdu<hako::pdu::msgs::sensor_msgs::PointCloud2>(cloud, bytes + 4096, 0x00);
+        HakoCpp_PointCloud2 fresh{};
+        ASSERT_TRUE(conv.pdu2cpp(pdu.data(), fresh));
+        ASSERT_TRUE(conv.pdu2cpp(pdu.data(), reused));
+        EXPECT_EQ(reused.data, fresh.data) << "bytes=" << bytes;
+        EXPECT_EQ(reused.data.size(), bytes);
+        EXPECT_EQ(reused.fields.size(), fresh.fields.size()) << "bytes=" << bytes;
+        EXPECT_EQ(reused.header.frame_id, fresh.header.frame_id);
+    }
+    HakoCpp_JointState joints{};
+    HakoCpp_JointState full{};
+    full.name = {"a", "b"};
+    full.position = {1.0, 2.0};
+    HakoCpp_JointState empty{};
+    for (HakoCpp_JointState* src : {&full, &empty}) {
+        std::vector<char> pdu = DirectPdu<hako::pdu::msgs::sensor_msgs::JointState>(*src, 4096, 0x00);
+        hako::pdu::msgs::sensor_msgs::JointState jconv;
+        ASSERT_TRUE(jconv.pdu2cpp(pdu.data(), joints));
+        EXPECT_EQ(joints.name, src->name);
+        EXPECT_EQ(joints.position, src->position);
+    }
+}
+
 TEST(Cpp2PduDirectWriteTest, NegativeLengthIsRefused)
 {
     HakoCpp_PointCloud2 cloud = MakeCloud(12);

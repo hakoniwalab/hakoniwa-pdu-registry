@@ -35,6 +35,9 @@ static inline int cpp_pdu2cpp_string_array_JointTrajectory_joint_names(const cha
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.joint_names, length);
     }
+    else {
+        dst.joint_names.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_JointTrajectory_points(const char* heap_ptr, Hako_JointTrajectory &src, HakoCpp_JointTrajectory &dst)
@@ -49,6 +52,9 @@ static inline int cpp_pdu2cpp_struct_array_JointTrajectory_points(const char* he
             cpp_pdu2cpp_JointTrajectoryPoint(heap_ptr, *temp_struct_ptr, dst.points[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.points.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

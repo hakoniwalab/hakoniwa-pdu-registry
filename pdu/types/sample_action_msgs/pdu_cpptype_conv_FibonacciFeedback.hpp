@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_FibonacciFeedback_partial_sequence
         dst.partial_sequence.resize(length);
         memcpy(dst.partial_sequence.data(), heap_ptr + offset, length * sizeof(Hako_int32));
     }
+    else {
+        dst.partial_sequence.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

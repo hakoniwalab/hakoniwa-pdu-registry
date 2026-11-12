@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_DroneVisualState_pwm_duty(const ch
         dst.pwm_duty.resize(length);
         memcpy(dst.pwm_duty.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.pwm_duty.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

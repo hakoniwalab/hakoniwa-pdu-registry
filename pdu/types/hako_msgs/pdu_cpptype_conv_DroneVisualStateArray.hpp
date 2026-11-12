@@ -36,6 +36,9 @@ static inline int cpp_pdu2cpp_struct_array_DroneVisualStateArray_drones(const ch
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.drones.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

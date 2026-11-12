@@ -37,6 +37,9 @@ static inline int cpp_pdu2cpp_primitive_array_OccupancyGrid_data(const char* hea
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_int8));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeEpoch_epoch(co
         dst.epoch.resize(length);
         memcpy(dst.epoch.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.epoch.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

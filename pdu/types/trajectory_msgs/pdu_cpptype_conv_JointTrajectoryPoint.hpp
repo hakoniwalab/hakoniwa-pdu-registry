@@ -32,6 +32,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_positions(con
         dst.positions.resize(length);
         memcpy(dst.positions.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.positions.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_velocities(const char* heap_ptr, Hako_JointTrajectoryPoint &src, HakoCpp_JointTrajectoryPoint &dst)
@@ -42,6 +45,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_velocities(co
     if (length > 0) {
         dst.velocities.resize(length);
         memcpy(dst.velocities.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.velocities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -54,6 +60,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_accelerations
         dst.accelerations.resize(length);
         memcpy(dst.accelerations.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.accelerations.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_effort(const char* heap_ptr, Hako_JointTrajectoryPoint &src, HakoCpp_JointTrajectoryPoint &dst)
@@ -64,6 +73,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_effort(const 
     if (length > 0) {
         dst.effort.resize(length);
         memcpy(dst.effort.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.effort.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

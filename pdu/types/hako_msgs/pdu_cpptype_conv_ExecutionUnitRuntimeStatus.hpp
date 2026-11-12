@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeStatus_status(
         dst.status.resize(length);
         memcpy(dst.status.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.status.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeStatus_epoch(const char* heap_ptr, Hako_ExecutionUnitRuntimeStatus &src, HakoCpp_ExecutionUnitRuntimeStatus &dst)
@@ -41,6 +44,9 @@ static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeStatus_epoch(c
     if (length > 0) {
         dst.epoch.resize(length);
         memcpy(dst.epoch.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
+    }
+    else {
+        dst.epoch.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -53,6 +59,9 @@ static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeStatus_curr_ow
         dst.curr_owner_node_id.resize(length);
         memcpy(dst.curr_owner_node_id.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.curr_owner_node_id.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeStatus_next_owner_node_id(const char* heap_ptr, Hako_ExecutionUnitRuntimeStatus &src, HakoCpp_ExecutionUnitRuntimeStatus &dst)
@@ -63,6 +72,9 @@ static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeStatus_next_ow
     if (length > 0) {
         dst.next_owner_node_id.resize(length);
         memcpy(dst.next_owner_node_id.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
+    }
+    else {
+        dst.next_owner_node_id.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

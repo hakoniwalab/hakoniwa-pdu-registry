@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_DisturbanceUserCustom_data(const c
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

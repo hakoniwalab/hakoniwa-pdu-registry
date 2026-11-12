@@ -40,6 +40,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiDOFJointTrajectoryPoint_transfor
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.transforms.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_MultiDOFJointTrajectoryPoint_velocities(const char* heap_ptr, Hako_MultiDOFJointTrajectoryPoint &src, HakoCpp_MultiDOFJointTrajectoryPoint &dst)
@@ -55,6 +58,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiDOFJointTrajectoryPoint_velociti
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.velocities.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_MultiDOFJointTrajectoryPoint_accelerations(const char* heap_ptr, Hako_MultiDOFJointTrajectoryPoint &src, HakoCpp_MultiDOFJointTrajectoryPoint &dst)
@@ -69,6 +75,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiDOFJointTrajectoryPoint_accelera
             cpp_pdu2cpp_Twist(heap_ptr, *temp_struct_ptr, dst.accelerations[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.accelerations.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

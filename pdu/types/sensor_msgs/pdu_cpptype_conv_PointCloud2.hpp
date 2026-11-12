@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_struct_array_PointCloud2_fields(const char* heap_p
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.fields.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_PointCloud2_data(const char* heap_ptr, Hako_PointCloud2 &src, HakoCpp_PointCloud2 &dst)
@@ -48,6 +51,9 @@ static inline int cpp_pdu2cpp_primitive_array_PointCloud2_data(const char* heap_
     if (length > 0) {
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
+    }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

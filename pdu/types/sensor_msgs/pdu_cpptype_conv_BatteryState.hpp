@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_primitive_array_BatteryState_cell_voltage(const ch
         dst.cell_voltage.resize(length);
         memcpy(dst.cell_voltage.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.cell_voltage.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_BatteryState_cell_temperature(const char* heap_ptr, Hako_BatteryState &src, HakoCpp_BatteryState &dst)
@@ -43,6 +46,9 @@ static inline int cpp_pdu2cpp_primitive_array_BatteryState_cell_temperature(cons
     if (length > 0) {
         dst.cell_temperature.resize(length);
         memcpy(dst.cell_temperature.data(), heap_ptr + offset, length * sizeof(Hako_float32));
+    }
+    else {
+        dst.cell_temperature.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

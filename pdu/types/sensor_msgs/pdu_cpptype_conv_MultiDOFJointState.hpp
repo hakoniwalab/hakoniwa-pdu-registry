@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_string_array_MultiDOFJointState_joint_names(const 
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.joint_names, length);
     }
+    else {
+        dst.joint_names.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_MultiDOFJointState_transforms(const char* heap_ptr, Hako_MultiDOFJointState &src, HakoCpp_MultiDOFJointState &dst)
@@ -52,6 +55,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiDOFJointState_transforms(const c
             cpp_pdu2cpp_Transform(heap_ptr, *temp_struct_ptr, dst.transforms[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.transforms.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -68,6 +74,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiDOFJointState_twist(const char* 
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.twist.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_MultiDOFJointState_wrench(const char* heap_ptr, Hako_MultiDOFJointState &src, HakoCpp_MultiDOFJointState &dst)
@@ -82,6 +91,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiDOFJointState_wrench(const char*
             cpp_pdu2cpp_Wrench(heap_ptr, *temp_struct_ptr, dst.wrench[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.wrench.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

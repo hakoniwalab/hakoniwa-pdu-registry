@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_ChannelFloat32_values(const char* 
         dst.values.resize(length);
         memcpy(dst.values.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.values.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

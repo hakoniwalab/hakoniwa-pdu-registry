@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_primitive_array_Joy_axes(const char* heap_ptr, Hak
         dst.axes.resize(length);
         memcpy(dst.axes.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.axes.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_Joy_buttons(const char* heap_ptr, Hako_Joy &src, HakoCpp_Joy &dst)
@@ -43,6 +46,9 @@ static inline int cpp_pdu2cpp_primitive_array_Joy_buttons(const char* heap_ptr, 
     if (length > 0) {
         dst.buttons.resize(length);
         memcpy(dst.buttons.data(), heap_ptr + offset, length * sizeof(Hako_int32));
+    }
+    else {
+        dst.buttons.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

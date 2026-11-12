@@ -36,6 +36,9 @@ static inline int cpp_pdu2cpp_struct_array_JoyFeedbackArray_array(const char* he
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.array.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

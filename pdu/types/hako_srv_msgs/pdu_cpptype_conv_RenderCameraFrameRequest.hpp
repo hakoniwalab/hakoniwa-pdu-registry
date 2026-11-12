@@ -39,6 +39,9 @@ static inline int cpp_pdu2cpp_struct_array_RenderCameraFrameRequest_objects(cons
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.objects.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

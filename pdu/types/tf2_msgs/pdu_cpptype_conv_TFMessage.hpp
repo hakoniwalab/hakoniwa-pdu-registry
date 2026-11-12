@@ -41,6 +41,9 @@ static inline int cpp_pdu2cpp_struct_array_TFMessage_transforms(const char* heap
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.transforms.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_primitive_array_{{container.msg_type_name}}_{{item
         dst.{{item["name"]}}.resize(length);
         memcpy(dst.{{item["name"]}}.data(), heap_ptr + offset, length * sizeof(Hako_{{container.get_msg_type(container.get_array_type(item["type"]))}}));
     }
+    else {
+        dst.{{item["name"]}}.clear();  // a reused destination keeps nothing from before
+    }
 {%-         else %}
     // Fixed size array convertor
     (void)heap_ptr;
@@ -58,6 +61,9 @@ static inline int cpp_pdu2cpp_string_array_{{container.msg_type_name}}_{{item["n
     if (length > 0) {
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.{{item["name"]}}, length);
+    }
+    else {
+        dst.{{item["name"]}}.clear();  // a reused destination keeps nothing from before
     }
 {%-         else %}
     // Fixed size array convertor
@@ -82,6 +88,9 @@ static inline int cpp_pdu2cpp_struct_array_{{container.msg_type_name}}_{{item["n
             cpp_pdu2cpp_{{container.get_msg_type(container.get_array_type(item["type"]))}}(heap_ptr, *temp_struct_ptr, dst.{{item["name"]}}[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.{{item["name"]}}.clear();  // a reused destination keeps nothing from before
     }
 {%-         else %}
     // Fixed size array convertor

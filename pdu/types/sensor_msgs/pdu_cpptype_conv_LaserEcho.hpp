@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_LaserEcho_echoes(const char* heap_
         dst.echoes.resize(length);
         memcpy(dst.echoes.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.echoes.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

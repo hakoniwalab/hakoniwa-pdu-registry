@@ -40,6 +40,9 @@ static inline int cpp_pdu2cpp_string_array_SimpleStructVarray_varray_str(const c
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.varray_str, length);
     }
+    else {
+        dst.varray_str.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_SimpleStructVarray_fixed_array(const char* heap_ptr, Hako_SimpleStructVarray &src, HakoCpp_SimpleStructVarray &dst)
@@ -62,6 +65,9 @@ static inline int cpp_pdu2cpp_struct_array_SimpleStructVarray_data(const char* h
             cpp_pdu2cpp_SimpleVarray(heap_ptr, *temp_struct_ptr, dst.data[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

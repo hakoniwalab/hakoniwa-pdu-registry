@@ -40,6 +40,9 @@ static inline int cpp_pdu2cpp_struct_array_PoseArray_poses(const char* heap_ptr,
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.poses.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

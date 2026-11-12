@@ -34,6 +34,9 @@ static inline int cpp_pdu2cpp_primitive_array_CameraInfo_d(const char* heap_ptr,
         dst.d.resize(length);
         memcpy(dst.d.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.d.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_CameraInfo_k(const char* heap_ptr, Hako_CameraInfo &src, HakoCpp_CameraInfo &dst)

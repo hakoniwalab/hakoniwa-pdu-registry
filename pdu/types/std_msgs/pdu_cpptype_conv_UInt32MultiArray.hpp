@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_primitive_array_UInt32MultiArray_data(const char* 
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_uint32));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

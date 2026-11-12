@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_ExecutionUnitRuntimeContext_contex
         dst.context.resize(length);
         memcpy(dst.context.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.context.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

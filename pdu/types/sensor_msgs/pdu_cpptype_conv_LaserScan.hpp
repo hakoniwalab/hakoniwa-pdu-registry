@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_primitive_array_LaserScan_ranges(const char* heap_
         dst.ranges.resize(length);
         memcpy(dst.ranges.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.ranges.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_LaserScan_intensities(const char* heap_ptr, Hako_LaserScan &src, HakoCpp_LaserScan &dst)
@@ -43,6 +46,9 @@ static inline int cpp_pdu2cpp_primitive_array_LaserScan_intensities(const char* 
     if (length > 0) {
         dst.intensities.resize(length);
         memcpy(dst.intensities.data(), heap_ptr + offset, length * sizeof(Hako_float32));
+    }
+    else {
+        dst.intensities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

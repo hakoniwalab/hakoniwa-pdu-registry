@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_string_array_JointState_name(const char* heap_ptr,
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.name, length);
     }
+    else {
+        dst.name.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointState_position(const char* heap_ptr, Hako_JointState &src, HakoCpp_JointState &dst)
@@ -43,6 +46,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointState_position(const char* he
     if (length > 0) {
         dst.position.resize(length);
         memcpy(dst.position.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.position.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -55,6 +61,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointState_velocity(const char* he
         dst.velocity.resize(length);
         memcpy(dst.velocity.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.velocity.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointState_effort(const char* heap_ptr, Hako_JointState &src, HakoCpp_JointState &dst)
@@ -65,6 +74,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointState_effort(const char* heap
     if (length > 0) {
         dst.effort.resize(length);
         memcpy(dst.effort.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.effort.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }

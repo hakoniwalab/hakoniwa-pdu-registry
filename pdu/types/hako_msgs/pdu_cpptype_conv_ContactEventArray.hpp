@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_struct_array_ContactEventArray_events(const char* 
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.events.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

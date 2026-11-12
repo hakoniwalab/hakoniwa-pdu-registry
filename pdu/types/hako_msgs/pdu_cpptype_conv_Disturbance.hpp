@@ -42,6 +42,9 @@ static inline int cpp_pdu2cpp_struct_array_Disturbance_d_user_custom(const char*
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.d_user_custom.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

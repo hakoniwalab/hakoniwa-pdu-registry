@@ -36,6 +36,9 @@ static inline int cpp_pdu2cpp_struct_array_Polygon_points(const char* heap_ptr, 
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.points.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 

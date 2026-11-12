@@ -42,6 +42,9 @@ static inline int _pdu2ros_struct_array_TFMessage_transforms(const char* heap_pt
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.transforms.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -74,12 +77,14 @@ static inline int hako_convert_pdu2ros_TFMessage(Hako_TFMessage &src, tf2_msgs::
 static inline bool _ros2pdu_struct_array_TFMessage_transforms(tf2_msgs::msg::TFMessage &src, Hako_TFMessage &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._transforms_len = src.transforms.size();
+    dst._transforms_len = hako_pdu_array_length(src.transforms.size());
     if (dst._transforms_len > 0) {
         Hako_TransformStamped* temp_struct_ptr = (Hako_TransformStamped*)dynamic_memory.allocate(dst._transforms_len, sizeof(Hako_TransformStamped));
         dst._transforms_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._transforms_len; ++i) {
-            _ros2pdu_TransformStamped(src.transforms[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_TransformStamped(src.transforms[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -93,8 +98,10 @@ static inline bool _ros2pdu_TFMessage(tf2_msgs::msg::TFMessage &src, Hako_TFMess
 {
     try {
         //struct array convert
-        _ros2pdu_struct_array_TFMessage_transforms(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_TFMessage_transforms(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -105,7 +112,7 @@ static inline bool _ros2pdu_TFMessage(tf2_msgs::msg::TFMessage &src, Hako_TFMess
 static inline int hako_convert_ros2pdu_TFMessage(tf2_msgs::msg::TFMessage &src, Hako_TFMessage** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_TFMessage out;
+    Hako_TFMessage out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_TFMessage(src, out, dynamic_memory)) {
         return -1;
     }
@@ -123,6 +130,22 @@ static inline int hako_convert_ros2pdu_TFMessage(tf2_msgs::msg::TFMessage &src, 
 
     *dst = (Hako_TFMessage*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_TFMessage() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_TFMessage(tf2_msgs::msg::TFMessage &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_TFMessage out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_TFMessage(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "TFMessage" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("TFMessage", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_TFMessage* hako_create_empty_pdu_TFMessage(int heap_size)

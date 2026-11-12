@@ -60,12 +60,14 @@ static inline bool cpp_cpp2pdu_Illuminance(HakoCpp_Illuminance &src, Hako_Illumi
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.illuminance, dst.illuminance);
         // primitive convert
         hako_convert_cpp2pdu(src.variance, dst.variance);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -76,7 +78,7 @@ static inline bool cpp_cpp2pdu_Illuminance(HakoCpp_Illuminance &src, Hako_Illumi
 static inline int hako_convert_cpp2pdu_Illuminance(HakoCpp_Illuminance &src, Hako_Illuminance** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Illuminance out;
+    Hako_Illuminance out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_Illuminance(src, out, dynamic_memory)) {
         return -1;
     }
@@ -128,26 +130,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_Illuminance() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_Illuminance& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_Illuminance(cppData, (Hako_Illuminance**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "Illuminance" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_Illuminance out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_Illuminance(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "Illuminance" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "Illuminance" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "Illuminance" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("Illuminance", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

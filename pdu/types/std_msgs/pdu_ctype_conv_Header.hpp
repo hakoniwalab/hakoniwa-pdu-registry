@@ -30,7 +30,7 @@ static inline int _pdu2ros_Header(const char* heap_ptr, Hako_Header &src, std_ms
     // Struct convert
     _pdu2ros_Time(heap_ptr, src.stamp, dst.stamp);
     // string convertor
-    dst.frame_id = (const char*)src.frame_id;
+    dst.frame_id = hako_convert_string_from_pdu(src.frame_id, M_SIZE(Hako_Header, frame_id));
     (void)heap_ptr;
     return 0;
 }
@@ -58,13 +58,12 @@ static inline bool _ros2pdu_Header(std_msgs::msg::Header &src, Hako_Header &dst,
 {
     try {
         // struct convert
-        _ros2pdu_Time(src.stamp, dst.stamp, dynamic_memory);
+        if (!_ros2pdu_Time(src.stamp, dst.stamp, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.frame_id, src.frame_id.length(),
-            dst.frame_id, M_ARRAY_SIZE(Hako_Header, char, frame_id));
-        dst.frame_id[src.frame_id.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.frame_id, dst.frame_id, M_SIZE(Hako_Header, frame_id));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -75,7 +74,7 @@ static inline bool _ros2pdu_Header(std_msgs::msg::Header &src, Hako_Header &dst,
 static inline int hako_convert_ros2pdu_Header(std_msgs::msg::Header &src, Hako_Header** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Header out;
+    Hako_Header out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Header(src, out, dynamic_memory)) {
         return -1;
     }
@@ -93,6 +92,22 @@ static inline int hako_convert_ros2pdu_Header(std_msgs::msg::Header &src, Hako_H
 
     *dst = (Hako_Header*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Header() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Header(std_msgs::msg::Header &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Header out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Header(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Header" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Header", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Header* hako_create_empty_pdu_Header(int heap_size)

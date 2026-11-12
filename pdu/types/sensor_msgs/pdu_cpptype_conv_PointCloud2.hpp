@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_struct_array_PointCloud2_fields(const char* heap_p
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.fields.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_PointCloud2_data(const char* heap_ptr, Hako_PointCloud2 &src, HakoCpp_PointCloud2 &dst)
@@ -48,6 +51,9 @@ static inline int cpp_pdu2cpp_primitive_array_PointCloud2_data(const char* heap_
     if (length > 0) {
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
+    }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -97,12 +103,14 @@ static inline int hako_convert_pdu2cpp_PointCloud2(Hako_PointCloud2 &src, HakoCp
 static inline bool cpp_cpp2pdu_struct_array_PointCloud2_fields(HakoCpp_PointCloud2 &src, Hako_PointCloud2 &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._fields_len = src.fields.size();
+    dst._fields_len = hako_pdu_array_length(src.fields.size());
     if (dst._fields_len > 0) {
         Hako_PointField* temp_struct_ptr = (Hako_PointField*)dynamic_memory.allocate(dst._fields_len, sizeof(Hako_PointField));
         dst._fields_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._fields_len; ++i) {
-            cpp_cpp2pdu_PointField(src.fields[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_PointField(src.fields[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -113,12 +121,10 @@ static inline bool cpp_cpp2pdu_struct_array_PointCloud2_fields(HakoCpp_PointClou
 }
 static inline bool cpp_cpp2pdu_primitive_array_PointCloud2_data(HakoCpp_PointCloud2 &src, Hako_PointCloud2 &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._data_len = src.data.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_uint8));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_uint8));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -130,13 +136,17 @@ static inline bool cpp_cpp2pdu_PointCloud2(HakoCpp_PointCloud2 &src, Hako_PointC
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.height, dst.height);
         // primitive convert
         hako_convert_cpp2pdu(src.width, dst.width);
         //struct array convert
-        cpp_cpp2pdu_struct_array_PointCloud2_fields(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_struct_array_PointCloud2_fields(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.is_bigendian, dst.is_bigendian);
         // primitive convert
@@ -144,10 +154,12 @@ static inline bool cpp_cpp2pdu_PointCloud2(HakoCpp_PointCloud2 &src, Hako_PointC
         // primitive convert
         hako_convert_cpp2pdu(src.row_step, dst.row_step);
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_PointCloud2_data(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_PointCloud2_data(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.is_dense, dst.is_dense);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -158,7 +170,7 @@ static inline bool cpp_cpp2pdu_PointCloud2(HakoCpp_PointCloud2 &src, Hako_PointC
 static inline int hako_convert_cpp2pdu_PointCloud2(HakoCpp_PointCloud2 &src, Hako_PointCloud2** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_PointCloud2 out;
+    Hako_PointCloud2 out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_PointCloud2(src, out, dynamic_memory)) {
         return -1;
     }
@@ -210,26 +222,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_PointCloud2() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_PointCloud2& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_PointCloud2(cppData, (Hako_PointCloud2**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "PointCloud2" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_PointCloud2 out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_PointCloud2(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "PointCloud2" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "PointCloud2" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "PointCloud2" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("PointCloud2", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_string_array_JointState_name(const char* heap_ptr,
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.name, length);
     }
+    else {
+        dst.name.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointState_position(const char* heap_ptr, Hako_JointState &src, HakoCpp_JointState &dst)
@@ -43,6 +46,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointState_position(const char* he
     if (length > 0) {
         dst.position.resize(length);
         memcpy(dst.position.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.position.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -55,6 +61,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointState_velocity(const char* he
         dst.velocity.resize(length);
         memcpy(dst.velocity.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.velocity.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointState_effort(const char* heap_ptr, Hako_JointState &src, HakoCpp_JointState &dst)
@@ -65,6 +74,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointState_effort(const char* heap
     if (length > 0) {
         dst.effort.resize(length);
         memcpy(dst.effort.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.effort.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -106,7 +118,7 @@ static inline int hako_convert_pdu2cpp_JointState(Hako_JointState &src, HakoCpp_
 static inline bool cpp_cpp2pdu_string_array_JointState_name(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._name_len = src.name.size();
+    dst._name_len = hako_pdu_array_length(src.name.size());
     if (dst._name_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._name_len, sizeof(Hako_cstring));
         (void)hako_convert_cpp2pdu_array_string_varray(src.name, temp_ptr);
@@ -119,12 +131,10 @@ static inline bool cpp_cpp2pdu_string_array_JointState_name(HakoCpp_JointState &
 }
 static inline bool cpp_cpp2pdu_primitive_array_JointState_position(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._position_len = src.position.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._position_len = hako_pdu_array_length(src.position.size());
     if (dst._position_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._position_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.position.data(), dst._position_len * sizeof(Hako_float64));
-        dst._position_off = dynamic_memory.get_offset(temp_ptr);
+        dst._position_off = dynamic_memory.reference(src.position.data(), dst._position_len, sizeof(Hako_float64));
     }
     else {
         dst._position_off = dynamic_memory.get_total_size();
@@ -133,12 +143,10 @@ static inline bool cpp_cpp2pdu_primitive_array_JointState_position(HakoCpp_Joint
 }
 static inline bool cpp_cpp2pdu_primitive_array_JointState_velocity(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._velocity_len = src.velocity.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._velocity_len = hako_pdu_array_length(src.velocity.size());
     if (dst._velocity_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._velocity_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.velocity.data(), dst._velocity_len * sizeof(Hako_float64));
-        dst._velocity_off = dynamic_memory.get_offset(temp_ptr);
+        dst._velocity_off = dynamic_memory.reference(src.velocity.data(), dst._velocity_len, sizeof(Hako_float64));
     }
     else {
         dst._velocity_off = dynamic_memory.get_total_size();
@@ -147,12 +155,10 @@ static inline bool cpp_cpp2pdu_primitive_array_JointState_velocity(HakoCpp_Joint
 }
 static inline bool cpp_cpp2pdu_primitive_array_JointState_effort(HakoCpp_JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._effort_len = src.effort.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._effort_len = hako_pdu_array_length(src.effort.size());
     if (dst._effort_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._effort_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.effort.data(), dst._effort_len * sizeof(Hako_float64));
-        dst._effort_off = dynamic_memory.get_offset(temp_ptr);
+        dst._effort_off = dynamic_memory.reference(src.effort.data(), dst._effort_len, sizeof(Hako_float64));
     }
     else {
         dst._effort_off = dynamic_memory.get_total_size();
@@ -164,16 +170,26 @@ static inline bool cpp_cpp2pdu_JointState(HakoCpp_JointState &src, Hako_JointSta
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string array convert
-        cpp_cpp2pdu_string_array_JointState_name(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_string_array_JointState_name(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointState_position(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_JointState_position(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointState_velocity(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_JointState_velocity(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointState_effort(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_primitive_array_JointState_effort(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -184,7 +200,7 @@ static inline bool cpp_cpp2pdu_JointState(HakoCpp_JointState &src, Hako_JointSta
 static inline int hako_convert_cpp2pdu_JointState(HakoCpp_JointState &src, Hako_JointState** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_JointState out;
+    Hako_JointState out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_JointState(src, out, dynamic_memory)) {
         return -1;
     }
@@ -236,26 +252,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_JointState() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_JointState& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_JointState(cppData, (Hako_JointState**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "JointState" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_JointState out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_JointState(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "JointState" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "JointState" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "JointState" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("JointState", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

@@ -116,7 +116,7 @@ static inline bool _ros2pdu_HakoHilSensor(hako_mavlink_msgs::msg::HakoHilSensor 
         hako_convert_ros2pdu(src.fields_updated, dst.fields_updated);
         // primitive convert
         hako_convert_ros2pdu(src.id, dst.id);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -127,7 +127,7 @@ static inline bool _ros2pdu_HakoHilSensor(hako_mavlink_msgs::msg::HakoHilSensor 
 static inline int hako_convert_ros2pdu_HakoHilSensor(hako_mavlink_msgs::msg::HakoHilSensor &src, Hako_HakoHilSensor** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoHilSensor out;
+    Hako_HakoHilSensor out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoHilSensor(src, out, dynamic_memory)) {
         return -1;
     }
@@ -145,6 +145,22 @@ static inline int hako_convert_ros2pdu_HakoHilSensor(hako_mavlink_msgs::msg::Hak
 
     *dst = (Hako_HakoHilSensor*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoHilSensor() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoHilSensor(hako_mavlink_msgs::msg::HakoHilSensor &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoHilSensor out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoHilSensor(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoHilSensor" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoHilSensor", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoHilSensor* hako_create_empty_pdu_HakoHilSensor(int heap_size)

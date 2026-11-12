@@ -72,7 +72,7 @@ static inline bool _ros2pdu_HakoCanHead(can_msgs::msg::HakoCanHead &src, Hako_Ha
         hako_convert_ros2pdu(src.dlc, dst.dlc);
         // primitive convert
         hako_convert_ros2pdu(src.canid, dst.canid);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -83,7 +83,7 @@ static inline bool _ros2pdu_HakoCanHead(can_msgs::msg::HakoCanHead &src, Hako_Ha
 static inline int hako_convert_ros2pdu_HakoCanHead(can_msgs::msg::HakoCanHead &src, Hako_HakoCanHead** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoCanHead out;
+    Hako_HakoCanHead out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoCanHead(src, out, dynamic_memory)) {
         return -1;
     }
@@ -101,6 +101,22 @@ static inline int hako_convert_ros2pdu_HakoCanHead(can_msgs::msg::HakoCanHead &s
 
     *dst = (Hako_HakoCanHead*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoCanHead() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoCanHead(can_msgs::msg::HakoCanHead &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoCanHead out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoCanHead(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoCanHead" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoCanHead", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoCanHead* hako_create_empty_pdu_HakoCanHead(int heap_size)

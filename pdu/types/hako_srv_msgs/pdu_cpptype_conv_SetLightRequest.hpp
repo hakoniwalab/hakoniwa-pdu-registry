@@ -26,7 +26,7 @@
 static inline int cpp_pdu2cpp_SetLightRequest(const char* heap_ptr, Hako_SetLightRequest &src, HakoCpp_SetLightRequest &dst)
 {
     // string convertor
-    dst.source = (const char*)src.source;
+    dst.source = hako_convert_string_from_pdu(src.source, M_SIZE(Hako_SetLightRequest, source));
     // primitive convert
     hako_convert_pdu2cpp(src.mode, dst.mode);
     // primitive convert
@@ -64,10 +64,7 @@ static inline bool cpp_cpp2pdu_SetLightRequest(HakoCpp_SetLightRequest &src, Hak
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.source, src.source.length(),
-            dst.source, M_ARRAY_SIZE(Hako_SetLightRequest, char, source));
-        dst.source[src.source.length()] = '\0';
+        hako_convert_string_to_pdu(src.source, dst.source, M_SIZE(Hako_SetLightRequest, source));
         // primitive convert
         hako_convert_cpp2pdu(src.mode, dst.mode);
         // primitive convert
@@ -78,7 +75,7 @@ static inline bool cpp_cpp2pdu_SetLightRequest(HakoCpp_SetLightRequest &src, Hak
         hako_convert_cpp2pdu(src.flashing_off_s, dst.flashing_off_s);
         // primitive convert
         hako_convert_cpp2pdu(src.transition_s, dst.transition_s);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -89,7 +86,7 @@ static inline bool cpp_cpp2pdu_SetLightRequest(HakoCpp_SetLightRequest &src, Hak
 static inline int hako_convert_cpp2pdu_SetLightRequest(HakoCpp_SetLightRequest &src, Hako_SetLightRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_SetLightRequest out;
+    Hako_SetLightRequest out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_SetLightRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -141,26 +138,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_SetLightRequest() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_SetLightRequest& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_SetLightRequest(cppData, (Hako_SetLightRequest**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "SetLightRequest" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_SetLightRequest out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_SetLightRequest(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "SetLightRequest" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "SetLightRequest" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "SetLightRequest" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("SetLightRequest", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

@@ -55,7 +55,7 @@ static inline bool cpp_cpp2pdu_DetachResponse(HakoCpp_DetachResponse &src, Hako_
     try {
         // primitive convert
         hako_convert_cpp2pdu(src.result_code, dst.result_code);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -66,7 +66,7 @@ static inline bool cpp_cpp2pdu_DetachResponse(HakoCpp_DetachResponse &src, Hako_
 static inline int hako_convert_cpp2pdu_DetachResponse(HakoCpp_DetachResponse &src, Hako_DetachResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_DetachResponse out;
+    Hako_DetachResponse out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_DetachResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -118,26 +118,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_DetachResponse() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_DetachResponse& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_DetachResponse(cppData, (Hako_DetachResponse**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "DetachResponse" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_DetachResponse out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_DetachResponse(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "DetachResponse" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "DetachResponse" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "DetachResponse" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("DetachResponse", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

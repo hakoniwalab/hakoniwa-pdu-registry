@@ -30,7 +30,7 @@
 static inline int _pdu2ros_RenderCameraRequest(const char* heap_ptr, Hako_RenderCameraRequest &src, hako_srv_msgs::msg::RenderCameraRequest &dst)
 {
     // string convertor
-    dst.camera_name = (const char*)src.camera_name;
+    dst.camera_name = hako_convert_string_from_pdu(src.camera_name, M_SIZE(Hako_RenderCameraRequest, camera_name));
     // primitive convert
     hako_convert_pdu2ros(src.sim_time_usec, dst.sim_time_usec);
     // Struct convert
@@ -62,15 +62,14 @@ static inline bool _ros2pdu_RenderCameraRequest(hako_srv_msgs::msg::RenderCamera
 {
     try {
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.camera_name, src.camera_name.length(),
-            dst.camera_name, M_ARRAY_SIZE(Hako_RenderCameraRequest, char, camera_name));
-        dst.camera_name[src.camera_name.length()] = '\0';
+        hako_convert_string_to_pdu(src.camera_name, dst.camera_name, M_SIZE(Hako_RenderCameraRequest, camera_name));
         // primitive convert
         hako_convert_ros2pdu(src.sim_time_usec, dst.sim_time_usec);
         // struct convert
-        _ros2pdu_Pose(src.camera_pose, dst.camera_pose, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_Pose(src.camera_pose, dst.camera_pose, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -81,7 +80,7 @@ static inline bool _ros2pdu_RenderCameraRequest(hako_srv_msgs::msg::RenderCamera
 static inline int hako_convert_ros2pdu_RenderCameraRequest(hako_srv_msgs::msg::RenderCameraRequest &src, Hako_RenderCameraRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_RenderCameraRequest out;
+    Hako_RenderCameraRequest out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_RenderCameraRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -99,6 +98,22 @@ static inline int hako_convert_ros2pdu_RenderCameraRequest(hako_srv_msgs::msg::R
 
     *dst = (Hako_RenderCameraRequest*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_RenderCameraRequest() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_RenderCameraRequest(hako_srv_msgs::msg::RenderCameraRequest &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_RenderCameraRequest out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_RenderCameraRequest(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "RenderCameraRequest" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("RenderCameraRequest", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_RenderCameraRequest* hako_create_empty_pdu_RenderCameraRequest(int heap_size)

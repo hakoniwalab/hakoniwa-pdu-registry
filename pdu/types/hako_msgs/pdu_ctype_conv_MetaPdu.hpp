@@ -43,7 +43,7 @@ static inline int _pdu2ros_MetaPdu(const char* heap_ptr, Hako_MetaPdu &src, hako
     // primitive convert
     hako_convert_pdu2ros(src.real_time_us, dst.real_time_us);
     // string convertor
-    dst.robot_name = (const char*)src.robot_name;
+    dst.robot_name = hako_convert_string_from_pdu(src.robot_name, M_SIZE(Hako_MetaPdu, robot_name));
     // primitive convert
     hako_convert_pdu2ros(src.channel_id, dst.channel_id);
     // primitive convert
@@ -91,15 +91,12 @@ static inline bool _ros2pdu_MetaPdu(hako_msgs::msg::MetaPdu &src, Hako_MetaPdu &
         // primitive convert
         hako_convert_ros2pdu(src.real_time_us, dst.real_time_us);
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.robot_name, src.robot_name.length(),
-            dst.robot_name, M_ARRAY_SIZE(Hako_MetaPdu, char, robot_name));
-        dst.robot_name[src.robot_name.length()] = '\0';
+        hako_convert_string_to_pdu(src.robot_name, dst.robot_name, M_SIZE(Hako_MetaPdu, robot_name));
         // primitive convert
         hako_convert_ros2pdu(src.channel_id, dst.channel_id);
         // primitive convert
         hako_convert_ros2pdu(src.body_len, dst.body_len);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -110,7 +107,7 @@ static inline bool _ros2pdu_MetaPdu(hako_msgs::msg::MetaPdu &src, Hako_MetaPdu &
 static inline int hako_convert_ros2pdu_MetaPdu(hako_msgs::msg::MetaPdu &src, Hako_MetaPdu** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MetaPdu out;
+    Hako_MetaPdu out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_MetaPdu(src, out, dynamic_memory)) {
         return -1;
     }
@@ -128,6 +125,22 @@ static inline int hako_convert_ros2pdu_MetaPdu(hako_msgs::msg::MetaPdu &src, Hak
 
     *dst = (Hako_MetaPdu*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_MetaPdu() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_MetaPdu(hako_msgs::msg::MetaPdu &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MetaPdu out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_MetaPdu(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "MetaPdu" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("MetaPdu", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_MetaPdu* hako_create_empty_pdu_MetaPdu(int heap_size)

@@ -32,6 +32,9 @@ static inline int _pdu2ros_primitive_array_DroneVisualState_pwm_duty(const char*
         dst.pwm_duty.resize(length);
         memcpy(dst.pwm_duty.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.pwm_duty.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -75,12 +78,10 @@ static inline int hako_convert_pdu2ros_DroneVisualState(Hako_DroneVisualState &s
  ***************************/
 static inline bool _ros2pdu_primitive_array_DroneVisualState_pwm_duty(hako_msgs::msg::DroneVisualState &src, Hako_DroneVisualState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._pwm_duty_len = src.pwm_duty.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._pwm_duty_len = hako_pdu_array_length(src.pwm_duty.size());
     if (dst._pwm_duty_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._pwm_duty_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.pwm_duty.data(), dst._pwm_duty_len * sizeof(Hako_float32));
-        dst._pwm_duty_off = dynamic_memory.get_offset(temp_ptr);
+        dst._pwm_duty_off = dynamic_memory.reference(src.pwm_duty.data(), dst._pwm_duty_len, sizeof(Hako_float32));
     }
     else {
         dst._pwm_duty_off = dynamic_memory.get_total_size();
@@ -104,8 +105,10 @@ static inline bool _ros2pdu_DroneVisualState(hako_msgs::msg::DroneVisualState &s
         // primitive convert
         hako_convert_ros2pdu(src.yaw, dst.yaw);
         //primitive array copy
-        _ros2pdu_primitive_array_DroneVisualState_pwm_duty(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_DroneVisualState_pwm_duty(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -116,7 +119,7 @@ static inline bool _ros2pdu_DroneVisualState(hako_msgs::msg::DroneVisualState &s
 static inline int hako_convert_ros2pdu_DroneVisualState(hako_msgs::msg::DroneVisualState &src, Hako_DroneVisualState** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_DroneVisualState out;
+    Hako_DroneVisualState out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_DroneVisualState(src, out, dynamic_memory)) {
         return -1;
     }
@@ -134,6 +137,22 @@ static inline int hako_convert_ros2pdu_DroneVisualState(hako_msgs::msg::DroneVis
 
     *dst = (Hako_DroneVisualState*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_DroneVisualState() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_DroneVisualState(hako_msgs::msg::DroneVisualState &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_DroneVisualState out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_DroneVisualState(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "DroneVisualState" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("DroneVisualState", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_DroneVisualState* hako_create_empty_pdu_DroneVisualState(int heap_size)

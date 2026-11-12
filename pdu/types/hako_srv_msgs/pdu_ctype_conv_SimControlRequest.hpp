@@ -27,7 +27,7 @@
 static inline int _pdu2ros_SimControlRequest(const char* heap_ptr, Hako_SimControlRequest &src, hako_srv_msgs::msg::SimControlRequest &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_SimControlRequest, name));
     // primitive convert
     hako_convert_pdu2ros(src.op, dst.op);
     (void)heap_ptr;
@@ -57,13 +57,10 @@ static inline bool _ros2pdu_SimControlRequest(hako_srv_msgs::msg::SimControlRequ
 {
     try {
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_SimControlRequest, char, name));
-        dst.name[src.name.length()] = '\0';
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_SimControlRequest, name));
         // primitive convert
         hako_convert_ros2pdu(src.op, dst.op);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -74,7 +71,7 @@ static inline bool _ros2pdu_SimControlRequest(hako_srv_msgs::msg::SimControlRequ
 static inline int hako_convert_ros2pdu_SimControlRequest(hako_srv_msgs::msg::SimControlRequest &src, Hako_SimControlRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_SimControlRequest out;
+    Hako_SimControlRequest out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_SimControlRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -92,6 +89,22 @@ static inline int hako_convert_ros2pdu_SimControlRequest(hako_srv_msgs::msg::Sim
 
     *dst = (Hako_SimControlRequest*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_SimControlRequest() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_SimControlRequest(hako_srv_msgs::msg::SimControlRequest &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_SimControlRequest out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_SimControlRequest(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "SimControlRequest" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("SimControlRequest", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_SimControlRequest* hako_create_empty_pdu_SimControlRequest(int heap_size)

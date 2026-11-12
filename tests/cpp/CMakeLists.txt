@@ -32,6 +32,20 @@ add_executable(hakoniwa_pdu_cpp_tests
   point_cloud2_cpp_interop_test.cpp
   simple_struct_varray_cpp_interop_test.cpp
   string_varray_alias_compat_test.cpp
+  cpp2pdu_direct_write_test.cpp
+  cpp2pdu_golden_test.cpp
+  string_bounds_test.cpp
+)
+target_compile_definitions(hakoniwa_pdu_cpp_tests PRIVATE
+  CPP2PDU_GOLDEN_DIR="${PROJECT_SOURCE_DIR}/../fixtures/cpp2pdu_golden"
+)
+
+# Writes the cpp2pdu golden files (see cpp2pdu_golden_dump.cpp).
+add_executable(cpp2pdu_golden_dump
+  cpp2pdu_golden_dump.cpp
+)
+target_include_directories(cpp2pdu_golden_dump PRIVATE
+  ${PROJECT_SOURCE_DIR}/../../pdu/types
 )
 
 add_executable(disturbance_cpp_dump
@@ -132,6 +146,30 @@ target_include_directories(float64_multi_array_cpp_dump PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(hakoniwa_pdu_cpp_tests)
+
+# The ROS 2 <-> PDU converters (pdu_ctype_conv_*.hpp) need the ROS 2 message
+# packages: built only where they are found (e.g. a sourced ROS 2 environment).
+find_package(sensor_msgs QUIET)
+find_package(std_msgs QUIET)
+find_package(trajectory_msgs QUIET)
+if(sensor_msgs_FOUND AND std_msgs_FOUND AND trajectory_msgs_FOUND)
+  add_executable(hakoniwa_pdu_ros2pdu_tests ros2pdu_test.cpp)
+  target_include_directories(hakoniwa_pdu_ros2pdu_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/../../pdu/types
+  )
+  target_compile_definitions(hakoniwa_pdu_ros2pdu_tests PRIVATE
+    CPP2PDU_GOLDEN_DIR="${PROJECT_SOURCE_DIR}/../fixtures/cpp2pdu_golden"
+  )
+  target_link_libraries(hakoniwa_pdu_ros2pdu_tests PRIVATE
+    GTest::gtest_main
+    ${sensor_msgs_TARGETS}
+    ${std_msgs_TARGETS}
+    ${trajectory_msgs_TARGETS}
+  )
+  gtest_discover_tests(hakoniwa_pdu_ros2pdu_tests)
+else()
+  message(STATUS "ROS 2 message packages not found; skipping the ROS 2 <-> PDU converter tests")
+endif()
 
 if(fastcdr_FOUND)
   add_executable(hakoniwa_pdu_cpp_cdr_tests

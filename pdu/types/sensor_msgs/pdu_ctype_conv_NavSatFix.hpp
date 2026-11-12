@@ -88,9 +88,13 @@ static inline bool _ros2pdu_NavSatFix(sensor_msgs::msg::NavSatFix &src, Hako_Nav
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_NavSatStatus(src.status, dst.status, dynamic_memory);
+        if (!_ros2pdu_NavSatStatus(src.status, dst.status, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.latitude, dst.latitude);
         // primitive convert
@@ -98,10 +102,12 @@ static inline bool _ros2pdu_NavSatFix(sensor_msgs::msg::NavSatFix &src, Hako_Nav
         // primitive convert
         hako_convert_ros2pdu(src.altitude, dst.altitude);
         //primitive array copy
-        _ros2pdu_primitive_array_NavSatFix_position_covariance(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_NavSatFix_position_covariance(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.position_covariance_type, dst.position_covariance_type);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -112,7 +118,7 @@ static inline bool _ros2pdu_NavSatFix(sensor_msgs::msg::NavSatFix &src, Hako_Nav
 static inline int hako_convert_ros2pdu_NavSatFix(sensor_msgs::msg::NavSatFix &src, Hako_NavSatFix** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_NavSatFix out;
+    Hako_NavSatFix out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_NavSatFix(src, out, dynamic_memory)) {
         return -1;
     }
@@ -130,6 +136,22 @@ static inline int hako_convert_ros2pdu_NavSatFix(sensor_msgs::msg::NavSatFix &sr
 
     *dst = (Hako_NavSatFix*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_NavSatFix() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_NavSatFix(sensor_msgs::msg::NavSatFix &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_NavSatFix out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_NavSatFix(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "NavSatFix" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("NavSatFix", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_NavSatFix* hako_create_empty_pdu_NavSatFix(int heap_size)

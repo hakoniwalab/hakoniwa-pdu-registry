@@ -61,12 +61,16 @@ static inline bool _ros2pdu_HakoCmdCameraMove(hako_msgs::msg::HakoCmdCameraMove 
 {
     try {
         // struct convert
-        _ros2pdu_HakoCmdHeader(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_HakoCmdHeader(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.request_id, dst.request_id);
         // struct convert
-        _ros2pdu_Vector3(src.angle, dst.angle, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_Vector3(src.angle, dst.angle, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -77,7 +81,7 @@ static inline bool _ros2pdu_HakoCmdCameraMove(hako_msgs::msg::HakoCmdCameraMove 
 static inline int hako_convert_ros2pdu_HakoCmdCameraMove(hako_msgs::msg::HakoCmdCameraMove &src, Hako_HakoCmdCameraMove** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoCmdCameraMove out;
+    Hako_HakoCmdCameraMove out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoCmdCameraMove(src, out, dynamic_memory)) {
         return -1;
     }
@@ -95,6 +99,22 @@ static inline int hako_convert_ros2pdu_HakoCmdCameraMove(hako_msgs::msg::HakoCmd
 
     *dst = (Hako_HakoCmdCameraMove*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoCmdCameraMove() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoCmdCameraMove(hako_msgs::msg::HakoCmdCameraMove &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoCmdCameraMove out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoCmdCameraMove(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoCmdCameraMove" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoCmdCameraMove", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoCmdCameraMove* hako_create_empty_pdu_HakoCmdCameraMove(int heap_size)

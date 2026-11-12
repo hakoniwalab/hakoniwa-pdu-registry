@@ -28,7 +28,7 @@ static inline int cpp_pdu2cpp_DroneSetReadyResponse(const char* heap_ptr, Hako_D
     // primitive convert
     hako_convert_pdu2cpp(src.ok, dst.ok);
     // string convertor
-    dst.message = (const char*)src.message;
+    dst.message = hako_convert_string_from_pdu(src.message, M_SIZE(Hako_DroneSetReadyResponse, message));
     (void)heap_ptr;
     return 0;
 }
@@ -58,11 +58,8 @@ static inline bool cpp_cpp2pdu_DroneSetReadyResponse(HakoCpp_DroneSetReadyRespon
         // primitive convert
         hako_convert_cpp2pdu(src.ok, dst.ok);
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.message, src.message.length(),
-            dst.message, M_ARRAY_SIZE(Hako_DroneSetReadyResponse, char, message));
-        dst.message[src.message.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.message, dst.message, M_SIZE(Hako_DroneSetReadyResponse, message));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -73,7 +70,7 @@ static inline bool cpp_cpp2pdu_DroneSetReadyResponse(HakoCpp_DroneSetReadyRespon
 static inline int hako_convert_cpp2pdu_DroneSetReadyResponse(HakoCpp_DroneSetReadyResponse &src, Hako_DroneSetReadyResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_DroneSetReadyResponse out;
+    Hako_DroneSetReadyResponse out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_DroneSetReadyResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -125,26 +122,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_DroneSetReadyResponse() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_DroneSetReadyResponse& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_DroneSetReadyResponse(cppData, (Hako_DroneSetReadyResponse**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "DroneSetReadyResponse" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_DroneSetReadyResponse out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_DroneSetReadyResponse(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "DroneSetReadyResponse" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "DroneSetReadyResponse" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "DroneSetReadyResponse" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("DroneSetReadyResponse", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

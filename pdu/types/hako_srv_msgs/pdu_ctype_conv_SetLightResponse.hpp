@@ -29,7 +29,7 @@ static inline int _pdu2ros_SetLightResponse(const char* heap_ptr, Hako_SetLightR
     // primitive convert
     hako_convert_pdu2ros(src.result_code, dst.result_code);
     // string convertor
-    dst.message = (const char*)src.message;
+    dst.message = hako_convert_string_from_pdu(src.message, M_SIZE(Hako_SetLightResponse, message));
     (void)heap_ptr;
     return 0;
 }
@@ -59,11 +59,8 @@ static inline bool _ros2pdu_SetLightResponse(hako_srv_msgs::msg::SetLightRespons
         // primitive convert
         hako_convert_ros2pdu(src.result_code, dst.result_code);
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.message, src.message.length(),
-            dst.message, M_ARRAY_SIZE(Hako_SetLightResponse, char, message));
-        dst.message[src.message.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.message, dst.message, M_SIZE(Hako_SetLightResponse, message));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -74,7 +71,7 @@ static inline bool _ros2pdu_SetLightResponse(hako_srv_msgs::msg::SetLightRespons
 static inline int hako_convert_ros2pdu_SetLightResponse(hako_srv_msgs::msg::SetLightResponse &src, Hako_SetLightResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_SetLightResponse out;
+    Hako_SetLightResponse out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_SetLightResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -92,6 +89,22 @@ static inline int hako_convert_ros2pdu_SetLightResponse(hako_srv_msgs::msg::SetL
 
     *dst = (Hako_SetLightResponse*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_SetLightResponse() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_SetLightResponse(hako_srv_msgs::msg::SetLightResponse &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_SetLightResponse out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_SetLightResponse(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "SetLightResponse" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("SetLightResponse", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_SetLightResponse* hako_create_empty_pdu_SetLightResponse(int heap_size)

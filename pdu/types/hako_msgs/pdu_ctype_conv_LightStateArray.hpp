@@ -37,6 +37,9 @@ static inline int _pdu2ros_struct_array_LightStateArray_lights(const char* heap_
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.lights.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -45,7 +48,7 @@ static inline int _pdu2ros_LightStateArray(const char* heap_ptr, Hako_LightState
     // primitive convert
     hako_convert_pdu2ros(src.stamp_usec, dst.stamp_usec);
     // string convertor
-    dst.carrier = (const char*)src.carrier;
+    dst.carrier = hako_convert_string_from_pdu(src.carrier, M_SIZE(Hako_LightStateArray, carrier));
     // struct array convertor
     _pdu2ros_struct_array_LightStateArray_lights(heap_ptr, src, dst);
     (void)heap_ptr;
@@ -73,12 +76,14 @@ static inline int hako_convert_pdu2ros_LightStateArray(Hako_LightStateArray &src
 static inline bool _ros2pdu_struct_array_LightStateArray_lights(hako_msgs::msg::LightStateArray &src, Hako_LightStateArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._lights_len = src.lights.size();
+    dst._lights_len = hako_pdu_array_length(src.lights.size());
     if (dst._lights_len > 0) {
         Hako_LightState* temp_struct_ptr = (Hako_LightState*)dynamic_memory.allocate(dst._lights_len, sizeof(Hako_LightState));
         dst._lights_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._lights_len; ++i) {
-            _ros2pdu_LightState(src.lights[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_LightState(src.lights[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -94,13 +99,12 @@ static inline bool _ros2pdu_LightStateArray(hako_msgs::msg::LightStateArray &src
         // primitive convert
         hako_convert_ros2pdu(src.stamp_usec, dst.stamp_usec);
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.carrier, src.carrier.length(),
-            dst.carrier, M_ARRAY_SIZE(Hako_LightStateArray, char, carrier));
-        dst.carrier[src.carrier.length()] = '\0';
+        hako_convert_string_to_pdu(src.carrier, dst.carrier, M_SIZE(Hako_LightStateArray, carrier));
         //struct array convert
-        _ros2pdu_struct_array_LightStateArray_lights(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_LightStateArray_lights(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -111,7 +115,7 @@ static inline bool _ros2pdu_LightStateArray(hako_msgs::msg::LightStateArray &src
 static inline int hako_convert_ros2pdu_LightStateArray(hako_msgs::msg::LightStateArray &src, Hako_LightStateArray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_LightStateArray out;
+    Hako_LightStateArray out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_LightStateArray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -129,6 +133,22 @@ static inline int hako_convert_ros2pdu_LightStateArray(hako_msgs::msg::LightStat
 
     *dst = (Hako_LightStateArray*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_LightStateArray() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_LightStateArray(hako_msgs::msg::LightStateArray &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_LightStateArray out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_LightStateArray(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "LightStateArray" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("LightStateArray", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_LightStateArray* hako_create_empty_pdu_LightStateArray(int heap_size)

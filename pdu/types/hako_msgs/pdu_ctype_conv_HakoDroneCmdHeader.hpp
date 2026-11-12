@@ -64,7 +64,7 @@ static inline bool _ros2pdu_HakoDroneCmdHeader(hako_msgs::msg::HakoDroneCmdHeade
         hako_convert_ros2pdu(src.result, dst.result);
         // primitive convert
         hako_convert_ros2pdu(src.result_code, dst.result_code);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -75,7 +75,7 @@ static inline bool _ros2pdu_HakoDroneCmdHeader(hako_msgs::msg::HakoDroneCmdHeade
 static inline int hako_convert_ros2pdu_HakoDroneCmdHeader(hako_msgs::msg::HakoDroneCmdHeader &src, Hako_HakoDroneCmdHeader** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoDroneCmdHeader out;
+    Hako_HakoDroneCmdHeader out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoDroneCmdHeader(src, out, dynamic_memory)) {
         return -1;
     }
@@ -93,6 +93,22 @@ static inline int hako_convert_ros2pdu_HakoDroneCmdHeader(hako_msgs::msg::HakoDr
 
     *dst = (Hako_HakoDroneCmdHeader*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoDroneCmdHeader() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoDroneCmdHeader(hako_msgs::msg::HakoDroneCmdHeader &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoDroneCmdHeader out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoDroneCmdHeader(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoDroneCmdHeader" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoDroneCmdHeader", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoDroneCmdHeader* hako_create_empty_pdu_HakoDroneCmdHeader(int heap_size)

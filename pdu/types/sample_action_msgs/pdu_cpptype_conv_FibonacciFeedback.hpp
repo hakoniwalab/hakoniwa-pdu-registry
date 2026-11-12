@@ -31,6 +31,9 @@ static inline int cpp_pdu2cpp_primitive_array_FibonacciFeedback_partial_sequence
         dst.partial_sequence.resize(length);
         memcpy(dst.partial_sequence.data(), heap_ptr + offset, length * sizeof(Hako_int32));
     }
+    else {
+        dst.partial_sequence.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -62,12 +65,10 @@ static inline int hako_convert_pdu2cpp_FibonacciFeedback(Hako_FibonacciFeedback 
  ***************************/
 static inline bool cpp_cpp2pdu_primitive_array_FibonacciFeedback_partial_sequence(HakoCpp_FibonacciFeedback &src, Hako_FibonacciFeedback &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._partial_sequence_len = src.partial_sequence.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._partial_sequence_len = hako_pdu_array_length(src.partial_sequence.size());
     if (dst._partial_sequence_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._partial_sequence_len, sizeof(Hako_int32));
-        memcpy(temp_ptr, src.partial_sequence.data(), dst._partial_sequence_len * sizeof(Hako_int32));
-        dst._partial_sequence_off = dynamic_memory.get_offset(temp_ptr);
+        dst._partial_sequence_off = dynamic_memory.reference(src.partial_sequence.data(), dst._partial_sequence_len, sizeof(Hako_int32));
     }
     else {
         dst._partial_sequence_off = dynamic_memory.get_total_size();
@@ -79,8 +80,10 @@ static inline bool cpp_cpp2pdu_FibonacciFeedback(HakoCpp_FibonacciFeedback &src,
 {
     try {
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_FibonacciFeedback_partial_sequence(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_primitive_array_FibonacciFeedback_partial_sequence(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -91,7 +94,7 @@ static inline bool cpp_cpp2pdu_FibonacciFeedback(HakoCpp_FibonacciFeedback &src,
 static inline int hako_convert_cpp2pdu_FibonacciFeedback(HakoCpp_FibonacciFeedback &src, Hako_FibonacciFeedback** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_FibonacciFeedback out;
+    Hako_FibonacciFeedback out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_FibonacciFeedback(src, out, dynamic_memory)) {
         return -1;
     }
@@ -143,26 +146,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_FibonacciFeedback() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_FibonacciFeedback& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_FibonacciFeedback(cppData, (Hako_FibonacciFeedback**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "FibonacciFeedback" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_FibonacciFeedback out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_FibonacciFeedback(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "FibonacciFeedback" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "FibonacciFeedback" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "FibonacciFeedback" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("FibonacciFeedback", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

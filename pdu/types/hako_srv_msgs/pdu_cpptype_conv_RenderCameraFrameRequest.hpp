@@ -39,13 +39,16 @@ static inline int cpp_pdu2cpp_struct_array_RenderCameraFrameRequest_objects(cons
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.objects.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
 static inline int cpp_pdu2cpp_RenderCameraFrameRequest(const char* heap_ptr, Hako_RenderCameraFrameRequest &src, HakoCpp_RenderCameraFrameRequest &dst)
 {
     // string convertor
-    dst.camera_name = (const char*)src.camera_name;
+    dst.camera_name = hako_convert_string_from_pdu(src.camera_name, M_SIZE(Hako_RenderCameraFrameRequest, camera_name));
     // primitive convert
     hako_convert_pdu2cpp(src.sim_time_usec, dst.sim_time_usec);
     // Struct convert
@@ -79,12 +82,14 @@ static inline int hako_convert_pdu2cpp_RenderCameraFrameRequest(Hako_RenderCamer
 static inline bool cpp_cpp2pdu_struct_array_RenderCameraFrameRequest_objects(HakoCpp_RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._objects_len = src.objects.size();
+    dst._objects_len = hako_pdu_array_length(src.objects.size());
     if (dst._objects_len > 0) {
         Hako_RenderObject* temp_struct_ptr = (Hako_RenderObject*)dynamic_memory.allocate(dst._objects_len, sizeof(Hako_RenderObject));
         dst._objects_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._objects_len; ++i) {
-            cpp_cpp2pdu_RenderObject(src.objects[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_RenderObject(src.objects[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -98,19 +103,20 @@ static inline bool cpp_cpp2pdu_RenderCameraFrameRequest(HakoCpp_RenderCameraFram
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.camera_name, src.camera_name.length(),
-            dst.camera_name, M_ARRAY_SIZE(Hako_RenderCameraFrameRequest, char, camera_name));
-        dst.camera_name[src.camera_name.length()] = '\0';
+        hako_convert_string_to_pdu(src.camera_name, dst.camera_name, M_SIZE(Hako_RenderCameraFrameRequest, camera_name));
         // primitive convert
         hako_convert_cpp2pdu(src.sim_time_usec, dst.sim_time_usec);
         // struct convert
-        cpp_cpp2pdu_Pose(src.camera_pose, dst.camera_pose, dynamic_memory);
+        if (!cpp_cpp2pdu_Pose(src.camera_pose, dst.camera_pose, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.outputs, dst.outputs);
         //struct array convert
-        cpp_cpp2pdu_struct_array_RenderCameraFrameRequest_objects(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_struct_array_RenderCameraFrameRequest_objects(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -121,7 +127,7 @@ static inline bool cpp_cpp2pdu_RenderCameraFrameRequest(HakoCpp_RenderCameraFram
 static inline int hako_convert_cpp2pdu_RenderCameraFrameRequest(HakoCpp_RenderCameraFrameRequest &src, Hako_RenderCameraFrameRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_RenderCameraFrameRequest out;
+    Hako_RenderCameraFrameRequest out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_RenderCameraFrameRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -173,26 +179,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_RenderCameraFrameRequest() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_RenderCameraFrameRequest& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_RenderCameraFrameRequest(cppData, (Hako_RenderCameraFrameRequest**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "RenderCameraFrameRequest" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_RenderCameraFrameRequest out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_RenderCameraFrameRequest(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "RenderCameraFrameRequest" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "RenderCameraFrameRequest" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "RenderCameraFrameRequest" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("RenderCameraFrameRequest", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

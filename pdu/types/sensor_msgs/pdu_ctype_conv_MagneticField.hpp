@@ -80,12 +80,18 @@ static inline bool _ros2pdu_MagneticField(sensor_msgs::msg::MagneticField &src, 
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.magnetic_field, dst.magnetic_field, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.magnetic_field, dst.magnetic_field, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_MagneticField_magnetic_field_covariance(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_MagneticField_magnetic_field_covariance(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -96,7 +102,7 @@ static inline bool _ros2pdu_MagneticField(sensor_msgs::msg::MagneticField &src, 
 static inline int hako_convert_ros2pdu_MagneticField(sensor_msgs::msg::MagneticField &src, Hako_MagneticField** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MagneticField out;
+    Hako_MagneticField out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_MagneticField(src, out, dynamic_memory)) {
         return -1;
     }
@@ -114,6 +120,22 @@ static inline int hako_convert_ros2pdu_MagneticField(sensor_msgs::msg::MagneticF
 
     *dst = (Hako_MagneticField*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_MagneticField() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_MagneticField(sensor_msgs::msg::MagneticField &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_MagneticField out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_MagneticField(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "MagneticField" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("MagneticField", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_MagneticField* hako_create_empty_pdu_MagneticField(int heap_size)

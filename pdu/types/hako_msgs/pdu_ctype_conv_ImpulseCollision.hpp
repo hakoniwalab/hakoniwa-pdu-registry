@@ -83,22 +83,36 @@ static inline bool _ros2pdu_ImpulseCollision(hako_msgs::msg::ImpulseCollision &s
         // primitive convert
         hako_convert_ros2pdu(src.restitution_coefficient, dst.restitution_coefficient);
         // struct convert
-        _ros2pdu_Point(src.self_contact_vector, dst.self_contact_vector, dynamic_memory);
+        if (!_ros2pdu_Point(src.self_contact_vector, dst.self_contact_vector, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.normal, dst.normal, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.normal, dst.normal, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Point(src.target_contact_vector, dst.target_contact_vector, dynamic_memory);
+        if (!_ros2pdu_Point(src.target_contact_vector, dst.target_contact_vector, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.target_velocity, dst.target_velocity, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.target_velocity, dst.target_velocity, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.target_angular_velocity, dst.target_angular_velocity, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.target_angular_velocity, dst.target_angular_velocity, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.target_euler, dst.target_euler, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.target_euler, dst.target_euler, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Vector3(src.target_inertia, dst.target_inertia, dynamic_memory);
+        if (!_ros2pdu_Vector3(src.target_inertia, dst.target_inertia, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.target_mass, dst.target_mass);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -109,7 +123,7 @@ static inline bool _ros2pdu_ImpulseCollision(hako_msgs::msg::ImpulseCollision &s
 static inline int hako_convert_ros2pdu_ImpulseCollision(hako_msgs::msg::ImpulseCollision &src, Hako_ImpulseCollision** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_ImpulseCollision out;
+    Hako_ImpulseCollision out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_ImpulseCollision(src, out, dynamic_memory)) {
         return -1;
     }
@@ -127,6 +141,22 @@ static inline int hako_convert_ros2pdu_ImpulseCollision(hako_msgs::msg::ImpulseC
 
     *dst = (Hako_ImpulseCollision*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_ImpulseCollision() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_ImpulseCollision(hako_msgs::msg::ImpulseCollision &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_ImpulseCollision out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_ImpulseCollision(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "ImpulseCollision" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("ImpulseCollision", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_ImpulseCollision* hako_create_empty_pdu_ImpulseCollision(int heap_size)

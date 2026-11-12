@@ -26,7 +26,7 @@
 static inline int cpp_pdu2cpp_ShareObjectOwnerRequest(const char* heap_ptr, Hako_ShareObjectOwnerRequest &src, HakoCpp_ShareObjectOwnerRequest &dst)
 {
     // string convertor
-    dst.object_name = (const char*)src.object_name;
+    dst.object_name = hako_convert_string_from_pdu(src.object_name, M_SIZE(Hako_ShareObjectOwnerRequest, object_name));
     // primitive convert
     hako_convert_pdu2cpp(src.request_type, dst.request_type);
     // primitive convert
@@ -60,17 +60,14 @@ static inline bool cpp_cpp2pdu_ShareObjectOwnerRequest(HakoCpp_ShareObjectOwnerR
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.object_name, src.object_name.length(),
-            dst.object_name, M_ARRAY_SIZE(Hako_ShareObjectOwnerRequest, char, object_name));
-        dst.object_name[src.object_name.length()] = '\0';
+        hako_convert_string_to_pdu(src.object_name, dst.object_name, M_SIZE(Hako_ShareObjectOwnerRequest, object_name));
         // primitive convert
         hako_convert_cpp2pdu(src.request_type, dst.request_type);
         // primitive convert
         hako_convert_cpp2pdu(src.new_owner_id, dst.new_owner_id);
         // primitive convert
         hako_convert_cpp2pdu(src.request_time, dst.request_time);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -81,7 +78,7 @@ static inline bool cpp_cpp2pdu_ShareObjectOwnerRequest(HakoCpp_ShareObjectOwnerR
 static inline int hako_convert_cpp2pdu_ShareObjectOwnerRequest(HakoCpp_ShareObjectOwnerRequest &src, Hako_ShareObjectOwnerRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_ShareObjectOwnerRequest out;
+    Hako_ShareObjectOwnerRequest out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_ShareObjectOwnerRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -133,26 +130,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_ShareObjectOwnerRequest() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_ShareObjectOwnerRequest& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_ShareObjectOwnerRequest(cppData, (Hako_ShareObjectOwnerRequest**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "ShareObjectOwnerRequest" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_ShareObjectOwnerRequest out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_ShareObjectOwnerRequest(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "ShareObjectOwnerRequest" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "ShareObjectOwnerRequest" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "ShareObjectOwnerRequest" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("ShareObjectOwnerRequest", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

@@ -32,6 +32,9 @@ static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeContext_context(c
         dst.context.resize(length);
         memcpy(dst.context.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.context.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -69,12 +72,10 @@ static inline int hako_convert_pdu2ros_ExecutionUnitRuntimeContext(Hako_Executio
  ***************************/
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeContext_context(hako_msgs::msg::ExecutionUnitRuntimeContext &src, Hako_ExecutionUnitRuntimeContext &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._context_len = src.context.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._context_len = hako_pdu_array_length(src.context.size());
     if (dst._context_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._context_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.context.data(), dst._context_len * sizeof(Hako_uint8));
-        dst._context_off = dynamic_memory.get_offset(temp_ptr);
+        dst._context_off = dynamic_memory.reference(src.context.data(), dst._context_len, sizeof(Hako_uint8));
     }
     else {
         dst._context_off = dynamic_memory.get_total_size();
@@ -92,8 +93,10 @@ static inline bool _ros2pdu_ExecutionUnitRuntimeContext(hako_msgs::msg::Executio
         // primitive convert
         hako_convert_ros2pdu(src.owner_id, dst.owner_id);
         //primitive array copy
-        _ros2pdu_primitive_array_ExecutionUnitRuntimeContext_context(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_ExecutionUnitRuntimeContext_context(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -104,7 +107,7 @@ static inline bool _ros2pdu_ExecutionUnitRuntimeContext(hako_msgs::msg::Executio
 static inline int hako_convert_ros2pdu_ExecutionUnitRuntimeContext(hako_msgs::msg::ExecutionUnitRuntimeContext &src, Hako_ExecutionUnitRuntimeContext** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_ExecutionUnitRuntimeContext out;
+    Hako_ExecutionUnitRuntimeContext out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_ExecutionUnitRuntimeContext(src, out, dynamic_memory)) {
         return -1;
     }
@@ -122,6 +125,22 @@ static inline int hako_convert_ros2pdu_ExecutionUnitRuntimeContext(hako_msgs::ms
 
     *dst = (Hako_ExecutionUnitRuntimeContext*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_ExecutionUnitRuntimeContext() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_ExecutionUnitRuntimeContext(hako_msgs::msg::ExecutionUnitRuntimeContext &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_ExecutionUnitRuntimeContext out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_ExecutionUnitRuntimeContext(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "ExecutionUnitRuntimeContext" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("ExecutionUnitRuntimeContext", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_ExecutionUnitRuntimeContext* hako_create_empty_pdu_ExecutionUnitRuntimeContext(int heap_size)

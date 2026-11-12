@@ -32,7 +32,7 @@ static inline int cpp_pdu2cpp_MagnetGrabResponse(const char* heap_ptr, Hako_Magn
     // primitive convert
     hako_convert_pdu2cpp(src.contact_on, dst.contact_on);
     // string convertor
-    dst.message = (const char*)src.message;
+    dst.message = hako_convert_string_from_pdu(src.message, M_SIZE(Hako_MagnetGrabResponse, message));
     (void)heap_ptr;
     return 0;
 }
@@ -66,11 +66,8 @@ static inline bool cpp_cpp2pdu_MagnetGrabResponse(HakoCpp_MagnetGrabResponse &sr
         // primitive convert
         hako_convert_cpp2pdu(src.contact_on, dst.contact_on);
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.message, src.message.length(),
-            dst.message, M_ARRAY_SIZE(Hako_MagnetGrabResponse, char, message));
-        dst.message[src.message.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.message, dst.message, M_SIZE(Hako_MagnetGrabResponse, message));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -81,7 +78,7 @@ static inline bool cpp_cpp2pdu_MagnetGrabResponse(HakoCpp_MagnetGrabResponse &sr
 static inline int hako_convert_cpp2pdu_MagnetGrabResponse(HakoCpp_MagnetGrabResponse &src, Hako_MagnetGrabResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MagnetGrabResponse out;
+    Hako_MagnetGrabResponse out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_MagnetGrabResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -133,26 +130,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_MagnetGrabResponse() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_MagnetGrabResponse& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_MagnetGrabResponse(cppData, (Hako_MagnetGrabResponse**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "MagnetGrabResponse" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_MagnetGrabResponse out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_MagnetGrabResponse(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "MagnetGrabResponse" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "MagnetGrabResponse" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "MagnetGrabResponse" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("MagnetGrabResponse", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

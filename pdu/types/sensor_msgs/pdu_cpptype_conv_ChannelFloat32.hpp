@@ -31,13 +31,16 @@ static inline int cpp_pdu2cpp_primitive_array_ChannelFloat32_values(const char* 
         dst.values.resize(length);
         memcpy(dst.values.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.values.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
 static inline int cpp_pdu2cpp_ChannelFloat32(const char* heap_ptr, Hako_ChannelFloat32 &src, HakoCpp_ChannelFloat32 &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_ChannelFloat32, name));
     // primitive array convertor
     cpp_pdu2cpp_primitive_array_ChannelFloat32_values(heap_ptr, src, dst);
     (void)heap_ptr;
@@ -64,12 +67,10 @@ static inline int hako_convert_pdu2cpp_ChannelFloat32(Hako_ChannelFloat32 &src, 
  ***************************/
 static inline bool cpp_cpp2pdu_primitive_array_ChannelFloat32_values(HakoCpp_ChannelFloat32 &src, Hako_ChannelFloat32 &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._values_len = src.values.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._values_len = hako_pdu_array_length(src.values.size());
     if (dst._values_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._values_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.values.data(), dst._values_len * sizeof(Hako_float32));
-        dst._values_off = dynamic_memory.get_offset(temp_ptr);
+        dst._values_off = dynamic_memory.reference(src.values.data(), dst._values_len, sizeof(Hako_float32));
     }
     else {
         dst._values_off = dynamic_memory.get_total_size();
@@ -81,13 +82,12 @@ static inline bool cpp_cpp2pdu_ChannelFloat32(HakoCpp_ChannelFloat32 &src, Hako_
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_ChannelFloat32, char, name));
-        dst.name[src.name.length()] = '\0';
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_ChannelFloat32, name));
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_ChannelFloat32_values(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_primitive_array_ChannelFloat32_values(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -98,7 +98,7 @@ static inline bool cpp_cpp2pdu_ChannelFloat32(HakoCpp_ChannelFloat32 &src, Hako_
 static inline int hako_convert_cpp2pdu_ChannelFloat32(HakoCpp_ChannelFloat32 &src, Hako_ChannelFloat32** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_ChannelFloat32 out;
+    Hako_ChannelFloat32 out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_ChannelFloat32(src, out, dynamic_memory)) {
         return -1;
     }
@@ -150,26 +150,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_ChannelFloat32() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_ChannelFloat32& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_ChannelFloat32(cppData, (Hako_ChannelFloat32**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "ChannelFloat32" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_ChannelFloat32 out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_ChannelFloat32(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "ChannelFloat32" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "ChannelFloat32" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "ChannelFloat32" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("ChannelFloat32", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

@@ -34,6 +34,9 @@ static inline int _pdu2ros_string_array_JointState_name(const char* heap_ptr, Ha
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2ros_array_string_varray(temp_struct_ptr, dst.name, length);
     }
+    else {
+        dst.name.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_JointState_position(const char* heap_ptr, Hako_JointState &src, sensor_msgs::msg::JointState &dst)
@@ -44,6 +47,9 @@ static inline int _pdu2ros_primitive_array_JointState_position(const char* heap_
     if (length > 0) {
         dst.position.resize(length);
         memcpy(dst.position.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.position.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -56,6 +62,9 @@ static inline int _pdu2ros_primitive_array_JointState_velocity(const char* heap_
         dst.velocity.resize(length);
         memcpy(dst.velocity.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.velocity.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_JointState_effort(const char* heap_ptr, Hako_JointState &src, sensor_msgs::msg::JointState &dst)
@@ -66,6 +75,9 @@ static inline int _pdu2ros_primitive_array_JointState_effort(const char* heap_pt
     if (length > 0) {
         dst.effort.resize(length);
         memcpy(dst.effort.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.effort.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -107,7 +119,7 @@ static inline int hako_convert_pdu2ros_JointState(Hako_JointState &src, sensor_m
 static inline bool _ros2pdu_string_array_JointState_name(sensor_msgs::msg::JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._name_len = src.name.size();
+    dst._name_len = hako_pdu_array_length(src.name.size());
     if (dst._name_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._name_len, sizeof(Hako_cstring));
         (void)hako_convert_ros2pdu_array_string_varray(src.name, temp_ptr);
@@ -120,12 +132,10 @@ static inline bool _ros2pdu_string_array_JointState_name(sensor_msgs::msg::Joint
 }
 static inline bool _ros2pdu_primitive_array_JointState_position(sensor_msgs::msg::JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._position_len = src.position.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._position_len = hako_pdu_array_length(src.position.size());
     if (dst._position_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._position_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.position.data(), dst._position_len * sizeof(Hako_float64));
-        dst._position_off = dynamic_memory.get_offset(temp_ptr);
+        dst._position_off = dynamic_memory.reference(src.position.data(), dst._position_len, sizeof(Hako_float64));
     }
     else {
         dst._position_off = dynamic_memory.get_total_size();
@@ -134,12 +144,10 @@ static inline bool _ros2pdu_primitive_array_JointState_position(sensor_msgs::msg
 }
 static inline bool _ros2pdu_primitive_array_JointState_velocity(sensor_msgs::msg::JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._velocity_len = src.velocity.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._velocity_len = hako_pdu_array_length(src.velocity.size());
     if (dst._velocity_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._velocity_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.velocity.data(), dst._velocity_len * sizeof(Hako_float64));
-        dst._velocity_off = dynamic_memory.get_offset(temp_ptr);
+        dst._velocity_off = dynamic_memory.reference(src.velocity.data(), dst._velocity_len, sizeof(Hako_float64));
     }
     else {
         dst._velocity_off = dynamic_memory.get_total_size();
@@ -148,12 +156,10 @@ static inline bool _ros2pdu_primitive_array_JointState_velocity(sensor_msgs::msg
 }
 static inline bool _ros2pdu_primitive_array_JointState_effort(sensor_msgs::msg::JointState &src, Hako_JointState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._effort_len = src.effort.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._effort_len = hako_pdu_array_length(src.effort.size());
     if (dst._effort_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._effort_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.effort.data(), dst._effort_len * sizeof(Hako_float64));
-        dst._effort_off = dynamic_memory.get_offset(temp_ptr);
+        dst._effort_off = dynamic_memory.reference(src.effort.data(), dst._effort_len, sizeof(Hako_float64));
     }
     else {
         dst._effort_off = dynamic_memory.get_total_size();
@@ -165,16 +171,26 @@ static inline bool _ros2pdu_JointState(sensor_msgs::msg::JointState &src, Hako_J
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string array convert
-        _ros2pdu_string_array_JointState_name(src, dst, dynamic_memory);
+        if (!_ros2pdu_string_array_JointState_name(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_JointState_position(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_JointState_position(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_JointState_velocity(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_JointState_velocity(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_JointState_effort(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_JointState_effort(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -185,7 +201,7 @@ static inline bool _ros2pdu_JointState(sensor_msgs::msg::JointState &src, Hako_J
 static inline int hako_convert_ros2pdu_JointState(sensor_msgs::msg::JointState &src, Hako_JointState** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_JointState out;
+    Hako_JointState out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_JointState(src, out, dynamic_memory)) {
         return -1;
     }
@@ -203,6 +219,22 @@ static inline int hako_convert_ros2pdu_JointState(sensor_msgs::msg::JointState &
 
     *dst = (Hako_JointState*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_JointState() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_JointState(sensor_msgs::msg::JointState &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_JointState out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_JointState(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "JointState" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("JointState", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_JointState* hako_create_empty_pdu_JointState(int heap_size)

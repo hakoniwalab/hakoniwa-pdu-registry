@@ -68,7 +68,7 @@ static inline bool _ros2pdu_RegisterClientResponse(hako_srv_msgs::msg::RegisterC
         hako_convert_ros2pdu(src.request_channel_id, dst.request_channel_id);
         // primitive convert
         hako_convert_ros2pdu(src.response_channel_id, dst.response_channel_id);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -79,7 +79,7 @@ static inline bool _ros2pdu_RegisterClientResponse(hako_srv_msgs::msg::RegisterC
 static inline int hako_convert_ros2pdu_RegisterClientResponse(hako_srv_msgs::msg::RegisterClientResponse &src, Hako_RegisterClientResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_RegisterClientResponse out;
+    Hako_RegisterClientResponse out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_RegisterClientResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -97,6 +97,22 @@ static inline int hako_convert_ros2pdu_RegisterClientResponse(hako_srv_msgs::msg
 
     *dst = (Hako_RegisterClientResponse*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_RegisterClientResponse() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_RegisterClientResponse(hako_srv_msgs::msg::RegisterClientResponse &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_RegisterClientResponse out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_RegisterClientResponse(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "RegisterClientResponse" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("RegisterClientResponse", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_RegisterClientResponse* hako_create_empty_pdu_RegisterClientResponse(int heap_size)

@@ -119,7 +119,9 @@ static inline bool _ros2pdu_struct_array_Ev3PduSensor_color_sensors(ev3_msgs::ms
     // array struct
     //array size is fixed
     for (int i = 0; i < 2; ++i) {
-        _ros2pdu_Ev3PduColorSensor(src.color_sensors[i], dst.color_sensors[i], dynamic_memory);
+        if (!_ros2pdu_Ev3PduColorSensor(src.color_sensors[i], dst.color_sensors[i], dynamic_memory)) {
+            return false;
+        }
     }
     return true;
 }
@@ -128,7 +130,9 @@ static inline bool _ros2pdu_struct_array_Ev3PduSensor_touch_sensors(ev3_msgs::ms
     // array struct
     //array size is fixed
     for (int i = 0; i < 2; ++i) {
-        _ros2pdu_Ev3PduTouchSensor(src.touch_sensors[i], dst.touch_sensors[i], dynamic_memory);
+        if (!_ros2pdu_Ev3PduTouchSensor(src.touch_sensors[i], dst.touch_sensors[i], dynamic_memory)) {
+            return false;
+        }
     }
     return true;
 }
@@ -146,15 +150,25 @@ static inline bool _ros2pdu_Ev3PduSensor(ev3_msgs::msg::Ev3PduSensor &src, Hako_
 {
     try {
         // struct convert
-        _ros2pdu_Ev3PduSensorHeader(src.head, dst.head, dynamic_memory);
+        if (!_ros2pdu_Ev3PduSensorHeader(src.head, dst.head, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Ev3PduSensor_buttons(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_Ev3PduSensor_buttons(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_Ev3PduSensor_color_sensors(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_Ev3PduSensor_color_sensors(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_Ev3PduSensor_touch_sensors(src, dst, dynamic_memory);
+        if (!_ros2pdu_struct_array_Ev3PduSensor_touch_sensors(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_Ev3PduSensor_motor_angle(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_Ev3PduSensor_motor_angle(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.gyro_degree, dst.gyro_degree);
         // primitive convert
@@ -165,7 +179,7 @@ static inline bool _ros2pdu_Ev3PduSensor(ev3_msgs::msg::Ev3PduSensor &src, Hako_
         hako_convert_ros2pdu(src.gps_lat, dst.gps_lat);
         // primitive convert
         hako_convert_ros2pdu(src.gps_lon, dst.gps_lon);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -176,7 +190,7 @@ static inline bool _ros2pdu_Ev3PduSensor(ev3_msgs::msg::Ev3PduSensor &src, Hako_
 static inline int hako_convert_ros2pdu_Ev3PduSensor(ev3_msgs::msg::Ev3PduSensor &src, Hako_Ev3PduSensor** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Ev3PduSensor out;
+    Hako_Ev3PduSensor out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Ev3PduSensor(src, out, dynamic_memory)) {
         return -1;
     }
@@ -194,6 +208,22 @@ static inline int hako_convert_ros2pdu_Ev3PduSensor(ev3_msgs::msg::Ev3PduSensor 
 
     *dst = (Hako_Ev3PduSensor*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Ev3PduSensor() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Ev3PduSensor(ev3_msgs::msg::Ev3PduSensor &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Ev3PduSensor out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Ev3PduSensor(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Ev3PduSensor" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Ev3PduSensor", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Ev3PduSensor* hako_create_empty_pdu_Ev3PduSensor(int heap_size)

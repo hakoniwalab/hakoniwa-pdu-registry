@@ -32,6 +32,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_positions(con
         dst.positions.resize(length);
         memcpy(dst.positions.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.positions.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_velocities(const char* heap_ptr, Hako_JointTrajectoryPoint &src, HakoCpp_JointTrajectoryPoint &dst)
@@ -42,6 +45,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_velocities(co
     if (length > 0) {
         dst.velocities.resize(length);
         memcpy(dst.velocities.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.velocities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -54,6 +60,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_accelerations
         dst.accelerations.resize(length);
         memcpy(dst.accelerations.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.accelerations.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_effort(const char* heap_ptr, Hako_JointTrajectoryPoint &src, HakoCpp_JointTrajectoryPoint &dst)
@@ -64,6 +73,9 @@ static inline int cpp_pdu2cpp_primitive_array_JointTrajectoryPoint_effort(const 
     if (length > 0) {
         dst.effort.resize(length);
         memcpy(dst.effort.data(), heap_ptr + offset, length * sizeof(Hako_float64));
+    }
+    else {
+        dst.effort.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -104,12 +116,10 @@ static inline int hako_convert_pdu2cpp_JointTrajectoryPoint(Hako_JointTrajectory
  ***************************/
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_positions(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._positions_len = src.positions.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._positions_len = hako_pdu_array_length(src.positions.size());
     if (dst._positions_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._positions_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.positions.data(), dst._positions_len * sizeof(Hako_float64));
-        dst._positions_off = dynamic_memory.get_offset(temp_ptr);
+        dst._positions_off = dynamic_memory.reference(src.positions.data(), dst._positions_len, sizeof(Hako_float64));
     }
     else {
         dst._positions_off = dynamic_memory.get_total_size();
@@ -118,12 +128,10 @@ static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_positions(Ha
 }
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_velocities(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._velocities_len = src.velocities.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._velocities_len = hako_pdu_array_length(src.velocities.size());
     if (dst._velocities_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._velocities_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.velocities.data(), dst._velocities_len * sizeof(Hako_float64));
-        dst._velocities_off = dynamic_memory.get_offset(temp_ptr);
+        dst._velocities_off = dynamic_memory.reference(src.velocities.data(), dst._velocities_len, sizeof(Hako_float64));
     }
     else {
         dst._velocities_off = dynamic_memory.get_total_size();
@@ -132,12 +140,10 @@ static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_velocities(H
 }
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_accelerations(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._accelerations_len = src.accelerations.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._accelerations_len = hako_pdu_array_length(src.accelerations.size());
     if (dst._accelerations_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._accelerations_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.accelerations.data(), dst._accelerations_len * sizeof(Hako_float64));
-        dst._accelerations_off = dynamic_memory.get_offset(temp_ptr);
+        dst._accelerations_off = dynamic_memory.reference(src.accelerations.data(), dst._accelerations_len, sizeof(Hako_float64));
     }
     else {
         dst._accelerations_off = dynamic_memory.get_total_size();
@@ -146,12 +152,10 @@ static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_acceleration
 }
 static inline bool cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_effort(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._effort_len = src.effort.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._effort_len = hako_pdu_array_length(src.effort.size());
     if (dst._effort_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._effort_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.effort.data(), dst._effort_len * sizeof(Hako_float64));
-        dst._effort_off = dynamic_memory.get_offset(temp_ptr);
+        dst._effort_off = dynamic_memory.reference(src.effort.data(), dst._effort_len, sizeof(Hako_float64));
     }
     else {
         dst._effort_off = dynamic_memory.get_total_size();
@@ -163,16 +167,26 @@ static inline bool cpp_cpp2pdu_JointTrajectoryPoint(HakoCpp_JointTrajectoryPoint
 {
     try {
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_positions(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_positions(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_velocities(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_velocities(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_accelerations(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_accelerations(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_effort(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_JointTrajectoryPoint_effort(src, dst, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        cpp_cpp2pdu_Duration(src.time_from_start, dst.time_from_start, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_Duration(src.time_from_start, dst.time_from_start, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -183,7 +197,7 @@ static inline bool cpp_cpp2pdu_JointTrajectoryPoint(HakoCpp_JointTrajectoryPoint
 static inline int hako_convert_cpp2pdu_JointTrajectoryPoint(HakoCpp_JointTrajectoryPoint &src, Hako_JointTrajectoryPoint** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_JointTrajectoryPoint out;
+    Hako_JointTrajectoryPoint out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_JointTrajectoryPoint(src, out, dynamic_memory)) {
         return -1;
     }
@@ -235,26 +249,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_JointTrajectoryPoint() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_JointTrajectoryPoint& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_JointTrajectoryPoint(cppData, (Hako_JointTrajectoryPoint**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "JointTrajectoryPoint" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_JointTrajectoryPoint out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_JointTrajectoryPoint(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "JointTrajectoryPoint" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "JointTrajectoryPoint" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "JointTrajectoryPoint" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("JointTrajectoryPoint", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

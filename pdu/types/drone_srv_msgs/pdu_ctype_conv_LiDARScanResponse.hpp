@@ -40,7 +40,7 @@ static inline int _pdu2ros_LiDARScanResponse(const char* heap_ptr, Hako_LiDARSca
     // Struct convert
     _pdu2ros_Pose(heap_ptr, src.lidar_pose, dst.lidar_pose);
     // string convertor
-    dst.message = (const char*)src.message;
+    dst.message = hako_convert_string_from_pdu(src.message, M_SIZE(Hako_LiDARScanResponse, message));
     (void)heap_ptr;
     return 0;
 }
@@ -70,15 +70,16 @@ static inline bool _ros2pdu_LiDARScanResponse(drone_srv_msgs::msg::LiDARScanResp
         // primitive convert
         hako_convert_ros2pdu(src.ok, dst.ok);
         // struct convert
-        _ros2pdu_PointCloud2(src.point_cloud, dst.point_cloud, dynamic_memory);
+        if (!_ros2pdu_PointCloud2(src.point_cloud, dst.point_cloud, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_Pose(src.lidar_pose, dst.lidar_pose, dynamic_memory);
+        if (!_ros2pdu_Pose(src.lidar_pose, dst.lidar_pose, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.message, src.message.length(),
-            dst.message, M_ARRAY_SIZE(Hako_LiDARScanResponse, char, message));
-        dst.message[src.message.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.message, dst.message, M_SIZE(Hako_LiDARScanResponse, message));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -89,7 +90,7 @@ static inline bool _ros2pdu_LiDARScanResponse(drone_srv_msgs::msg::LiDARScanResp
 static inline int hako_convert_ros2pdu_LiDARScanResponse(drone_srv_msgs::msg::LiDARScanResponse &src, Hako_LiDARScanResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_LiDARScanResponse out;
+    Hako_LiDARScanResponse out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_LiDARScanResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -107,6 +108,22 @@ static inline int hako_convert_ros2pdu_LiDARScanResponse(drone_srv_msgs::msg::Li
 
     *dst = (Hako_LiDARScanResponse*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_LiDARScanResponse() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_LiDARScanResponse(drone_srv_msgs::msg::LiDARScanResponse &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_LiDARScanResponse out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_LiDARScanResponse(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "LiDARScanResponse" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("LiDARScanResponse", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_LiDARScanResponse* hako_create_empty_pdu_LiDARScanResponse(int heap_size)

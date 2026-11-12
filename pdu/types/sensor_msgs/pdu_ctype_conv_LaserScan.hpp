@@ -34,6 +34,9 @@ static inline int _pdu2ros_primitive_array_LaserScan_ranges(const char* heap_ptr
         dst.ranges.resize(length);
         memcpy(dst.ranges.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.ranges.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_LaserScan_intensities(const char* heap_ptr, Hako_LaserScan &src, sensor_msgs::msg::LaserScan &dst)
@@ -44,6 +47,9 @@ static inline int _pdu2ros_primitive_array_LaserScan_intensities(const char* hea
     if (length > 0) {
         dst.intensities.resize(length);
         memcpy(dst.intensities.data(), heap_ptr + offset, length * sizeof(Hako_float32));
+    }
+    else {
+        dst.intensities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -94,12 +100,10 @@ static inline int hako_convert_pdu2ros_LaserScan(Hako_LaserScan &src, sensor_msg
  ***************************/
 static inline bool _ros2pdu_primitive_array_LaserScan_ranges(sensor_msgs::msg::LaserScan &src, Hako_LaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._ranges_len = src.ranges.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._ranges_len = hako_pdu_array_length(src.ranges.size());
     if (dst._ranges_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._ranges_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.ranges.data(), dst._ranges_len * sizeof(Hako_float32));
-        dst._ranges_off = dynamic_memory.get_offset(temp_ptr);
+        dst._ranges_off = dynamic_memory.reference(src.ranges.data(), dst._ranges_len, sizeof(Hako_float32));
     }
     else {
         dst._ranges_off = dynamic_memory.get_total_size();
@@ -108,12 +112,10 @@ static inline bool _ros2pdu_primitive_array_LaserScan_ranges(sensor_msgs::msg::L
 }
 static inline bool _ros2pdu_primitive_array_LaserScan_intensities(sensor_msgs::msg::LaserScan &src, Hako_LaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._intensities_len = src.intensities.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._intensities_len = hako_pdu_array_length(src.intensities.size());
     if (dst._intensities_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._intensities_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.intensities.data(), dst._intensities_len * sizeof(Hako_float32));
-        dst._intensities_off = dynamic_memory.get_offset(temp_ptr);
+        dst._intensities_off = dynamic_memory.reference(src.intensities.data(), dst._intensities_len, sizeof(Hako_float32));
     }
     else {
         dst._intensities_off = dynamic_memory.get_total_size();
@@ -125,7 +127,9 @@ static inline bool _ros2pdu_LaserScan(sensor_msgs::msg::LaserScan &src, Hako_Las
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.angle_min, dst.angle_min);
         // primitive convert
@@ -141,10 +145,14 @@ static inline bool _ros2pdu_LaserScan(sensor_msgs::msg::LaserScan &src, Hako_Las
         // primitive convert
         hako_convert_ros2pdu(src.range_max, dst.range_max);
         //primitive array copy
-        _ros2pdu_primitive_array_LaserScan_ranges(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_LaserScan_ranges(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_LaserScan_intensities(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_LaserScan_intensities(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -155,7 +163,7 @@ static inline bool _ros2pdu_LaserScan(sensor_msgs::msg::LaserScan &src, Hako_Las
 static inline int hako_convert_ros2pdu_LaserScan(sensor_msgs::msg::LaserScan &src, Hako_LaserScan** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_LaserScan out;
+    Hako_LaserScan out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_LaserScan(src, out, dynamic_memory)) {
         return -1;
     }
@@ -173,6 +181,22 @@ static inline int hako_convert_ros2pdu_LaserScan(sensor_msgs::msg::LaserScan &sr
 
     *dst = (Hako_LaserScan*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_LaserScan() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_LaserScan(sensor_msgs::msg::LaserScan &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_LaserScan out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_LaserScan(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "LaserScan" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("LaserScan", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_LaserScan* hako_create_empty_pdu_LaserScan(int heap_size)

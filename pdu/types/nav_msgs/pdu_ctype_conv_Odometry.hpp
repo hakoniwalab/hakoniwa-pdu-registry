@@ -38,7 +38,7 @@ static inline int _pdu2ros_Odometry(const char* heap_ptr, Hako_Odometry &src, na
     // Struct convert
     _pdu2ros_Header(heap_ptr, src.header, dst.header);
     // string convertor
-    dst.child_frame_id = (const char*)src.child_frame_id;
+    dst.child_frame_id = hako_convert_string_from_pdu(src.child_frame_id, M_SIZE(Hako_Odometry, child_frame_id));
     // Struct convert
     _pdu2ros_PoseWithCovariance(heap_ptr, src.pose, dst.pose);
     // Struct convert
@@ -70,17 +70,20 @@ static inline bool _ros2pdu_Odometry(nav_msgs::msg::Odometry &src, Hako_Odometry
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.child_frame_id, src.child_frame_id.length(),
-            dst.child_frame_id, M_ARRAY_SIZE(Hako_Odometry, char, child_frame_id));
-        dst.child_frame_id[src.child_frame_id.length()] = '\0';
+        hako_convert_string_to_pdu(src.child_frame_id, dst.child_frame_id, M_SIZE(Hako_Odometry, child_frame_id));
         // struct convert
-        _ros2pdu_PoseWithCovariance(src.pose, dst.pose, dynamic_memory);
+        if (!_ros2pdu_PoseWithCovariance(src.pose, dst.pose, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_TwistWithCovariance(src.twist, dst.twist, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_TwistWithCovariance(src.twist, dst.twist, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -91,7 +94,7 @@ static inline bool _ros2pdu_Odometry(nav_msgs::msg::Odometry &src, Hako_Odometry
 static inline int hako_convert_ros2pdu_Odometry(nav_msgs::msg::Odometry &src, Hako_Odometry** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Odometry out;
+    Hako_Odometry out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Odometry(src, out, dynamic_memory)) {
         return -1;
     }
@@ -109,6 +112,22 @@ static inline int hako_convert_ros2pdu_Odometry(nav_msgs::msg::Odometry &src, Ha
 
     *dst = (Hako_Odometry*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Odometry() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Odometry(nav_msgs::msg::Odometry &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Odometry out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Odometry(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Odometry" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Odometry", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Odometry* hako_create_empty_pdu_Odometry(int heap_size)

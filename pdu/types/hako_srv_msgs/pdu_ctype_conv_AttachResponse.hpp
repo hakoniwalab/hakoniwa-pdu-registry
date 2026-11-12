@@ -66,10 +66,12 @@ static inline bool _ros2pdu_AttachResponse(hako_srv_msgs::msg::AttachResponse &s
         // primitive convert
         hako_convert_ros2pdu(src.session_id, dst.session_id);
         // struct convert
-        _ros2pdu_LogicalTime(src.world_time, dst.world_time, dynamic_memory);
+        if (!_ros2pdu_LogicalTime(src.world_time, dst.world_time, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.delta_asset_tick, dst.delta_asset_tick);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -80,7 +82,7 @@ static inline bool _ros2pdu_AttachResponse(hako_srv_msgs::msg::AttachResponse &s
 static inline int hako_convert_ros2pdu_AttachResponse(hako_srv_msgs::msg::AttachResponse &src, Hako_AttachResponse** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_AttachResponse out;
+    Hako_AttachResponse out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_AttachResponse(src, out, dynamic_memory)) {
         return -1;
     }
@@ -98,6 +100,22 @@ static inline int hako_convert_ros2pdu_AttachResponse(hako_srv_msgs::msg::Attach
 
     *dst = (Hako_AttachResponse*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_AttachResponse() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_AttachResponse(hako_srv_msgs::msg::AttachResponse &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_AttachResponse out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_AttachResponse(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "AttachResponse" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("AttachResponse", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_AttachResponse* hako_create_empty_pdu_AttachResponse(int heap_size)

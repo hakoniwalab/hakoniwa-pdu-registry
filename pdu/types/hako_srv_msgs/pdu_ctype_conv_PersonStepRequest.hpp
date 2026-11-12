@@ -33,9 +33,9 @@ static inline int _pdu2ros_PersonStepRequest(const char* heap_ptr, Hako_PersonSt
     // Struct convert
     _pdu2ros_Twist(heap_ptr, src.cmd_vel, dst.cmd_vel);
     // string convertor
-    dst.animation = (const char*)src.animation;
+    dst.animation = hako_convert_string_from_pdu(src.animation, M_SIZE(Hako_PersonStepRequest, animation));
     // string convertor
-    dst.ride = (const char*)src.ride;
+    dst.ride = hako_convert_string_from_pdu(src.ride, M_SIZE(Hako_PersonStepRequest, ride));
     (void)heap_ptr;
     return 0;
 }
@@ -65,18 +65,14 @@ static inline bool _ros2pdu_PersonStepRequest(hako_srv_msgs::msg::PersonStepRequ
         // primitive convert
         hako_convert_ros2pdu(src.step, dst.step);
         // struct convert
-        _ros2pdu_Twist(src.cmd_vel, dst.cmd_vel, dynamic_memory);
+        if (!_ros2pdu_Twist(src.cmd_vel, dst.cmd_vel, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.animation, src.animation.length(),
-            dst.animation, M_ARRAY_SIZE(Hako_PersonStepRequest, char, animation));
-        dst.animation[src.animation.length()] = '\0';
+        hako_convert_string_to_pdu(src.animation, dst.animation, M_SIZE(Hako_PersonStepRequest, animation));
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.ride, src.ride.length(),
-            dst.ride, M_ARRAY_SIZE(Hako_PersonStepRequest, char, ride));
-        dst.ride[src.ride.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.ride, dst.ride, M_SIZE(Hako_PersonStepRequest, ride));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -87,7 +83,7 @@ static inline bool _ros2pdu_PersonStepRequest(hako_srv_msgs::msg::PersonStepRequ
 static inline int hako_convert_ros2pdu_PersonStepRequest(hako_srv_msgs::msg::PersonStepRequest &src, Hako_PersonStepRequest** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_PersonStepRequest out;
+    Hako_PersonStepRequest out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_PersonStepRequest(src, out, dynamic_memory)) {
         return -1;
     }
@@ -105,6 +101,22 @@ static inline int hako_convert_ros2pdu_PersonStepRequest(hako_srv_msgs::msg::Per
 
     *dst = (Hako_PersonStepRequest*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_PersonStepRequest() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_PersonStepRequest(hako_srv_msgs::msg::PersonStepRequest &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_PersonStepRequest out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_PersonStepRequest(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "PersonStepRequest" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("PersonStepRequest", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_PersonStepRequest* hako_create_empty_pdu_PersonStepRequest(int heap_size)

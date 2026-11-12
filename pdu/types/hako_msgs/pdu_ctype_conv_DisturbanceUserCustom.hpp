@@ -32,6 +32,9 @@ static inline int _pdu2ros_primitive_array_DisturbanceUserCustom_data(const char
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_float64));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -63,12 +66,10 @@ static inline int hako_convert_pdu2ros_DisturbanceUserCustom(Hako_DisturbanceUse
  ***************************/
 static inline bool _ros2pdu_primitive_array_DisturbanceUserCustom_data(hako_msgs::msg::DisturbanceUserCustom &src, Hako_DisturbanceUserCustom &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._data_len = src.data.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_float64));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_float64));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_float64));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -80,8 +81,10 @@ static inline bool _ros2pdu_DisturbanceUserCustom(hako_msgs::msg::DisturbanceUse
 {
     try {
         //primitive array copy
-        _ros2pdu_primitive_array_DisturbanceUserCustom_data(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_DisturbanceUserCustom_data(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -92,7 +95,7 @@ static inline bool _ros2pdu_DisturbanceUserCustom(hako_msgs::msg::DisturbanceUse
 static inline int hako_convert_ros2pdu_DisturbanceUserCustom(hako_msgs::msg::DisturbanceUserCustom &src, Hako_DisturbanceUserCustom** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_DisturbanceUserCustom out;
+    Hako_DisturbanceUserCustom out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_DisturbanceUserCustom(src, out, dynamic_memory)) {
         return -1;
     }
@@ -110,6 +113,22 @@ static inline int hako_convert_ros2pdu_DisturbanceUserCustom(hako_msgs::msg::Dis
 
     *dst = (Hako_DisturbanceUserCustom*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_DisturbanceUserCustom() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_DisturbanceUserCustom(hako_msgs::msg::DisturbanceUserCustom &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_DisturbanceUserCustom out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_DisturbanceUserCustom(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "DisturbanceUserCustom" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("DisturbanceUserCustom", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_DisturbanceUserCustom* hako_create_empty_pdu_DisturbanceUserCustom(int heap_size)

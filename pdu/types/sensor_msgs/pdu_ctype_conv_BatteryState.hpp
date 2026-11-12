@@ -34,6 +34,9 @@ static inline int _pdu2ros_primitive_array_BatteryState_cell_voltage(const char*
         dst.cell_voltage.resize(length);
         memcpy(dst.cell_voltage.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.cell_voltage.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_BatteryState_cell_temperature(const char* heap_ptr, Hako_BatteryState &src, sensor_msgs::msg::BatteryState &dst)
@@ -44,6 +47,9 @@ static inline int _pdu2ros_primitive_array_BatteryState_cell_temperature(const c
     if (length > 0) {
         dst.cell_temperature.resize(length);
         memcpy(dst.cell_temperature.data(), heap_ptr + offset, length * sizeof(Hako_float32));
+    }
+    else {
+        dst.cell_temperature.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -79,9 +85,9 @@ static inline int _pdu2ros_BatteryState(const char* heap_ptr, Hako_BatteryState 
     // primitive array convertor
     _pdu2ros_primitive_array_BatteryState_cell_temperature(heap_ptr, src, dst);
     // string convertor
-    dst.location = (const char*)src.location;
+    dst.location = hako_convert_string_from_pdu(src.location, M_SIZE(Hako_BatteryState, location));
     // string convertor
-    dst.serial_number = (const char*)src.serial_number;
+    dst.serial_number = hako_convert_string_from_pdu(src.serial_number, M_SIZE(Hako_BatteryState, serial_number));
     (void)heap_ptr;
     return 0;
 }
@@ -106,12 +112,10 @@ static inline int hako_convert_pdu2ros_BatteryState(Hako_BatteryState &src, sens
  ***************************/
 static inline bool _ros2pdu_primitive_array_BatteryState_cell_voltage(sensor_msgs::msg::BatteryState &src, Hako_BatteryState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._cell_voltage_len = src.cell_voltage.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._cell_voltage_len = hako_pdu_array_length(src.cell_voltage.size());
     if (dst._cell_voltage_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._cell_voltage_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.cell_voltage.data(), dst._cell_voltage_len * sizeof(Hako_float32));
-        dst._cell_voltage_off = dynamic_memory.get_offset(temp_ptr);
+        dst._cell_voltage_off = dynamic_memory.reference(src.cell_voltage.data(), dst._cell_voltage_len, sizeof(Hako_float32));
     }
     else {
         dst._cell_voltage_off = dynamic_memory.get_total_size();
@@ -120,12 +124,10 @@ static inline bool _ros2pdu_primitive_array_BatteryState_cell_voltage(sensor_msg
 }
 static inline bool _ros2pdu_primitive_array_BatteryState_cell_temperature(sensor_msgs::msg::BatteryState &src, Hako_BatteryState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._cell_temperature_len = src.cell_temperature.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._cell_temperature_len = hako_pdu_array_length(src.cell_temperature.size());
     if (dst._cell_temperature_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._cell_temperature_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.cell_temperature.data(), dst._cell_temperature_len * sizeof(Hako_float32));
-        dst._cell_temperature_off = dynamic_memory.get_offset(temp_ptr);
+        dst._cell_temperature_off = dynamic_memory.reference(src.cell_temperature.data(), dst._cell_temperature_len, sizeof(Hako_float32));
     }
     else {
         dst._cell_temperature_off = dynamic_memory.get_total_size();
@@ -137,7 +139,9 @@ static inline bool _ros2pdu_BatteryState(sensor_msgs::msg::BatteryState &src, Ha
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.voltage, dst.voltage);
         // primitive convert
@@ -161,20 +165,18 @@ static inline bool _ros2pdu_BatteryState(sensor_msgs::msg::BatteryState &src, Ha
         // primitive convert
         hako_convert_ros2pdu(src.present, dst.present);
         //primitive array copy
-        _ros2pdu_primitive_array_BatteryState_cell_voltage(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_BatteryState_cell_voltage(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_BatteryState_cell_temperature(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_BatteryState_cell_temperature(src, dst, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.location, src.location.length(),
-            dst.location, M_ARRAY_SIZE(Hako_BatteryState, char, location));
-        dst.location[src.location.length()] = '\0';
+        hako_convert_string_to_pdu(src.location, dst.location, M_SIZE(Hako_BatteryState, location));
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.serial_number, src.serial_number.length(),
-            dst.serial_number, M_ARRAY_SIZE(Hako_BatteryState, char, serial_number));
-        dst.serial_number[src.serial_number.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.serial_number, dst.serial_number, M_SIZE(Hako_BatteryState, serial_number));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -185,7 +187,7 @@ static inline bool _ros2pdu_BatteryState(sensor_msgs::msg::BatteryState &src, Ha
 static inline int hako_convert_ros2pdu_BatteryState(sensor_msgs::msg::BatteryState &src, Hako_BatteryState** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_BatteryState out;
+    Hako_BatteryState out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_BatteryState(src, out, dynamic_memory)) {
         return -1;
     }
@@ -203,6 +205,22 @@ static inline int hako_convert_ros2pdu_BatteryState(sensor_msgs::msg::BatterySta
 
     *dst = (Hako_BatteryState*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_BatteryState() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_BatteryState(sensor_msgs::msg::BatteryState &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_BatteryState out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_BatteryState(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "BatteryState" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("BatteryState", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_BatteryState* hako_create_empty_pdu_BatteryState(int heap_size)

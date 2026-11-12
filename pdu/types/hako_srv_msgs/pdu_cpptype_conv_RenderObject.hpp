@@ -29,9 +29,9 @@
 static inline int cpp_pdu2cpp_RenderObject(const char* heap_ptr, Hako_RenderObject &src, HakoCpp_RenderObject &dst)
 {
     // string convertor
-    dst.name = (const char*)src.name;
+    dst.name = hako_convert_string_from_pdu(src.name, M_SIZE(Hako_RenderObject, name));
     // string convertor
-    dst.model = (const char*)src.model;
+    dst.model = hako_convert_string_from_pdu(src.model, M_SIZE(Hako_RenderObject, model));
     // Struct convert
     cpp_pdu2cpp_Pose(heap_ptr, src.pose, dst.pose);
     (void)heap_ptr;
@@ -61,18 +61,14 @@ static inline bool cpp_cpp2pdu_RenderObject(HakoCpp_RenderObject &src, Hako_Rend
 {
     try {
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.name, src.name.length(),
-            dst.name, M_ARRAY_SIZE(Hako_RenderObject, char, name));
-        dst.name[src.name.length()] = '\0';
+        hako_convert_string_to_pdu(src.name, dst.name, M_SIZE(Hako_RenderObject, name));
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.model, src.model.length(),
-            dst.model, M_ARRAY_SIZE(Hako_RenderObject, char, model));
-        dst.model[src.model.length()] = '\0';
+        hako_convert_string_to_pdu(src.model, dst.model, M_SIZE(Hako_RenderObject, model));
         // struct convert
-        cpp_cpp2pdu_Pose(src.pose, dst.pose, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_Pose(src.pose, dst.pose, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -83,7 +79,7 @@ static inline bool cpp_cpp2pdu_RenderObject(HakoCpp_RenderObject &src, Hako_Rend
 static inline int hako_convert_cpp2pdu_RenderObject(HakoCpp_RenderObject &src, Hako_RenderObject** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_RenderObject out;
+    Hako_RenderObject out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_RenderObject(src, out, dynamic_memory)) {
         return -1;
     }
@@ -135,26 +131,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_RenderObject() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_RenderObject& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_RenderObject(cppData, (Hako_RenderObject**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "RenderObject" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_RenderObject out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_RenderObject(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "RenderObject" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "RenderObject" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "RenderObject" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("RenderObject", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

@@ -36,6 +36,9 @@ static inline int _pdu2ros_string_array_JointTrajectory_joint_names(const char* 
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2ros_array_string_varray(temp_struct_ptr, dst.joint_names, length);
     }
+    else {
+        dst.joint_names.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_struct_array_JointTrajectory_points(const char* heap_ptr, Hako_JointTrajectory &src, trajectory_msgs::msg::JointTrajectory &dst)
@@ -50,6 +53,9 @@ static inline int _pdu2ros_struct_array_JointTrajectory_points(const char* heap_
             _pdu2ros_JointTrajectoryPoint(heap_ptr, *temp_struct_ptr, dst.points[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.points.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -87,7 +93,7 @@ static inline int hako_convert_pdu2ros_JointTrajectory(Hako_JointTrajectory &src
 static inline bool _ros2pdu_string_array_JointTrajectory_joint_names(trajectory_msgs::msg::JointTrajectory &src, Hako_JointTrajectory &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._joint_names_len = src.joint_names.size();
+    dst._joint_names_len = hako_pdu_array_length(src.joint_names.size());
     if (dst._joint_names_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._joint_names_len, sizeof(Hako_cstring));
         (void)hako_convert_ros2pdu_array_string_varray(src.joint_names, temp_ptr);
@@ -101,12 +107,14 @@ static inline bool _ros2pdu_string_array_JointTrajectory_joint_names(trajectory_
 static inline bool _ros2pdu_struct_array_JointTrajectory_points(trajectory_msgs::msg::JointTrajectory &src, Hako_JointTrajectory &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._points_len = src.points.size();
+    dst._points_len = hako_pdu_array_length(src.points.size());
     if (dst._points_len > 0) {
         Hako_JointTrajectoryPoint* temp_struct_ptr = (Hako_JointTrajectoryPoint*)dynamic_memory.allocate(dst._points_len, sizeof(Hako_JointTrajectoryPoint));
         dst._points_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._points_len; ++i) {
-            _ros2pdu_JointTrajectoryPoint(src.points[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_JointTrajectoryPoint(src.points[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -120,12 +128,18 @@ static inline bool _ros2pdu_JointTrajectory(trajectory_msgs::msg::JointTrajector
 {
     try {
         // struct convert
-        _ros2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // string array convert
-        _ros2pdu_string_array_JointTrajectory_joint_names(src, dst, dynamic_memory);
+        if (!_ros2pdu_string_array_JointTrajectory_joint_names(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_JointTrajectory_points(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_JointTrajectory_points(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -136,7 +150,7 @@ static inline bool _ros2pdu_JointTrajectory(trajectory_msgs::msg::JointTrajector
 static inline int hako_convert_ros2pdu_JointTrajectory(trajectory_msgs::msg::JointTrajectory &src, Hako_JointTrajectory** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_JointTrajectory out;
+    Hako_JointTrajectory out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_JointTrajectory(src, out, dynamic_memory)) {
         return -1;
     }
@@ -154,6 +168,22 @@ static inline int hako_convert_ros2pdu_JointTrajectory(trajectory_msgs::msg::Joi
 
     *dst = (Hako_JointTrajectory*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_JointTrajectory() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_JointTrajectory(trajectory_msgs::msg::JointTrajectory &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_JointTrajectory out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_JointTrajectory(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "JointTrajectory" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("JointTrajectory", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_JointTrajectory* hako_create_empty_pdu_JointTrajectory(int heap_size)

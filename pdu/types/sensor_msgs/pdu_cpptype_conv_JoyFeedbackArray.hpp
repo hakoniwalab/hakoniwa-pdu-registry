@@ -36,6 +36,9 @@ static inline int cpp_pdu2cpp_struct_array_JoyFeedbackArray_array(const char* he
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.array.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -68,12 +71,14 @@ static inline int hako_convert_pdu2cpp_JoyFeedbackArray(Hako_JoyFeedbackArray &s
 static inline bool cpp_cpp2pdu_struct_array_JoyFeedbackArray_array(HakoCpp_JoyFeedbackArray &src, Hako_JoyFeedbackArray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._array_len = src.array.size();
+    dst._array_len = hako_pdu_array_length(src.array.size());
     if (dst._array_len > 0) {
         Hako_JoyFeedback* temp_struct_ptr = (Hako_JoyFeedback*)dynamic_memory.allocate(dst._array_len, sizeof(Hako_JoyFeedback));
         dst._array_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._array_len; ++i) {
-            cpp_cpp2pdu_JoyFeedback(src.array[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_JoyFeedback(src.array[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -87,8 +92,10 @@ static inline bool cpp_cpp2pdu_JoyFeedbackArray(HakoCpp_JoyFeedbackArray &src, H
 {
     try {
         //struct array convert
-        cpp_cpp2pdu_struct_array_JoyFeedbackArray_array(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_struct_array_JoyFeedbackArray_array(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -99,7 +106,7 @@ static inline bool cpp_cpp2pdu_JoyFeedbackArray(HakoCpp_JoyFeedbackArray &src, H
 static inline int hako_convert_cpp2pdu_JoyFeedbackArray(HakoCpp_JoyFeedbackArray &src, Hako_JoyFeedbackArray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_JoyFeedbackArray out;
+    Hako_JoyFeedbackArray out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_JoyFeedbackArray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -151,26 +158,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_JoyFeedbackArray() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_JoyFeedbackArray& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_JoyFeedbackArray(cppData, (Hako_JoyFeedbackArray**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "JoyFeedbackArray" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_JoyFeedbackArray out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_JoyFeedbackArray(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "JoyFeedbackArray" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "JoyFeedbackArray" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "JoyFeedbackArray" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("JoyFeedbackArray", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

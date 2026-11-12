@@ -99,12 +99,16 @@ static inline bool _ros2pdu_ActionFeedbackHeader(hako_action_msgs::msg::ActionFe
         // primitive convert
         hako_convert_ros2pdu(src.version, dst.version);
         //primitive array copy
-        _ros2pdu_primitive_array_ActionFeedbackHeader_reserved(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_ActionFeedbackHeader_reserved(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_ActionFeedbackHeader_goal_id(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_ActionFeedbackHeader_goal_id(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.sequence_no, dst.sequence_no);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -115,7 +119,7 @@ static inline bool _ros2pdu_ActionFeedbackHeader(hako_action_msgs::msg::ActionFe
 static inline int hako_convert_ros2pdu_ActionFeedbackHeader(hako_action_msgs::msg::ActionFeedbackHeader &src, Hako_ActionFeedbackHeader** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_ActionFeedbackHeader out;
+    Hako_ActionFeedbackHeader out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_ActionFeedbackHeader(src, out, dynamic_memory)) {
         return -1;
     }
@@ -133,6 +137,22 @@ static inline int hako_convert_ros2pdu_ActionFeedbackHeader(hako_action_msgs::ms
 
     *dst = (Hako_ActionFeedbackHeader*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_ActionFeedbackHeader() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_ActionFeedbackHeader(hako_action_msgs::msg::ActionFeedbackHeader &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_ActionFeedbackHeader out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_ActionFeedbackHeader(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "ActionFeedbackHeader" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("ActionFeedbackHeader", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_ActionFeedbackHeader* hako_create_empty_pdu_ActionFeedbackHeader(int heap_size)

@@ -27,7 +27,7 @@
 static inline int _pdu2ros_String(const char* heap_ptr, Hako_String &src, std_msgs::msg::String &dst)
 {
     // string convertor
-    dst.data = (const char*)src.data;
+    dst.data = hako_convert_string_from_pdu(src.data, M_SIZE(Hako_String, data));
     (void)heap_ptr;
     return 0;
 }
@@ -55,11 +55,8 @@ static inline bool _ros2pdu_String(std_msgs::msg::String &src, Hako_String &dst,
 {
     try {
         // string convertor
-        (void)hako_convert_ros2pdu_array(
-            src.data, src.data.length(),
-            dst.data, M_ARRAY_SIZE(Hako_String, char, data));
-        dst.data[src.data.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.data, dst.data, M_SIZE(Hako_String, data));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -70,7 +67,7 @@ static inline bool _ros2pdu_String(std_msgs::msg::String &src, Hako_String &dst,
 static inline int hako_convert_ros2pdu_String(std_msgs::msg::String &src, Hako_String** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_String out;
+    Hako_String out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_String(src, out, dynamic_memory)) {
         return -1;
     }
@@ -88,6 +85,22 @@ static inline int hako_convert_ros2pdu_String(std_msgs::msg::String &src, Hako_S
 
     *dst = (Hako_String*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_String() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_String(std_msgs::msg::String &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_String out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_String(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "String" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("String", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_String* hako_create_empty_pdu_String(int heap_size)

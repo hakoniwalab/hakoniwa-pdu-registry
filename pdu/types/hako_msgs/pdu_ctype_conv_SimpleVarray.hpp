@@ -32,6 +32,9 @@ static inline int _pdu2ros_primitive_array_SimpleVarray_data(const char* heap_pt
         dst.data.resize(length);
         memcpy(dst.data.data(), heap_ptr + offset, length * sizeof(Hako_int8));
     }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_SimpleVarray_fixed_array(const char* heap_ptr, Hako_SimpleVarray &src, hako_msgs::msg::SimpleVarray &dst)
@@ -76,12 +79,10 @@ static inline int hako_convert_pdu2ros_SimpleVarray(Hako_SimpleVarray &src, hako
  ***************************/
 static inline bool _ros2pdu_primitive_array_SimpleVarray_data(hako_msgs::msg::SimpleVarray &src, Hako_SimpleVarray &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._data_len = src.data.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._data_len, sizeof(Hako_int8));
-        memcpy(temp_ptr, src.data.data(), dst._data_len * sizeof(Hako_int8));
-        dst._data_off = dynamic_memory.get_offset(temp_ptr);
+        dst._data_off = dynamic_memory.reference(src.data.data(), dst._data_len, sizeof(Hako_int8));
     }
     else {
         dst._data_off = dynamic_memory.get_total_size();
@@ -102,12 +103,16 @@ static inline bool _ros2pdu_SimpleVarray(hako_msgs::msg::SimpleVarray &src, Hako
 {
     try {
         //primitive array copy
-        _ros2pdu_primitive_array_SimpleVarray_data(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_SimpleVarray_data(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_SimpleVarray_fixed_array(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_SimpleVarray_fixed_array(src, dst, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.p_mem1, dst.p_mem1);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -118,7 +123,7 @@ static inline bool _ros2pdu_SimpleVarray(hako_msgs::msg::SimpleVarray &src, Hako
 static inline int hako_convert_ros2pdu_SimpleVarray(hako_msgs::msg::SimpleVarray &src, Hako_SimpleVarray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_SimpleVarray out;
+    Hako_SimpleVarray out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_SimpleVarray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -136,6 +141,22 @@ static inline int hako_convert_ros2pdu_SimpleVarray(hako_msgs::msg::SimpleVarray
 
     *dst = (Hako_SimpleVarray*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_SimpleVarray() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_SimpleVarray(hako_msgs::msg::SimpleVarray &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_SimpleVarray out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_SimpleVarray(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "SimpleVarray" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("SimpleVarray", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_SimpleVarray* hako_create_empty_pdu_SimpleVarray(int heap_size)

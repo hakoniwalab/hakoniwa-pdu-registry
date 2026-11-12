@@ -43,6 +43,9 @@ static inline int _pdu2ros_struct_array_Disturbance_d_user_custom(const char* he
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.d_user_custom.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 
@@ -83,12 +86,14 @@ static inline int hako_convert_pdu2ros_Disturbance(Hako_Disturbance &src, hako_m
 static inline bool _ros2pdu_struct_array_Disturbance_d_user_custom(hako_msgs::msg::Disturbance &src, Hako_Disturbance &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._d_user_custom_len = src.d_user_custom.size();
+    dst._d_user_custom_len = hako_pdu_array_length(src.d_user_custom.size());
     if (dst._d_user_custom_len > 0) {
         Hako_DisturbanceUserCustom* temp_struct_ptr = (Hako_DisturbanceUserCustom*)dynamic_memory.allocate(dst._d_user_custom_len, sizeof(Hako_DisturbanceUserCustom));
         dst._d_user_custom_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._d_user_custom_len; ++i) {
-            _ros2pdu_DisturbanceUserCustom(src.d_user_custom[i], *temp_struct_ptr, dynamic_memory);
+            if (!_ros2pdu_DisturbanceUserCustom(src.d_user_custom[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -102,16 +107,26 @@ static inline bool _ros2pdu_Disturbance(hako_msgs::msg::Disturbance &src, Hako_D
 {
     try {
         // struct convert
-        _ros2pdu_DisturbanceTemperature(src.d_temp, dst.d_temp, dynamic_memory);
+        if (!_ros2pdu_DisturbanceTemperature(src.d_temp, dst.d_temp, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_DisturbanceWind(src.d_wind, dst.d_wind, dynamic_memory);
+        if (!_ros2pdu_DisturbanceWind(src.d_wind, dst.d_wind, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_DisturbanceAtm(src.d_atm, dst.d_atm, dynamic_memory);
+        if (!_ros2pdu_DisturbanceAtm(src.d_atm, dst.d_atm, dynamic_memory)) {
+            return false;
+        }
         // struct convert
-        _ros2pdu_DisturbanceBoundary(src.d_boundary, dst.d_boundary, dynamic_memory);
+        if (!_ros2pdu_DisturbanceBoundary(src.d_boundary, dst.d_boundary, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        _ros2pdu_struct_array_Disturbance_d_user_custom(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_struct_array_Disturbance_d_user_custom(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -122,7 +137,7 @@ static inline bool _ros2pdu_Disturbance(hako_msgs::msg::Disturbance &src, Hako_D
 static inline int hako_convert_ros2pdu_Disturbance(hako_msgs::msg::Disturbance &src, Hako_Disturbance** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Disturbance out;
+    Hako_Disturbance out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Disturbance(src, out, dynamic_memory)) {
         return -1;
     }
@@ -140,6 +155,22 @@ static inline int hako_convert_ros2pdu_Disturbance(hako_msgs::msg::Disturbance &
 
     *dst = (Hako_Disturbance*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Disturbance() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Disturbance(hako_msgs::msg::Disturbance &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Disturbance out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Disturbance(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Disturbance" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Disturbance", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Disturbance* hako_create_empty_pdu_Disturbance(int heap_size)

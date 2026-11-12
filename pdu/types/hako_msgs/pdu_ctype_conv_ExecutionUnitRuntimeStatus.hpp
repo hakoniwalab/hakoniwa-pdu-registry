@@ -32,6 +32,9 @@ static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeStatus_status(con
         dst.status.resize(length);
         memcpy(dst.status.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.status.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeStatus_epoch(const char* heap_ptr, Hako_ExecutionUnitRuntimeStatus &src, hako_msgs::msg::ExecutionUnitRuntimeStatus &dst)
@@ -42,6 +45,9 @@ static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeStatus_epoch(cons
     if (length > 0) {
         dst.epoch.resize(length);
         memcpy(dst.epoch.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
+    }
+    else {
+        dst.epoch.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -54,6 +60,9 @@ static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeStatus_curr_owner
         dst.curr_owner_node_id.resize(length);
         memcpy(dst.curr_owner_node_id.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
     }
+    else {
+        dst.curr_owner_node_id.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeStatus_next_owner_node_id(const char* heap_ptr, Hako_ExecutionUnitRuntimeStatus &src, hako_msgs::msg::ExecutionUnitRuntimeStatus &dst)
@@ -64,6 +73,9 @@ static inline int _pdu2ros_primitive_array_ExecutionUnitRuntimeStatus_next_owner
     if (length > 0) {
         dst.next_owner_node_id.resize(length);
         memcpy(dst.next_owner_node_id.data(), heap_ptr + offset, length * sizeof(Hako_uint8));
+    }
+    else {
+        dst.next_owner_node_id.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -106,12 +118,10 @@ static inline int hako_convert_pdu2ros_ExecutionUnitRuntimeStatus(Hako_Execution
  ***************************/
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_status(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._status_len = src.status.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._status_len = hako_pdu_array_length(src.status.size());
     if (dst._status_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._status_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.status.data(), dst._status_len * sizeof(Hako_uint8));
-        dst._status_off = dynamic_memory.get_offset(temp_ptr);
+        dst._status_off = dynamic_memory.reference(src.status.data(), dst._status_len, sizeof(Hako_uint8));
     }
     else {
         dst._status_off = dynamic_memory.get_total_size();
@@ -120,12 +130,10 @@ static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_status(ha
 }
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_epoch(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._epoch_len = src.epoch.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._epoch_len = hako_pdu_array_length(src.epoch.size());
     if (dst._epoch_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._epoch_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.epoch.data(), dst._epoch_len * sizeof(Hako_uint8));
-        dst._epoch_off = dynamic_memory.get_offset(temp_ptr);
+        dst._epoch_off = dynamic_memory.reference(src.epoch.data(), dst._epoch_len, sizeof(Hako_uint8));
     }
     else {
         dst._epoch_off = dynamic_memory.get_total_size();
@@ -134,12 +142,10 @@ static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_epoch(hak
 }
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_curr_owner_node_id(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._curr_owner_node_id_len = src.curr_owner_node_id.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._curr_owner_node_id_len = hako_pdu_array_length(src.curr_owner_node_id.size());
     if (dst._curr_owner_node_id_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._curr_owner_node_id_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.curr_owner_node_id.data(), dst._curr_owner_node_id_len * sizeof(Hako_uint8));
-        dst._curr_owner_node_id_off = dynamic_memory.get_offset(temp_ptr);
+        dst._curr_owner_node_id_off = dynamic_memory.reference(src.curr_owner_node_id.data(), dst._curr_owner_node_id_len, sizeof(Hako_uint8));
     }
     else {
         dst._curr_owner_node_id_off = dynamic_memory.get_total_size();
@@ -148,12 +154,10 @@ static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_curr_owne
 }
 static inline bool _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_next_owner_node_id(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._next_owner_node_id_len = src.next_owner_node_id.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._next_owner_node_id_len = hako_pdu_array_length(src.next_owner_node_id.size());
     if (dst._next_owner_node_id_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._next_owner_node_id_len, sizeof(Hako_uint8));
-        memcpy(temp_ptr, src.next_owner_node_id.data(), dst._next_owner_node_id_len * sizeof(Hako_uint8));
-        dst._next_owner_node_id_off = dynamic_memory.get_offset(temp_ptr);
+        dst._next_owner_node_id_off = dynamic_memory.reference(src.next_owner_node_id.data(), dst._next_owner_node_id_len, sizeof(Hako_uint8));
     }
     else {
         dst._next_owner_node_id_off = dynamic_memory.get_total_size();
@@ -169,14 +173,22 @@ static inline bool _ros2pdu_ExecutionUnitRuntimeStatus(hako_msgs::msg::Execution
         // primitive convert
         hako_convert_ros2pdu(src.unit_count, dst.unit_count);
         //primitive array copy
-        _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_status(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_status(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_epoch(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_epoch(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_curr_owner_node_id(src, dst, dynamic_memory);
+        if (!_ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_curr_owner_node_id(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        _ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_next_owner_node_id(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!_ros2pdu_primitive_array_ExecutionUnitRuntimeStatus_next_owner_node_id(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -187,7 +199,7 @@ static inline bool _ros2pdu_ExecutionUnitRuntimeStatus(hako_msgs::msg::Execution
 static inline int hako_convert_ros2pdu_ExecutionUnitRuntimeStatus(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, Hako_ExecutionUnitRuntimeStatus** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_ExecutionUnitRuntimeStatus out;
+    Hako_ExecutionUnitRuntimeStatus out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_ExecutionUnitRuntimeStatus(src, out, dynamic_memory)) {
         return -1;
     }
@@ -205,6 +217,22 @@ static inline int hako_convert_ros2pdu_ExecutionUnitRuntimeStatus(hako_msgs::msg
 
     *dst = (Hako_ExecutionUnitRuntimeStatus*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_ExecutionUnitRuntimeStatus() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_ExecutionUnitRuntimeStatus(hako_msgs::msg::ExecutionUnitRuntimeStatus &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_ExecutionUnitRuntimeStatus out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_ExecutionUnitRuntimeStatus(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "ExecutionUnitRuntimeStatus" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("ExecutionUnitRuntimeStatus", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_ExecutionUnitRuntimeStatus* hako_create_empty_pdu_ExecutionUnitRuntimeStatus(int heap_size)

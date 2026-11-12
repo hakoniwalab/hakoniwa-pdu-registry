@@ -66,7 +66,9 @@ static inline bool _ros2pdu_HakoDroneCmdMove(hako_msgs::msg::HakoDroneCmdMove &s
 {
     try {
         // struct convert
-        _ros2pdu_HakoDroneCmdHeader(src.header, dst.header, dynamic_memory);
+        if (!_ros2pdu_HakoDroneCmdHeader(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_ros2pdu(src.x, dst.x);
         // primitive convert
@@ -77,7 +79,7 @@ static inline bool _ros2pdu_HakoDroneCmdMove(hako_msgs::msg::HakoDroneCmdMove &s
         hako_convert_ros2pdu(src.speed, dst.speed);
         // primitive convert
         hako_convert_ros2pdu(src.yaw_deg, dst.yaw_deg);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -88,7 +90,7 @@ static inline bool _ros2pdu_HakoDroneCmdMove(hako_msgs::msg::HakoDroneCmdMove &s
 static inline int hako_convert_ros2pdu_HakoDroneCmdMove(hako_msgs::msg::HakoDroneCmdMove &src, Hako_HakoDroneCmdMove** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_HakoDroneCmdMove out;
+    Hako_HakoDroneCmdMove out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_HakoDroneCmdMove(src, out, dynamic_memory)) {
         return -1;
     }
@@ -106,6 +108,22 @@ static inline int hako_convert_ros2pdu_HakoDroneCmdMove(hako_msgs::msg::HakoDron
 
     *dst = (Hako_HakoDroneCmdMove*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_HakoDroneCmdMove() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_HakoDroneCmdMove(hako_msgs::msg::HakoDroneCmdMove &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_HakoDroneCmdMove out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_HakoDroneCmdMove(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "HakoDroneCmdMove" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("HakoDroneCmdMove", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_HakoDroneCmdMove* hako_create_empty_pdu_HakoDroneCmdMove(int heap_size)

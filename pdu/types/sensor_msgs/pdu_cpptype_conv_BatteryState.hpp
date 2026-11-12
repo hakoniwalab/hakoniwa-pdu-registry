@@ -33,6 +33,9 @@ static inline int cpp_pdu2cpp_primitive_array_BatteryState_cell_voltage(const ch
         dst.cell_voltage.resize(length);
         memcpy(dst.cell_voltage.data(), heap_ptr + offset, length * sizeof(Hako_float32));
     }
+    else {
+        dst.cell_voltage.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_primitive_array_BatteryState_cell_temperature(const char* heap_ptr, Hako_BatteryState &src, HakoCpp_BatteryState &dst)
@@ -43,6 +46,9 @@ static inline int cpp_pdu2cpp_primitive_array_BatteryState_cell_temperature(cons
     if (length > 0) {
         dst.cell_temperature.resize(length);
         memcpy(dst.cell_temperature.data(), heap_ptr + offset, length * sizeof(Hako_float32));
+    }
+    else {
+        dst.cell_temperature.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -78,9 +84,9 @@ static inline int cpp_pdu2cpp_BatteryState(const char* heap_ptr, Hako_BatterySta
     // primitive array convertor
     cpp_pdu2cpp_primitive_array_BatteryState_cell_temperature(heap_ptr, src, dst);
     // string convertor
-    dst.location = (const char*)src.location;
+    dst.location = hako_convert_string_from_pdu(src.location, M_SIZE(Hako_BatteryState, location));
     // string convertor
-    dst.serial_number = (const char*)src.serial_number;
+    dst.serial_number = hako_convert_string_from_pdu(src.serial_number, M_SIZE(Hako_BatteryState, serial_number));
     (void)heap_ptr;
     return 0;
 }
@@ -105,12 +111,10 @@ static inline int hako_convert_pdu2cpp_BatteryState(Hako_BatteryState &src, Hako
  ***************************/
 static inline bool cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(HakoCpp_BatteryState &src, Hako_BatteryState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._cell_voltage_len = src.cell_voltage.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._cell_voltage_len = hako_pdu_array_length(src.cell_voltage.size());
     if (dst._cell_voltage_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._cell_voltage_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.cell_voltage.data(), dst._cell_voltage_len * sizeof(Hako_float32));
-        dst._cell_voltage_off = dynamic_memory.get_offset(temp_ptr);
+        dst._cell_voltage_off = dynamic_memory.reference(src.cell_voltage.data(), dst._cell_voltage_len, sizeof(Hako_float32));
     }
     else {
         dst._cell_voltage_off = dynamic_memory.get_total_size();
@@ -119,12 +123,10 @@ static inline bool cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(HakoCpp
 }
 static inline bool cpp_cpp2pdu_primitive_array_BatteryState_cell_temperature(HakoCpp_BatteryState &src, Hako_BatteryState &dst, PduDynamicMemory &dynamic_memory)
 {
-    //Copy varray
-    dst._cell_temperature_len = src.cell_temperature.size();
+    //Copy varray (the source's bytes are copied once, straight into the PDU)
+    dst._cell_temperature_len = hako_pdu_array_length(src.cell_temperature.size());
     if (dst._cell_temperature_len > 0) {
-        void* temp_ptr = dynamic_memory.allocate(dst._cell_temperature_len, sizeof(Hako_float32));
-        memcpy(temp_ptr, src.cell_temperature.data(), dst._cell_temperature_len * sizeof(Hako_float32));
-        dst._cell_temperature_off = dynamic_memory.get_offset(temp_ptr);
+        dst._cell_temperature_off = dynamic_memory.reference(src.cell_temperature.data(), dst._cell_temperature_len, sizeof(Hako_float32));
     }
     else {
         dst._cell_temperature_off = dynamic_memory.get_total_size();
@@ -136,7 +138,9 @@ static inline bool cpp_cpp2pdu_BatteryState(HakoCpp_BatteryState &src, Hako_Batt
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.voltage, dst.voltage);
         // primitive convert
@@ -160,20 +164,18 @@ static inline bool cpp_cpp2pdu_BatteryState(HakoCpp_BatteryState &src, Hako_Batt
         // primitive convert
         hako_convert_cpp2pdu(src.present, dst.present);
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_BatteryState_cell_voltage(src, dst, dynamic_memory)) {
+            return false;
+        }
         //primitive array copy
-        cpp_cpp2pdu_primitive_array_BatteryState_cell_temperature(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_primitive_array_BatteryState_cell_temperature(src, dst, dynamic_memory)) {
+            return false;
+        }
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.location, src.location.length(),
-            dst.location, M_ARRAY_SIZE(Hako_BatteryState, char, location));
-        dst.location[src.location.length()] = '\0';
+        hako_convert_string_to_pdu(src.location, dst.location, M_SIZE(Hako_BatteryState, location));
         // string convertor
-        (void)hako_convert_cpp2pdu_array(
-            src.serial_number, src.serial_number.length(),
-            dst.serial_number, M_ARRAY_SIZE(Hako_BatteryState, char, serial_number));
-        dst.serial_number[src.serial_number.length()] = '\0';
-    } catch (const std::runtime_error& e) {
+        hako_convert_string_to_pdu(src.serial_number, dst.serial_number, M_SIZE(Hako_BatteryState, serial_number));
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -184,7 +186,7 @@ static inline bool cpp_cpp2pdu_BatteryState(HakoCpp_BatteryState &src, Hako_Batt
 static inline int hako_convert_cpp2pdu_BatteryState(HakoCpp_BatteryState &src, Hako_BatteryState** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_BatteryState out;
+    Hako_BatteryState out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_BatteryState(src, out, dynamic_memory)) {
         return -1;
     }
@@ -236,26 +238,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_BatteryState() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_BatteryState& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_BatteryState(cppData, (Hako_BatteryState**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "BatteryState" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_BatteryState out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_BatteryState(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "BatteryState" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "BatteryState" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "BatteryState" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("BatteryState", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

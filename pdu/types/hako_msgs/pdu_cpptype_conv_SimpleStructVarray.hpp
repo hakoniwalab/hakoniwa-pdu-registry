@@ -40,6 +40,9 @@ static inline int cpp_pdu2cpp_string_array_SimpleStructVarray_varray_str(const c
         Hako_cstring *temp_struct_ptr = (Hako_cstring *)(heap_ptr + offset);
         hako_convert_pdu2cpp_array_string_varray(temp_struct_ptr, dst.varray_str, length);
     }
+    else {
+        dst.varray_str.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_SimpleStructVarray_fixed_array(const char* heap_ptr, Hako_SimpleStructVarray &src, HakoCpp_SimpleStructVarray &dst)
@@ -62,6 +65,9 @@ static inline int cpp_pdu2cpp_struct_array_SimpleStructVarray_data(const char* h
             cpp_pdu2cpp_SimpleVarray(heap_ptr, *temp_struct_ptr, dst.data[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.data.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -111,7 +117,7 @@ static inline bool cpp_cpp2pdu_string_array_SimpleStructVarray_fixed_str(HakoCpp
 static inline bool cpp_cpp2pdu_string_array_SimpleStructVarray_varray_str(HakoCpp_SimpleStructVarray &src, Hako_SimpleStructVarray &dst, PduDynamicMemory &dynamic_memory)
 {
     //Copy varray string
-    dst._varray_str_len = src.varray_str.size();
+    dst._varray_str_len = hako_pdu_array_length(src.varray_str.size());
     if (dst._varray_str_len > 0) {
         Hako_cstring* temp_ptr = (Hako_cstring*)dynamic_memory.allocate(dst._varray_str_len, sizeof(Hako_cstring));
         (void)hako_convert_cpp2pdu_array_string_varray(src.varray_str, temp_ptr);
@@ -127,19 +133,23 @@ static inline bool cpp_cpp2pdu_struct_array_SimpleStructVarray_fixed_array(HakoC
     // array struct
     //array size is fixed
     for (int i = 0; i < 5; ++i) {
-        cpp_cpp2pdu_SimpleVarray(src.fixed_array[i], dst.fixed_array[i], dynamic_memory);
+        if (!cpp_cpp2pdu_SimpleVarray(src.fixed_array[i], dst.fixed_array[i], dynamic_memory)) {
+            return false;
+        }
     }
     return true;
 }
 static inline bool cpp_cpp2pdu_struct_array_SimpleStructVarray_data(HakoCpp_SimpleStructVarray &src, Hako_SimpleStructVarray &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._data_len = src.data.size();
+    dst._data_len = hako_pdu_array_length(src.data.size());
     if (dst._data_len > 0) {
         Hako_SimpleVarray* temp_struct_ptr = (Hako_SimpleVarray*)dynamic_memory.allocate(dst._data_len, sizeof(Hako_SimpleVarray));
         dst._data_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._data_len; ++i) {
-            cpp_cpp2pdu_SimpleVarray(src.data[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_SimpleVarray(src.data[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -155,14 +165,22 @@ static inline bool cpp_cpp2pdu_SimpleStructVarray(HakoCpp_SimpleStructVarray &sr
         // primitive convert
         hako_convert_cpp2pdu(src.aaa, dst.aaa);
         // string array convert
-        cpp_cpp2pdu_string_array_SimpleStructVarray_fixed_str(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_string_array_SimpleStructVarray_fixed_str(src, dst, dynamic_memory)) {
+            return false;
+        }
         // string array convert
-        cpp_cpp2pdu_string_array_SimpleStructVarray_varray_str(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_string_array_SimpleStructVarray_varray_str(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        cpp_cpp2pdu_struct_array_SimpleStructVarray_fixed_array(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_struct_array_SimpleStructVarray_fixed_array(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        cpp_cpp2pdu_struct_array_SimpleStructVarray_data(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_struct_array_SimpleStructVarray_data(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -173,7 +191,7 @@ static inline bool cpp_cpp2pdu_SimpleStructVarray(HakoCpp_SimpleStructVarray &sr
 static inline int hako_convert_cpp2pdu_SimpleStructVarray(HakoCpp_SimpleStructVarray &src, Hako_SimpleStructVarray** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_SimpleStructVarray out;
+    Hako_SimpleStructVarray out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_SimpleStructVarray(src, out, dynamic_memory)) {
         return -1;
     }
@@ -225,26 +243,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_SimpleStructVarray() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_SimpleStructVarray& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_SimpleStructVarray(cppData, (Hako_SimpleStructVarray**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "SimpleStructVarray" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_SimpleStructVarray out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_SimpleStructVarray(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "SimpleStructVarray" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "SimpleStructVarray" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "SimpleStructVarray" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("SimpleStructVarray", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

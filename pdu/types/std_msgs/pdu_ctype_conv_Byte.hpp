@@ -56,7 +56,7 @@ static inline bool _ros2pdu_Byte(std_msgs::msg::Byte &src, Hako_Byte &dst, PduDy
     try {
         // primitive convert
         hako_convert_ros2pdu(src.data, dst.data);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -67,7 +67,7 @@ static inline bool _ros2pdu_Byte(std_msgs::msg::Byte &src, Hako_Byte &dst, PduDy
 static inline int hako_convert_ros2pdu_Byte(std_msgs::msg::Byte &src, Hako_Byte** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_Byte out;
+    Hako_Byte out{};  // zeroed: no stray bytes in the padding
     if (!_ros2pdu_Byte(src, out, dynamic_memory)) {
         return -1;
     }
@@ -85,6 +85,22 @@ static inline int hako_convert_ros2pdu_Byte(std_msgs::msg::Byte &src, Hako_Byte*
 
     *dst = (Hako_Byte*)base_ptr;
     return hako_get_pdu_meta_data(base_ptr)->total_size;
+}
+
+// Builds the PDU straight into buffer (no intermediate PDU; each array of the
+// message is copied once), byte for byte as hako_convert_ros2pdu_Byte() lays
+// it out. buffer needs no alignment and must not overlap src's arrays. Returns
+// the PDU size, or -1 (nothing written) on a conversion error, a buffer too
+// small or overlapping src's arrays.
+static inline int hako_convert_ros2pdu_into_Byte(std_msgs::msg::Byte &src, char* buffer, int buffer_len)
+{
+    PduDynamicMemory dynamic_memory;
+    Hako_Byte out{};  // zeroed: no stray bytes in the padding
+    if (!_ros2pdu_Byte(src, out, dynamic_memory)) {
+        std::cerr << "[ConvertorError][" << "Byte" << "] hako_convert_ros2pdu returned error code: " << -1 << std::endl;
+        return -1;
+    }
+    return hako_pdu_build_into("Byte", &out, sizeof(out), dynamic_memory, buffer, buffer_len);
 }
 
 static inline Hako_Byte* hako_create_empty_pdu_Byte(int heap_size)

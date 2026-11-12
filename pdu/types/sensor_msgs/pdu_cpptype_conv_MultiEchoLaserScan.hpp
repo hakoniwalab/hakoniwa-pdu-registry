@@ -38,6 +38,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiEchoLaserScan_ranges(const char*
             temp_struct_ptr++;
         }
     }
+    else {
+        dst.ranges.clear();  // a reused destination keeps nothing from before
+    }
     return 0;
 }
 static inline int cpp_pdu2cpp_struct_array_MultiEchoLaserScan_intensities(const char* heap_ptr, Hako_MultiEchoLaserScan &src, HakoCpp_MultiEchoLaserScan &dst)
@@ -52,6 +55,9 @@ static inline int cpp_pdu2cpp_struct_array_MultiEchoLaserScan_intensities(const 
             cpp_pdu2cpp_LaserEcho(heap_ptr, *temp_struct_ptr, dst.intensities[i]);
             temp_struct_ptr++;
         }
+    }
+    else {
+        dst.intensities.clear();  // a reused destination keeps nothing from before
     }
     return 0;
 }
@@ -103,12 +109,14 @@ static inline int hako_convert_pdu2cpp_MultiEchoLaserScan(Hako_MultiEchoLaserSca
 static inline bool cpp_cpp2pdu_struct_array_MultiEchoLaserScan_ranges(HakoCpp_MultiEchoLaserScan &src, Hako_MultiEchoLaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._ranges_len = src.ranges.size();
+    dst._ranges_len = hako_pdu_array_length(src.ranges.size());
     if (dst._ranges_len > 0) {
         Hako_LaserEcho* temp_struct_ptr = (Hako_LaserEcho*)dynamic_memory.allocate(dst._ranges_len, sizeof(Hako_LaserEcho));
         dst._ranges_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._ranges_len; ++i) {
-            cpp_cpp2pdu_LaserEcho(src.ranges[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_LaserEcho(src.ranges[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -120,12 +128,14 @@ static inline bool cpp_cpp2pdu_struct_array_MultiEchoLaserScan_ranges(HakoCpp_Mu
 static inline bool cpp_cpp2pdu_struct_array_MultiEchoLaserScan_intensities(HakoCpp_MultiEchoLaserScan &src, Hako_MultiEchoLaserScan &dst, PduDynamicMemory &dynamic_memory)
 {
     // array struct
-    dst._intensities_len = src.intensities.size();
+    dst._intensities_len = hako_pdu_array_length(src.intensities.size());
     if (dst._intensities_len > 0) {
         Hako_LaserEcho* temp_struct_ptr = (Hako_LaserEcho*)dynamic_memory.allocate(dst._intensities_len, sizeof(Hako_LaserEcho));
         dst._intensities_off = dynamic_memory.get_offset(temp_struct_ptr);
         for (int i = 0; i < dst._intensities_len; ++i) {
-            cpp_cpp2pdu_LaserEcho(src.intensities[i], *temp_struct_ptr, dynamic_memory);
+            if (!cpp_cpp2pdu_LaserEcho(src.intensities[i], *temp_struct_ptr, dynamic_memory)) {
+                return false;
+            }
             temp_struct_ptr++;
         }
     }
@@ -139,7 +149,9 @@ static inline bool cpp_cpp2pdu_MultiEchoLaserScan(HakoCpp_MultiEchoLaserScan &sr
 {
     try {
         // struct convert
-        cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory);
+        if (!cpp_cpp2pdu_Header(src.header, dst.header, dynamic_memory)) {
+            return false;
+        }
         // primitive convert
         hako_convert_cpp2pdu(src.angle_min, dst.angle_min);
         // primitive convert
@@ -155,10 +167,14 @@ static inline bool cpp_cpp2pdu_MultiEchoLaserScan(HakoCpp_MultiEchoLaserScan &sr
         // primitive convert
         hako_convert_cpp2pdu(src.range_max, dst.range_max);
         //struct array convert
-        cpp_cpp2pdu_struct_array_MultiEchoLaserScan_ranges(src, dst, dynamic_memory);
+        if (!cpp_cpp2pdu_struct_array_MultiEchoLaserScan_ranges(src, dst, dynamic_memory)) {
+            return false;
+        }
         //struct array convert
-        cpp_cpp2pdu_struct_array_MultiEchoLaserScan_intensities(src, dst, dynamic_memory);
-    } catch (const std::runtime_error& e) {
+        if (!cpp_cpp2pdu_struct_array_MultiEchoLaserScan_intensities(src, dst, dynamic_memory)) {
+            return false;
+        }
+    } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;
     }
@@ -169,7 +185,7 @@ static inline bool cpp_cpp2pdu_MultiEchoLaserScan(HakoCpp_MultiEchoLaserScan &sr
 static inline int hako_convert_cpp2pdu_MultiEchoLaserScan(HakoCpp_MultiEchoLaserScan &src, Hako_MultiEchoLaserScan** dst)
 {
     PduDynamicMemory dynamic_memory;
-    Hako_MultiEchoLaserScan out;
+    Hako_MultiEchoLaserScan out{};  // zeroed: no stray bytes in the padding
     if (!cpp_cpp2pdu_MultiEchoLaserScan(src, out, dynamic_memory)) {
         return -1;
     }
@@ -221,26 +237,20 @@ public:
         return true;
     }
 
+    // Builds the PDU straight into pdu_buffer, byte for byte as
+    // hako_convert_cpp2pdu_MultiEchoLaserScan() lays it out (metadata, base, heap), without
+    // an intermediate PDU: each array of the message is copied once.
+    // pdu_buffer needs no alignment. It must not overlap cppData's arrays (they
+    // are read while the PDU is written): an overlap is refused.
     int cpp2pdu(HakoCpp_MultiEchoLaserScan& cppData, char* pdu_buffer, int buffer_len)
     {
-        char* base_ptr = nullptr;
-        int pdu_size = hako_convert_cpp2pdu_MultiEchoLaserScan(cppData, (Hako_MultiEchoLaserScan**)&base_ptr);
-        if (pdu_size < 0) {
-            std::cerr << "[ConvertorError][" << "MultiEchoLaserScan" << "] hako_convert_cpp2pdu returned error code: " << pdu_size << std::endl;
+        PduDynamicMemory dynamic_memory;
+        Hako_MultiEchoLaserScan out{};  // zeroed: no stray bytes in the padding
+        if (!cpp_cpp2pdu_MultiEchoLaserScan(cppData, out, dynamic_memory)) {
+            std::cerr << "[ConvertorError][" << "MultiEchoLaserScan" << "] hako_convert_cpp2pdu returned error code: " << -1 << std::endl;
             return -1;
         }
-        if (pdu_size > buffer_len) {
-            std::cerr << "[ConvertorError][" << "MultiEchoLaserScan" << "] buffer too small. pdu_size=" << pdu_size << " buffer_len=" << buffer_len << std::endl;
-            return -1;
-        }
-        void* top_ptr = hako_get_top_ptr_pdu((void*)base_ptr);
-        if (top_ptr == nullptr) {
-            std::cerr << "[ConvertorError][" << "MultiEchoLaserScan" << "] hako_get_top_ptr_pdu returned null" << std::endl;
-            return -1;
-        }
-        memcpy(pdu_buffer, top_ptr, pdu_size);
-        hako_destroy_pdu((void*)base_ptr);
-        return pdu_size;
+        return hako_pdu_build_into("MultiEchoLaserScan", &out, sizeof(out), dynamic_memory, pdu_buffer, buffer_len);
     }
 
 private:

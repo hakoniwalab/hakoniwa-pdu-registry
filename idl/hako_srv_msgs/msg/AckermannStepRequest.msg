@@ -1,2 +1,3 @@
 uint64 step
 ackermann_msgs/AckermannDrive drive
+float64 tire_friction

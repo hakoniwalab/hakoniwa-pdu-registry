@@ -37,11 +37,16 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequestConverter do
         base_off + 8
       )
 
+    # member: tire_friction, type: float64 (primitive), offset: 32, size: 8
+    tire_friction = read_primitive("float64", binary_part(binary_data, base_off + 32, 8))
+
     struct(obj, %{
 
       step: step,
 
-      drive: drive
+      drive: drive,
+
+      tire_friction: tire_friction
 
     })
   end
@@ -58,6 +63,9 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequestConverter do
         allocator,
         obj.drive
       )
+
+    # member: tire_friction, type: float64 (primitive), offset: 32, size: 8
+    allocator = add_binary(allocator, parent_off + 32, primitive_to_bin("float64", obj.tire_friction, 8))
 
     {allocator, heap_data}
   end

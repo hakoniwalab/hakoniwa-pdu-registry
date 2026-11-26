@@ -9,7 +9,9 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequest do
 
     step: 0,
 
-    drive: HakoPdu.AckermannMsgs.AckermannDrive.new()
+    drive: HakoPdu.AckermannMsgs.AckermannDrive.new(),
+
+    tire_friction: 0.0
 
   ]
 
@@ -22,7 +24,9 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequest do
 
       "step" => encode_value(msg.step),
 
-      "drive" => encode_value(msg.drive)
+      "drive" => encode_value(msg.drive),
+
+      "tire_friction" => encode_value(msg.tire_friction)
 
     }
   end
@@ -32,7 +36,9 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequest do
 
       step: map |> get_value(:step, "step", 0) |> decode_step(),
 
-      drive: map |> get_value(:drive, "drive", HakoPdu.AckermannMsgs.AckermannDrive.new()) |> decode_drive()
+      drive: map |> get_value(:drive, "drive", HakoPdu.AckermannMsgs.AckermannDrive.new()) |> decode_drive(),
+
+      tire_friction: map |> get_value(:tire_friction, "tire_friction", 0.0) |> decode_tire_friction()
 
     }
   end
@@ -83,6 +89,11 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequest do
 
   defp decode_drive(value) do
     if is_map(value), do: HakoPdu.AckermannMsgs.AckermannDrive.from_map(value), else: value
+  end
+
+
+  defp decode_tire_friction(value) do
+    value
   end
 
 end

@@ -31,6 +31,8 @@ static inline int _pdu2ros_AckermannStepRequest(const char* heap_ptr, Hako_Acker
     hako_convert_pdu2ros(src.step, dst.step);
     // Struct convert
     _pdu2ros_AckermannDrive(heap_ptr, src.drive, dst.drive);
+    // primitive convert
+    hako_convert_pdu2ros(src.tire_friction, dst.tire_friction);
     (void)heap_ptr;
     return 0;
 }
@@ -63,6 +65,8 @@ static inline bool _ros2pdu_AckermannStepRequest(hako_srv_msgs::msg::AckermannSt
         if (!_ros2pdu_AckermannDrive(src.drive, dst.drive, dynamic_memory)) {
             return false;
         }
+        // primitive convert
+        hako_convert_ros2pdu(src.tire_friction, dst.tire_friction);
     } catch (const std::exception& e) {
         std::cerr << "convertor error: " << e.what() << std::endl;
         return false;

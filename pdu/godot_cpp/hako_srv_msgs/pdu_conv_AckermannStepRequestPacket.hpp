@@ -53,7 +53,7 @@ inline void binary_write_recursive_AckermannStepRequestPacket(
     hako::godot_runtime::DynamicAllocator &allocator,
     const godot::Dictionary &obj)
 {
-    allocator.ensure_size(parent_off + 304);
+    allocator.ensure_size(parent_off + 312);
     if (obj.has("header")) {
         hako::godot_pdu::hako_srv_msgs::binary_write_recursive_ServiceRequestHeader(
             parent_off + 0,

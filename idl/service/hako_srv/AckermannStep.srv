@@ -3,6 +3,8 @@
 # step: step number k; drive: the same command as the AckermannDrive PDU
 uint64 step
 ackermann_msgs/AckermannDrive drive
+# tire_friction: tyre-priority friction of this car for step k; 0 or less = keep the current value
+float64 tire_friction
 ---
 # Response: the car after step k was applied and the world stepped once
 # step: the request's k; result_code: 0 ok

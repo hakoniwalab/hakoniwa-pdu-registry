@@ -10,11 +10,14 @@ export class AckermannStepRequest {
     step;
 /** @type { AckermannDrive } */
     drive;
+/** @type { number } */
+    tire_friction;
 
 
     constructor() {
         this.step = 0n;
         this.drive = new AckermannDrive();
+        this.tire_friction = 0.0;
     }
 
     /**
@@ -64,6 +67,27 @@ export class AckermannStepRequest {
                 d['drive'] = field_val;
             }
         }
+        {
+            // handle field 'tire_friction'
+            const field_val = this.tire_friction;
+            if (typeof field_val?.toDict === 'function') {
+                d['tire_friction'] = field_val.toDict();
+            } else if (Array.isArray(field_val)) {
+                d['tire_friction'] = field_val.map(item => {
+                    if (typeof item?.toDict === 'function') {
+                        return item.toDict();
+                    }
+                    if (typeof item === 'bigint') {
+                        return item.toString();
+                    }
+                    return item;
+                });
+            } else if (typeof field_val === 'bigint') {
+                d['tire_friction'] = field_val.toString();
+            } else {
+                d['tire_friction'] = field_val;
+            }
+        }
         return d;
     }
 
@@ -81,6 +105,9 @@ export class AckermannStepRequest {
             if (d.drive) {
                 obj.drive = field_class.fromDict(d.drive);
             }
+        }
+        if (d.hasOwnProperty('tire_friction')) {
+            obj.tire_friction = d.tire_friction;
         }
         return obj;
     }

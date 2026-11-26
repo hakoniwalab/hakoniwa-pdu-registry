@@ -34,7 +34,7 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequestPacketConverter do
         base_off + 0
       )
 
-    # member: body, type: AckermannStepRequest (struct), offset: 272, size: 32
+    # member: body, type: AckermannStepRequest (struct), offset: 272, size: 40
     body =
       HakoPdu.HakoSrvMsgs.AckermannStepRequestConverter.binary_read_recursive_ackermann_step_request(
         meta,
@@ -62,7 +62,7 @@ defmodule HakoPdu.HakoSrvMsgs.AckermannStepRequestPacketConverter do
         obj.header
       )
 
-    # member: body, type: AckermannStepRequest (struct), offset: 272, size: 32
+    # member: body, type: AckermannStepRequest (struct), offset: 272, size: 40
     {allocator, heap_data} =
       HakoPdu.HakoSrvMsgs.AckermannStepRequestConverter.binary_write_recursive_ackermann_step_request(
         parent_off + 272,

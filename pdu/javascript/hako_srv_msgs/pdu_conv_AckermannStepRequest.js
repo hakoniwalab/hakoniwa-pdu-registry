@@ -39,6 +39,14 @@ export function binary_read_recursive_AckermannStepRequest(meta, binary_data, js
         js_obj.drive = tmp_obj;
     }
     
+    // member: tire_friction, type: float64 (primitive)
+
+    
+    {
+        const bin = PduUtils.readBinary(binary_data, base_off + 32, 8);
+        js_obj.tire_friction = PduUtils.binToValue("float64", bin);
+    }
+    
     return js_obj;
 }
 
@@ -83,6 +91,14 @@ export function binary_write_recursive_AckermannStepRequest(parent_off, bw_conta
 
     {
         binary_write_recursive_AckermannDrive(parent_off + 8, bw_container, allocator, js_obj.drive);
+    }
+    
+    // member: tire_friction, type: float64 (primitive)
+
+    
+    {
+        const bin = PduUtils.typeToBin("float64", js_obj.tire_friction, 8);
+        allocator.add(bin, parent_off + 32);
     }
     
 }

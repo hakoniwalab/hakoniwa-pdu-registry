@@ -38,5 +38,10 @@ namespace hakoniwa.pdu.msgs.hako_srv_msgs
                 _pdu.SetData("drive", value.GetPdu());
             }
         }
+        public double tire_friction
+        {
+            get => _pdu.GetData<double>("tire_friction");
+            set => _pdu.SetData("tire_friction", value);
+        }
     }
 }

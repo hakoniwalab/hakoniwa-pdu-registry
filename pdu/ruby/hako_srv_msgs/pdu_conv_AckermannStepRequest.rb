@@ -33,6 +33,9 @@ module HakoPdu::HakoSrvMsgs::AckermannStepRequestConverter
     obj.drive = HakoPdu::AckermannMsgs::AckermannDrive.new
     HakoPdu::AckermannMsgs::AckermannDriveConverter.binary_read_recursive_ackermann_drive(meta, binary_data, obj.drive, base_off + 8)
 
+    # member: tire_friction, type: float64 (primitive), offset: 32, size: 8
+    obj.tire_friction = read_primitive('float64', binary_data.byteslice(base_off + 32, 8))
+
     obj
   end
 
@@ -42,6 +45,9 @@ module HakoPdu::HakoSrvMsgs::AckermannStepRequestConverter
 
     # member: drive, type: ackermann_msgs/AckermannDrive (struct), offset: 8, size: 20
     HakoPdu::AckermannMsgs::AckermannDriveConverter.binary_write_recursive_ackermann_drive(parent_off + 8, heap_data, allocator, obj.drive)
+
+    # member: tire_friction, type: float64 (primitive), offset: 32, size: 8
+    add_binary(allocator, parent_off + 32, primitive_to_bin('float64', obj.tire_friction, 8))
 
     obj
   end

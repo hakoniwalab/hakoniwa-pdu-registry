@@ -30,12 +30,14 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
             obj.step = PduRuntime.ReadUInt64(binaryData, baseOff + 0);
             obj.drive = new AckermannDrive();
             AckermannDriveConverter.BinaryReadRecursive(meta, binaryData, obj.drive, baseOff + 8);
+            obj.tire_friction = PduRuntime.ReadFloat64(binaryData, baseOff + 32);
         }
 
         public static void BinaryWriteRecursive(int parentOff, BinaryWriterContainer writer, DynamicAllocator allocator, AckermannStepRequest obj)
         {
             allocator.Add(PduRuntime.GetBinaryForUInt64(obj.step), parentOff + 0);
             AckermannDriveConverter.BinaryWriteRecursive(parentOff + 8, writer, allocator, obj.drive);
+            allocator.Add(PduRuntime.GetBinaryForFloat64(obj.tire_friction), parentOff + 32);
         }
     }
 }

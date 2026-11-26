@@ -34,6 +34,8 @@ static inline void cpp2cdr_AckermannStepRequest(
     cdr << src.step;
     // nested struct: drive
     cpp2cdr_AckermannDrive(cdr, src.drive);
+    // primitive: tire_friction
+    cdr << src.tire_friction;
 }
 
 /***************************
@@ -49,6 +51,8 @@ static inline void cdr2cpp_AckermannStepRequest(
     cdr >> dst.step;
     // nested struct: drive
     cdr2cpp_AckermannDrive(cdr, dst.drive);
+    // primitive: tire_friction
+    cdr >> dst.tire_friction;
 }
 
 /***************************

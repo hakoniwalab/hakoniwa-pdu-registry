@@ -12,6 +12,7 @@ export class PduAckermannStepRequestConverter {
     static to_cdr_body(writer, src) {
         writer.write_uint64(src.step);
         PduAckermannDriveConverter.to_cdr_body(writer, src.drive);
+        writer.write_float64(src.tire_friction);
     }
 
     /**
@@ -22,6 +23,7 @@ export class PduAckermannStepRequestConverter {
     static cdr_body_to_js(reader, dst) {
         dst.step = reader.read_uint64();
         PduAckermannDriveConverter.cdr_body_to_js(reader, dst.drive);
+        dst.tire_friction = reader.read_float64();
         return dst;
     }
 

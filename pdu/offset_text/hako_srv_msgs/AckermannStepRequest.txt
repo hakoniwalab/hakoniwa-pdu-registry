@@ -1,2 +1,3 @@
 single:primitive:step:uint64:0:8
 single:struct:drive:ackermann_msgs/AckermannDrive:8:20
+single:primitive:tire_friction:float64:32:8

@@ -7,6 +7,7 @@
 typedef struct {
         Hako_uint64 step;
         Hako_AckermannDrive drive;
+        Hako_float64 tire_friction;
 } Hako_AckermannStepRequest;
 
 #endif /* _pdu_ctype_hako_srv_msgs_AckermannStepRequest_H_ */

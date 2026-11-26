@@ -29,6 +29,8 @@ inline void binary_read_recursive_AckermannStepRequest(
             meta, binary_data, child, base_off + 8);
         obj["drive"] = child;
     }
+    obj["tire_friction"] = hako::godot_runtime::read_float64(
+        binary_data, base_off + 32);
 }
 
 inline godot::Dictionary pdu_to_godot_AckermannStepRequest(const godot::PackedByteArray &binary_data)
@@ -48,7 +50,7 @@ inline void binary_write_recursive_AckermannStepRequest(
     hako::godot_runtime::DynamicAllocator &allocator,
     const godot::Dictionary &obj)
 {
-    allocator.ensure_size(parent_off + 28);
+    allocator.ensure_size(parent_off + 40);
     if (obj.has("step")) {
         allocator.add(
             hako::godot_runtime::get_binary_for_uint64(
@@ -61,6 +63,12 @@ inline void binary_write_recursive_AckermannStepRequest(
             writer,
             allocator,
             hako::godot_runtime::variant_to_dictionary(obj["drive"]));
+    }
+    if (obj.has("tire_friction")) {
+        allocator.add(
+            hako::godot_runtime::get_binary_for_float64(
+                hako::godot_runtime::variant_to_float64(obj["tire_friction"])),
+            parent_off + 32);
     }
 }
 

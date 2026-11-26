@@ -28,6 +28,7 @@ add_executable(hakoniwa_pdu_cpp_tests
   disturbance_cpp_interop_test.cpp
   disturbance_user_custom_cpp_interop_test.cpp
   game_controller_operation_cpp_interop_test.cpp
+  ackermann_step_request_cpp_interop_test.cpp
   joint_state_cpp_interop_test.cpp
   point_cloud2_cpp_interop_test.cpp
   simple_struct_varray_cpp_interop_test.cpp

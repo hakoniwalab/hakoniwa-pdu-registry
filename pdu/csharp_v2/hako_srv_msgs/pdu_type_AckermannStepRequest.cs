@@ -10,12 +10,14 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
     {
         public ulong step { get; set; } = 0;
         public AckermannDrive drive { get; set; } = new AckermannDrive();
+        public double tire_friction { get; set; } = 0.0;
 
         public Dictionary<string, object?> ToDictionary()
         {
             var dict = new Dictionary<string, object?>();
             dict["step"] = ToSerializableValue(step);
             dict["drive"] = ToSerializableValue(drive);
+            dict["tire_friction"] = ToSerializableValue(tire_friction);
             return dict;
         }
 
@@ -29,6 +31,10 @@ namespace Hakoniwa.Pdu.CSharpV2.hako_srv_msgs
             if (dict.TryGetValue("drive", out var driveValue))
             {
                 obj.drive = PduRuntime.ConvertObject<AckermannDrive>(driveValue, item => AckermannDrive.FromDictionary(item));
+            }
+            if (dict.TryGetValue("tire_friction", out var tire_frictionValue))
+            {
+                obj.tire_friction = PduRuntime.ConvertValue<double>(tire_frictionValue);
             }
             return obj;
         }
